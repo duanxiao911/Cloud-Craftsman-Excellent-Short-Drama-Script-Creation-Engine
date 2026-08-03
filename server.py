@@ -265,10 +265,9 @@ def create_app() -> FastAPI:
         if not request.stream:
             # 非流式：直接转发响应
             try:
-                async with app.state.http_client.post(url, json=payload, headers=headers) as resp:
-                    body = await resp.aread()
-                    from fastapi.responses import Response
-                    return Response(content=body, status_code=resp.status_code, media_type="application/json")
+                resp = await app.state.http_client.post(url, json=payload, headers=headers)
+                from fastapi.responses import Response
+                return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
             except Exception as e:
                 raise HTTPException(status_code=502, detail=f"上游API错误: {str(e)[:200]}")
         else:
