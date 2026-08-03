@@ -12,6 +12,7 @@ Endpoints:
     GET  /api/v1/progress/{id} - 查询进度
     GET  /api/v1/experts       - 列出专家
     GET  /health               - 健康检查
+    POST /chat/completions     - OpenAI兼容代理（前端直接调用）
 """
 
 import os
@@ -223,6 +224,78 @@ def create_app() -> FastAPI:
             "model": config["model"],
             "base_url": config["base_url"],
         }
+
+
+    # ============ OpenAI兼容代理端点（前端直接调用） ============
+
+    class ChatCompletionRequest(BaseModel):
+        model: str = "deepseek-chat"
+        messages: List[Dict[str, Any]] = []
+        temperature: float = 0.8
+        max_tokens: int = 16384
+        stream: bool = False
+
+    @app.post("/chat/completions")
+    async def openai_chat_completions(request: ChatCompletionRequest):
+        """
+        OpenAI兼容代理端点 - 前端可直接调用，无需API Key
+        接受标准OpenAI格式请求，代理转发到DeepSeek，返回标准OpenAI SSE格式
+        """
+        config = get_llm_config()
+        api_key = config["api_key"]
+        base_url = config["base_url"].rstrip("/")
+        use_model = request.model or config["model"]
+
+        if not api_key:
+            raise HTTPException(status_code=500, detail="服务端未配置API Key")
+
+        url = f"{base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": use_model,
+            "messages": request.messages,
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens,
+            "stream": request.stream,
+        }
+
+        if not request.stream:
+            # 非流式：直接转发响应
+            try:
+                async with app.state.http_client.post(url, json=payload, headers=headers) as resp:
+                    body = await resp.aread()
+                    from fastapi.responses import Response
+                    return Response(content=body, status_code=resp.status_code, media_type="application/json")
+            except Exception as e:
+                raise HTTPException(status_code=502, detail=f"上游API错误: {str(e)[:200]}")
+        else:
+            # 流式：透传SSE（直接转发DeepSeek的原始OpenAI格式）
+            async def passthrough_stream():
+                try:
+                    async with app.state.http_client.stream("POST", url, json=payload, headers=headers, timeout=120.0) as resp:
+                        if resp.status_code != 200:
+                            body = await resp.aread()
+                            yield f'data: {json.dumps({"error": {"message": f"上游API返回{resp.status_code}: {body.decode()[:200]}"}})}\n\n'
+                            return
+                        async for line in resp.aiter_lines():
+                            if line:
+                                yield line + "\n"
+                        yield "\n"
+                except Exception as e:
+                    yield f'data: {json.dumps({"error": {"message": f"流式代理异常: {str(e)[:200]}"}})}\n\n'
+
+            return StreamingResponse(
+                passthrough_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
+                },
+            )
 
     # ============ 【核心接口】流式LLM代理 ============
 
