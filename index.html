@@ -6729,6 +6729,11 @@ function renderMarkdown(md) {
     resultEl.innerHTML = '测试中...<br>URL: ' + url + '<br>模型: ' + model + '<br>Key: ' + maskedKey + ' (长度: ' + key.length + ')';
     testBtn.disabled = true;
 
+    // 服务器休眠唤醒提示：5 秒未响应时告知用户（Railway 免费版冷启动约需 30 秒）
+    var wakeTimer = setTimeout(function () {
+      resultEl.innerHTML += '<br><span style="color:#f59e0b">首次连接正在唤醒服务器，约需 30 秒，请稍候…</span>';
+    }, 5000);
+
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -6759,9 +6764,10 @@ function renderMarkdown(md) {
       resultEl.style.background = 'rgba(239,68,68,0.1)';
       resultEl.style.color = '#ef4444';
       resultEl.innerHTML = '网络错误: ' + e.message + '<br>URL: ' + url + '<br>可能是跨域(CORS)问题，请确保通过HTTP服务器访问而非file://协议';
+    } finally {
+      clearTimeout(wakeTimer);
+      testBtn.disabled = false;
     }
-
-    testBtn.disabled = false;
   }
 
   function updateApiStatus() {
