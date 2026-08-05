@@ -5644,18 +5644,16 @@
     letter-spacing: 0.5px;
   }
 
-  /* ===== 一键到顶 / 一键到底 浮动按钮 ===== */
+  /* ===== 一键到顶 / 一键到底（内嵌控制栏，位于 API 状态左侧） ===== */
   .scroll-fab-group {
-    position: fixed;
-    right: 20px;
-    bottom: 160px; /* 避开右下角小助手 */
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 150;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    margin-right: 10px;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(8px);
+    transform: translateY(4px);
     transition: opacity 0.3s ease, transform 0.3s ease;
   }
   .scroll-fab-group.show {
@@ -5664,13 +5662,13 @@
     transform: translateY(0);
   }
   .scroll-fab {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
     background: var(--bg-secondary, rgba(255, 255, 255, 0.9));
     color: var(--text-secondary);
-    font-size: 15px;
+    font-size: 13px;
     line-height: 1;
     cursor: pointer;
     backdrop-filter: blur(8px);
@@ -6399,6 +6397,11 @@ function renderMarkdown(md) {
             <span id="selectedPersonalityTags" class="chip-selected-text"></span>
           </div>
           <div class="controls-right">
+            <!-- 一键到顶 / 一键到底（画布可滚动时显示） -->
+            <div class="scroll-fab-group" id="scrollFabGroup">
+              <button class="scroll-fab" id="scrollTopFab" title="一键到顶" onclick="scrollToPageTop()">↑</button>
+              <button class="scroll-fab" id="scrollBottomFab" title="一键到底" onclick="scrollToPageBottom(true)">↓</button>
+            </div>
             <div class="api-status-new" id="apiStatus" onclick="toggleSettings()" style="cursor:pointer;">
               <span class="dot" id="apiStatusDot" style="background:#ef4444;"></span>
               <span id="apiStatusText">未配置API</span>
@@ -11306,13 +11309,8 @@ ADVICE|项目名|具体建议`;
     </div>
   </div>
 
-  <!-- 一键到顶 / 一键到底 -->
-  <div class="scroll-fab-group" id="scrollFabGroup">
-    <button class="scroll-fab" id="scrollTopFab" title="一键到顶" onclick="scrollToPageTop()">↑</button>
-    <button class="scroll-fab" id="scrollBottomFab" title="一键到底" onclick="scrollToPageBottom(true)">↓</button>
-  </div>
   <script>
-  // 画布（或页面）可滚动时才显示浮动按钮；接近底部时隐藏"到底"，在顶部时隐藏"到顶"
+  // 画布（或页面）可滚动时才显示置顶/到底按钮；接近底部时隐藏"到底"，在顶部时隐藏"到顶"
   (function() {
     const group = document.getElementById('scrollFabGroup');
     const topBtn = document.getElementById('scrollTopFab');
