@@ -6004,7 +6004,7 @@ function renderMarkdown(md) {
           </div>
         </div>
         <div class="onboarding-footer">
-          已有 <span id="creatorCount">4</span> 位创作者在这里写出了他们的故事
+          已产出《电气工的眼泪》《晚风载你》等多部卡卡星 A+ 级测评剧本
         </div>
       </div>
       <!-- 右侧表单面板 -->
@@ -6268,11 +6268,11 @@ function renderMarkdown(md) {
           <div class="feature-list">
             <div class="feature-item">
               <div class="feature-icon">⚡</div>
-              <div class="feature-text">25分钟出稿</div>
+              <div class="feature-text">六阶段分钟级出稿</div>
             </div>
             <div class="feature-item">
               <div class="feature-icon">🎯</div>
-              <div class="feature-text">过审率行业领先</div>
+              <div class="feature-text">卡卡星测评双A+（88/85分）</div>
             </div>
             <div class="feature-item">
               <div class="feature-icon">🏛️</div>
@@ -6675,7 +6675,7 @@ function renderMarkdown(md) {
     <div class="footer-right">
       <div class="footer-badge">
         <span>📊</span>
-        <span>过审率 A-B 级验证</span>
+        <span>卡卡星测评 A+ 级实证</span>
       </div>
       <div class="footer-badge">
         <span>🎬</span>
@@ -9822,8 +9822,6 @@ ADVICE|项目名|具体建议`;
   // ========== 导出计数器 ==========
   let exportedCount = parseInt(localStorage.getItem('dramaExportCount') || '0');
   document.getElementById('scriptCount').textContent = exportedCount;
-  // 创作者数 = 基础 2 位 + 累计进入工作室次数（导出次数不再影响它）
-  document.getElementById('creatorCount').textContent = 2 + parseInt(localStorage.getItem('yunjiangEnterCount') || '0');
   
   function incrementExportCount() {
     exportedCount++;
