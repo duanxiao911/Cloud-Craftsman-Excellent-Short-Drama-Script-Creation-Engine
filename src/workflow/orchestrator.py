@@ -42,7 +42,11 @@ from src.knowledge.culture_kb import CultureKnowledgeBase
 
 MAX_REVISIONS = 2  # 审核失败最大重试次数（v2.0提升为2次）
 QUALITY_THRESHOLD = 0.6  # 质量分低于此值触发回滚
-KNOWLEDGE_DIR = "knowledge/experts"  # 专家知识库目录
+KNOWLEDGE_DIR_CANDIDATES = [
+    "knowledge/experts",
+    "drama-engine/knowledge/experts",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "knowledge", "experts"),
+]
 
 
 class WorkflowStatus(Enum):
@@ -189,24 +193,32 @@ class Orchestrator:
             "§3": "structure_architect",
             "§4": "dialogue_master",
             "§5": "episode_writer",
+            "§6": "format_craftsman",
             "§7": "quality_auditor",
             "§8": "project_configurator",
-            "§9": "visual_director",
-            "§10": "compliance_guard",
-            "§11": "quality_auditor",
-            "§12": "quality_director",
+            "§9": "revision_editor",
+            "§10": "battle_commander",
+            "§11": "scene_craftsman",
             "§13": "visual_director",
-            "§14": "business_strategist",
-            "§15": "script_reviewer",
-            "§16": "episode_outline_reviewer",
+            "§14": "business_operator",
+            "§15": "quality_director",
+            "§16": "script_reviewer",
+            "§17": "episode_outline_reviewer",
         }
 
         filename = expert_name_map.get(expert_id)
         if not filename:
             return None
 
-        filepath = os.path.join(KNOWLEDGE_DIR, f"{filename}.md")
-        if not os.path.exists(filepath):
+        # 尝试多个候选路径
+        filepath = None
+        for candidate_dir in KNOWLEDGE_DIR_CANDIDATES:
+            candidate_path = os.path.join(candidate_dir, f"{filename}.md")
+            if os.path.exists(candidate_path):
+                filepath = candidate_path
+                break
+        
+        if filepath is None:
             return None
 
         # 检查缓存
