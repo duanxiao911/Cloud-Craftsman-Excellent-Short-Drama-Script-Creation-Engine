@@ -27,6 +27,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 from datetime import datetime
+from pathlib import Path
+import logging
 import time
 from collections import defaultdict
 
@@ -427,9 +429,45 @@ def create_app() -> FastAPI:
             },
         )
 
+    # ============ 知识库加载 ============
+    # 知识库MD文件目录
+    _KB_DIR = Path(__file__).parent / "knowledge" / "experts"
+    _kb_cache: Dict[str, str] = {}  # 缓存已加载的知识库
+    _logger = logging.getLogger(__name__)
+
+    def _load_expert_knowledge(expert_id: str) -> Optional[str]:
+        """从 knowledge/experts/{expert_id}.md 加载知识库内容。
+        支持缓存，文件变更时自动更新（基于修改时间）。"""
+        kb_file = _KB_DIR / f"{expert_id}.md"
+        if not kb_file.exists():
+            return None
+        try:
+            mtime = kb_file.stat().st_mtime
+            cache_key = f"{expert_id}:{mtime}"
+            if cache_key in _kb_cache:
+                return _kb_cache[cache_key]
+            # 清理旧缓存
+            _kb_cache.clear()
+            content = kb_file.read_text(encoding="utf-8")
+            _kb_cache[cache_key] = content
+            _logger.info(f"已加载知识库: {expert_id} ({len(content)} 字符)")
+            return content
+        except Exception as e:
+            _logger.warning(f"加载知识库失败 {expert_id}: {e}")
+            return None
+
     def _build_expert_system_prompt(expert_id: str, context: Optional[Dict] = None) -> str:
-        """根据专家ID构建系统提示词"""
-        base_prompts = {
+        """根据专家ID构建系统提示词。
+        优先从 knowledge/experts/{expert_id}.md 加载完整知识库，
+        若无外部知识库文件，则使用内嵌prompt。"""
+
+        # 优先加载外部知识库
+        kb_content = _load_expert_knowledge(expert_id)
+        if kb_content:
+            system_prompt = kb_content
+        else:
+            # 无外部知识库时，使用内嵌prompt
+            base_prompts = {
             "soul_catcher": """你是一位专精精品短剧的资深编剧，代号§0灵魂捕手。
 你的核心能力：通过精准追问，将用户模糊的创作想法转化为清晰、可执行的故事方向。
 追问维度：核心人物、核心冲突、情感基调、真实来源、目标受众、类型偏好。
@@ -473,9 +511,9 @@ def create_app() -> FastAPI:
             "script_reviewer": """你是§16终审评审官。对终稿进行综合评审，给出评分和改进建议。""",
         }
 
-        system_prompt = base_prompts.get(expert_id, f"你是短剧创作引擎专家 {expert_id}。")
+            system_prompt = base_prompts.get(expert_id, f"你是短剧创作引擎专家 {expert_id}。")
 
-        # 注入上下文（前序节点产出）
+        # 注入上下文（前序节点产出）—— 无论知识库来源都注入
         if context:
             context_str = json.dumps(context, ensure_ascii=False, indent=2)[:3000]
             system_prompt += f"\n\n=== 前序产出上下文 ===\n{context_str}"
