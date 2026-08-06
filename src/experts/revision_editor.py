@@ -115,6 +115,130 @@ class RevisionEditorExpert(ExpertBase):
 """
         return prompt
 
+
+    @staticmethod
+    def _calc_quality_score(content: str) -> float:
+        """
+        计算内容质量分数（基于多维度启发式指标）。
+        用于返工前后的质量对比，防止越改越差。
+        """
+        if not content or not content.strip():
+            return 0.0
+
+        score = 0.0
+        lines = content.split('\n')
+        char_count = len(content)
+
+        # 1. 长度指标：剧本内容需要足够充实 (0-25分)
+        if char_count >= 8000:
+            score += 25
+        elif char_count >= 5000:
+            score += 20
+        elif char_count >= 3000:
+            score += 15
+        elif char_count >= 1000:
+            score += 10
+        else:
+            score += 5
+
+        # 2. 结构完整性：场景标题、对白标记等 (0-25分)
+        scene_markers = len(re.findall(r'(?:第.+集|场景|Scene|EXT\.|INT\.)', content, re.IGNORECASE))
+        dialogue_markers = len(re.findall(r'(?:：|:)', content))
+        if scene_markers >= 5:
+            score += 15
+        elif scene_markers >= 2:
+            score += 10
+        else:
+            score += 5
+
+        if dialogue_markers >= 20:
+            score += 10
+        elif dialogue_markers >= 10:
+            score += 7
+        else:
+            score += 3
+
+        # 3. 情感/冲突关键词密度 (0-25分)
+        emotion_keywords = ['愤怒', '悲伤', '喜悦', '恐惧', '震惊', '绝望', '希望',
+                           '冲突', '矛盾', '反转', '悬念', '紧张', '感动', '痛苦',
+                           'love', 'anger', 'fear', 'hope', 'despair', 'tension']
+        emotion_count = sum(content.lower().count(kw) for kw in emotion_keywords)
+        density = emotion_count / max(char_count / 1000, 1)
+        if density >= 3:
+            score += 25
+        elif density >= 2:
+            score += 20
+        elif density >= 1:
+            score += 15
+        else:
+            score += 8
+
+        # 4. 角色多样性：不同说话者数量 (0-25分)
+        # 中文剧本常见格式：角色名 + 冒号/括号
+        speaker_patterns = re.findall(r'([\u4e00-\u9fff]{2,4})(?:：|:)', content)
+        unique_speakers = len(set(speaker_patterns))
+        if unique_speakers >= 5:
+            score += 25
+        elif unique_speakers >= 3:
+            score += 20
+        elif unique_speakers >= 2:
+            score += 12
+        else:
+            score += 5
+
+        return min(score, 100.0)
+
+    def run_with_rollback(self, context: ExpertContext, **kwargs) -> dict:
+        """
+        带返工回滚的执行方法。
+        在LLM修正前后分别计算质量分数，如果修正后质量下降超过10%，则回滚到原文。
+        """
+        # 获取当前剧本内容
+        original_content = ""
+        if context.metadata.get("step_outputs", {}).get("§6"):
+            original_content = context.metadata["step_outputs"]["§6"].get("content", "")
+        elif context.metadata.get("step_outputs", {}).get("§5"):
+            original_content = context.metadata["step_outputs"]["§5"].get("content", "")
+
+        if not original_content:
+            return {"content": "", "rollback": False, "reason": "无原始内容可处理"}
+
+        # 修正前：计算质量分数
+        pre_score = self._calc_quality_score(original_content)
+
+        # 执行正常改稿流程
+        user_prompt = self.get_user_prompt(context, **kwargs)
+        system_prompt = self.get_system_prompt()
+
+        # 调用LLM（由上层orchestrator处理，这里返回改稿后的内容）
+        revised_content = kwargs.get("revised_content", "")
+
+        if not revised_content:
+            return {
+                "content": original_content,
+                "rollback": True,
+                "reason": "改稿未产出新内容，保留原文"
+            }
+
+        # 修正后：计算质量分数
+        post_score = self._calc_quality_score(revised_content)
+
+        # 回滚判定：修正后分数低于修正前的90%
+        if post_score < pre_score * 0.9:
+            return {
+                "content": original_content,  # 回滚
+                "rollback": True,
+                "reason": f"返工后质量下降（{pre_score:.1f}→{post_score:.1f}），已保留原文"
+            }
+
+        return {
+            "content": revised_content,
+            "rollback": False,
+            "pre_score": round(pre_score, 1),
+            "post_score": round(post_score, 1),
+            "reason": f"改稿质量稳定或提升（{pre_score:.1f}→{post_score:.1f}）"
+        }
+
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
         errors = []
         # 检查是否有变更日志

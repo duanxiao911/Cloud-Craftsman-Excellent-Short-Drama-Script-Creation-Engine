@@ -49,25 +49,29 @@ drama-engine/
 
 ### 专家清单（17个）
 
-| 序号 | 专家ID | 名称 | 知识库MD |
+| 序号 | 专家ID | 名称 | 知识来源 |
 |------|--------|------|----------|
-| 0 | soul_catcher | 灵魂捕手 | 有 |
-| 1 | project_configurator | 项目策划师 | 有 |
-| 2 | story_director | 故事总监 | - |
-| 3 | structure_architect | 剧情架构师 | 有 |
-| 4 | business_strategist | 商业分析师 | - |
-| 5 | character_forger | 人物锻造师 | 有 |
-| 6 | episode_writer | 分集编剧 | - |
-| 7 | dialogue_master | 对白大师 | 有 |
-| 8 | scene_craftsman | 场景工匠 | - |
-| 9 | visual_director | 视觉导演 | 有 |
-| 10 | compliance_guard | 合规守卫 | 有 |
-| 11 | quality_auditor | 质量审计师 | - |
-| 12 | quality_director | 质量总监 | - |
-| 13 | revision_editor | 返工编辑 | - |
-| 14 | script_reviewer | 剧本审核 | 有 |
-| 15 | episode_outline_reviewer | 分集大纲审核 | 有 |
-| 16 | format_craftsman | 格式工匠 | - |
+| 0 | soul_catcher | 灵魂捕手 | ✅ 外部知识库 |
+| 1 | project_configurator | 项目策划师 | ✅ 外部知识库 |
+| 2 | story_director | 故事总监 | 📝 内嵌prompt |
+| 3 | structure_architect | 剧情架构师 | ✅ 外部知识库 |
+| 4 | business_strategist | 商业分析师 | 📝 内嵌prompt |
+| 5 | character_forger | 人物锻造师 | ✅ 外部知识库 |
+| 6 | episode_writer | 分集编剧 | 📝 内嵌prompt |
+| 7 | dialogue_master | 对白大师 | ✅ 外部知识库 |
+| 8 | scene_craftsman | 场景工匠 | 📝 内嵌prompt |
+| 9 | visual_director | 视觉导演 | ✅ 外部知识库 |
+| 10 | compliance_guard | 合规守卫 | ✅ 外部知识库 |
+| 11 | quality_auditor | 质量审计师 | 📝 内嵌prompt |
+| 12 | quality_director | 质量总监 | 📝 内嵌prompt |
+| 13 | revision_editor | 返工编辑 | 📝 内嵌prompt |
+| 14 | script_reviewer | 剧本审核 | ✅ 外部知识库 |
+| 15 | episode_outline_reviewer | 分集大纲审核 | ✅ 外部知识库 |
+| 16 | format_craftsman | 格式工匠 | 📝 内嵌prompt |
+
+**知识来源说明**：
+- ✅ 外部知识库：专家的系统prompt存储在 `knowledge/experts/` 目录下的MD文件中，支持热更新
+- 📝 内嵌prompt：专家的提示词直接写在Python代码中，适合规则明确、不需要频繁调整的逻辑
 
 ## 快速开始
 

@@ -37,6 +37,10 @@ MAX_TOKENS_CAP = 8192  # 单次请求最大token
 RATE_LIMIT_WINDOW = 60  # 限流窗口（秒）
 RATE_LIMIT_MAX = 30  # 窗口内最大请求数
 
+# Token消耗追踪
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_requests": 0}
+
+
 # 简易内存限流
 _rate_buckets: Dict[str, list] = defaultdict(list)
 
@@ -229,6 +233,12 @@ def create_app() -> FastAPI:
                         break
                     try:
                         chunk = json.loads(data_str)
+                        # 提取token用量（部分API在最后一个chunk中返回usage）
+                        usage = chunk.get("usage")
+                        if usage:
+                            _token_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                            _token_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+                            _token_usage["total_requests"] += 1
                         delta = chunk.get("choices", [{}])[0].get("delta", {})
                         content = delta.get("content", "")
                         if content:
@@ -253,6 +263,7 @@ def create_app() -> FastAPI:
             "llm_configured": bool(config["api_key"]),
             "model": config["model"],
             "base_url": config["base_url"],
+            "token_usage": dict(_token_usage),
         }
 
 
@@ -296,6 +307,16 @@ def create_app() -> FastAPI:
             # 非流式：直接转发响应
             try:
                 resp = await app.state.http_client.post(url, json=payload, headers=headers)
+                # 追踪token消耗
+                try:
+                    resp_json = resp.json()
+                    usage = resp_json.get("usage", {})
+                    if usage:
+                        _token_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                        _token_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+                        _token_usage["total_requests"] += 1
+                except Exception:
+                    pass
                 from fastapi.responses import Response
                 return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
             except Exception as e:
@@ -310,6 +331,17 @@ def create_app() -> FastAPI:
                             yield f'data: {json.dumps({"error": {"message": f"上游API返回{resp.status_code}: {body.decode()[:200]}"}})}\n\n'
                             return
                         async for line in resp.aiter_lines():
+                            # 追踪token消耗（尝试从SSE数据中提取usage）
+                            if line.startswith("data: ") and "[DONE]" not in line:
+                                try:
+                                    chunk_data = json.loads(line[6:])
+                                    usage = chunk_data.get("usage")
+                                    if usage:
+                                        _token_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                                        _token_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+                                        _token_usage["total_requests"] += 1
+                                except (json.JSONDecodeError, AttributeError):
+                                    pass
                             if line:
                                 yield line + "\n"
                         yield "\n"
@@ -449,6 +481,22 @@ def create_app() -> FastAPI:
             system_prompt += f"\n\n=== 前序产出上下文 ===\n{context_str}"
 
         return system_prompt
+
+    # ============ Token消耗统计 ============
+
+    @app.get("/api/v1/token_usage")
+    async def get_token_usage():
+        """获取当前token消耗统计"""
+        # DeepSeek定价：input ¥1/M tokens, output ¥2/M tokens
+        input_cost = _token_usage["prompt_tokens"] / 1_000_000 * 1
+        output_cost = _token_usage["completion_tokens"] / 1_000_000 * 2
+        return {
+            "prompt_tokens": _token_usage["prompt_tokens"],
+            "completion_tokens": _token_usage["completion_tokens"],
+            "total_requests": _token_usage["total_requests"],
+            "estimated_cost_cny": round(input_cost + output_cost, 4),
+            "pricing": {"input_per_million": 1, "output_per_million": 2}
+        }
 
     # ============ 原有接口（保留兼容） ============
 
