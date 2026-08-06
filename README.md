@@ -33,7 +33,7 @@ drama-engine/
 │   └── workflow/          # 工作流编排（Orchestrator）
 ├── knowledge/
 │   ├── culture/           # 中华优秀传统文化知识库
-│   └── experts/           # 专家知识库定义（10个MD）
+│   └── experts/           # 专家知识库定义（16个MD）
 ├── tests/                 # 测试用例
 └── examples/              # 示例配置
 ```
@@ -49,25 +49,25 @@ drama-engine/
 
 ### 专家清单（17个）
 
-| 序号 | 专家ID | 名称 | 知识来源 |
-|------|--------|------|----------|
-| 0 | soul_catcher | 灵魂捕手 | ✅ 外部知识库 |
-| 1 | project_configurator | 项目策划师 | ✅ 外部知识库 |
-| 2 | story_director | 故事总监 | 📝 内嵌prompt |
-| 3 | structure_architect | 剧情架构师 | ✅ 外部知识库 |
-| 4 | business_strategist | 商业分析师 | 📝 内嵌prompt |
-| 5 | character_forger | 人物锻造师 | ✅ 外部知识库 |
-| 6 | episode_writer | 分集编剧 | 📝 内嵌prompt |
-| 7 | dialogue_master | 对白大师 | ✅ 外部知识库 |
-| 8 | scene_craftsman | 场景工匠 | 📝 内嵌prompt |
-| 9 | visual_director | 视觉导演 | ✅ 外部知识库 |
-| 10 | compliance_guard | 合规守卫 | ✅ 外部知识库 |
-| 11 | quality_auditor | 质量审计师 | 📝 内嵌prompt |
-| 12 | quality_director | 质量总监 | 📝 内嵌prompt |
-| 13 | revision_editor | 返工编辑 | 📝 内嵌prompt |
-| 14 | script_reviewer | 剧本审核 | ✅ 外部知识库 |
-| 15 | episode_outline_reviewer | 分集大纲审核 | ✅ 外部知识库 |
-| 16 | format_craftsman | 格式工匠 | 📝 内嵌prompt |
+| 专家ID | 名称 | 职责 | 知识来源 |
+|--------|------|------|----------|
+| §0 | soul_catcher | 灵魂捕手：对话式追问，确认故事方向 | ✅ 外部知识库 |
+| §1 | character_forger | 人物锻造师：三层四维度人设+弧光线 | ✅ 外部知识库 |
+| §2 | compliance_guard | 合规守卫：红线扫描，输出风险评级 | ✅ 外部知识库 |
+| §3 | structure_architect | 剧情架构师：救猫咪节拍表+23段落 | ✅ 外部知识库 |
+| §4 | dialogue_master | 对白大师：语料库+对白风格卡+钩子链 | ✅ 外部知识库 |
+| §5 | episode_writer | 分集编剧：大纲展开为分场剧本（编排器内置） | 📝 内嵌逻辑 |
+| §6 | format_craftsman | 格式工匠：行业通用格式输出 | 📝 内嵌prompt |
+| §7 | quality_auditor | 质量审计师：37项爆款漏斗审查 | ✅ 外部知识库 |
+| §8 | project_configurator | 项目策划师：方向拆解为完整项目设定 | ✅ 外部知识库 |
+| §9 | revision_editor | 返工编辑：质量不达标时针对性修改 | ✅ 外部知识库 |
+| §10 | battle_commander | 实战指挥：端到端工作流编排+异常恢复 | ✅ 外部知识库 |
+| §11 | scene_craftsman | 场景工匠：场景细节与氛围描写 | ✅ 外部知识库 |
+| §13 | visual_director | 视觉导演：光影+镜头+声音系统 | ✅ 外部知识库 |
+| §14 | business_operator | 商业操盘：市场分析+投放策略+变现路径 | ✅ 外部知识库 |
+| §15 | quality_director | 质量总监：全集质量审计 | 📝 内嵌prompt |
+| §16 | script_reviewer | 剧本审核：12维度量化商业诊断 | ✅ 外部知识库 |
+| §17 | episode_outline_reviewer | 集纲审核：37项爆款漏斗逐项审查 | ✅ 外部知识库 |
 
 **知识来源说明**：
 - ✅ 外部知识库：专家的系统prompt存储在 `knowledge/experts/` 目录下的MD文件中，支持热更新
