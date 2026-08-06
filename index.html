@@ -5870,14 +5870,15 @@ function renderMarkdown(md) {
       
       <div class="settings-group">
         <label class="settings-label">API 接口地址</label>
-        <input type="text" class="settings-input" id="apiBaseUrl" placeholder="https://api.deepseek.com" value="https://api.deepseek.com">
+        <input type="text" class="settings-input" id="apiBaseUrl" placeholder="https://api.deepseek.com" value="https://drama-engine-production-3d64.up.railway.app">
+        <div class="settings-hint" style="color:#10b981;">已预配置云端演示接口，打开即可直接创作，无需任何设置</div>
         <div class="settings-hint">兼容 OpenAI 格式的接口，国内可填中转/代理地址；切换模型时会自动填对应平台官方地址</div>
       </div>
 
       <div class="settings-group">
         <label class="settings-label">API Key</label>
-        <input type="password" class="settings-input" id="apiKey" placeholder="sk-...">
-        <div class="settings-hint">Key 仅保存在你本地浏览器，不上传任何服务器</div>
+        <input type="password" class="settings-input" id="apiKey" placeholder="sk-..." value="sk-yunjiang-demo">
+        <div class="settings-hint">云端演示模式下 Key 为占位符（真实 Key 已安全内置在云端服务器）；如使用自己的接口，Key 仅保存在你本地浏览器，不上传任何服务器</div>
         <div id="keyDiagInfo" style="display:none;margin-top:6px;padding:6px 10px;background:rgba(255,165,0,0.1);border:1px solid rgba(255,165,0,0.3);border-radius:6px;font-size:11px;color:#ffa500;font-family:monospace;"></div>
       </div>
 
@@ -5885,8 +5886,8 @@ function renderMarkdown(md) {
         <label class="settings-label">模型名称</label>
         <select class="settings-input" id="apiModelSelect" onchange="onModelSelectChange()">
           <optgroup label="DeepSeek">
-            <option value="deepseek-v4-flash" selected>deepseek-v4-flash（默认）</option>
-            <option value="deepseek-chat">deepseek-chat</option>
+            <option value="deepseek-chat" selected>deepseek-chat（云端演示默认）</option>
+            <option value="deepseek-v4-flash">deepseek-v4-flash</option>
             <option value="deepseek-reasoner">deepseek-reasoner（R1 推理）</option>
           </optgroup>
           <optgroup label="Kimi · 月之暗面">
@@ -5923,8 +5924,8 @@ function renderMarkdown(md) {
           </optgroup>
           <option value="custom">✏️ 自定义模型名称…</option>
         </select>
-        <input type="text" class="settings-input" id="apiModel" placeholder="输入模型名称，如 deepseek-v4-flash" value="deepseek-v4-flash" style="display:none;margin-top:8px;">
-        <div class="settings-hint">默认 deepseek-v4-flash；换接口平台时选对应模型，或选"自定义"手填任意模型名</div>
+        <input type="text" class="settings-input" id="apiModel" placeholder="输入模型名称，如 deepseek-chat" value="deepseek-chat" style="display:none;margin-top:8px;">
+        <div class="settings-hint">云端演示默认 deepseek-chat；换接口平台时选对应模型，或选"自定义"手填任意模型名</div>
       </div>
 
       <div class="settings-group">
@@ -6687,9 +6688,9 @@ function renderMarkdown(md) {
 <script>
   // ====== API 配置相关 ======
   const DEFAULT_SETTINGS = {
-    apiBaseUrl: 'https://api.deepseek.com',
-    apiKey: '',
-    model: 'deepseek-v4-flash',
+    apiBaseUrl: 'https://drama-engine-production-3d64.up.railway.app',
+    apiKey: 'sk-yunjiang-demo',
+    model: 'deepseek-chat',
     episodeCount: 40,
     auditRounds: 2,
     auditItemsPerRound: 2,
