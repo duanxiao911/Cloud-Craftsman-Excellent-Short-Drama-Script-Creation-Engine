@@ -8,7 +8,32 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class VisualDirectorInput(BaseInput):
+    """视觉导演专家的输入"""
+    scene_description: str = ""  # 场景描写
+    emotional_tone: str = ""  # 情绪基调
+    story_phase: str = ""  # 故事阶段（开端/发展/高潮/结局）
+
+
+@dataclass
+class VisualDirectorOutput(BaseOutput):
+    """视觉导演专家的输出"""
+    lighting_system: Dict[str, Any] = field(default_factory=dict)  # 光影系统
+    camera_system: Dict[str, Any] = field(default_factory=dict)  # 镜头系统
+    sound_system: Dict[str, Any] = field(default_factory=dict)  # 声音系统
+    visual_style_guide: Dict[str, Any] = field(default_factory=dict)  # 视觉风格指南
 
 
 class VisualDirectorExpert(ExpertBase):

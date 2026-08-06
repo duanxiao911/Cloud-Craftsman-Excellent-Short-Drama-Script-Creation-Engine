@@ -20,6 +20,29 @@ from typing import Dict, List, Optional, Any, Callable
 from pathlib import Path
 
 
+
+
+# ============================================================
+# 专家类型化IO基类
+# ============================================================
+
+@dataclass
+class BaseInput:
+    """所有专家输入的基类"""
+    user_input: str = ""
+    context: Optional[Dict[str, Any]] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class BaseOutput:
+    """所有专家输出的基类"""
+    content: str = ""
+    structured_data: Dict[str, Any] = field(default_factory=dict)
+    validation_passed: bool = True
+    validation_errors: List[str] = field(default_factory=list)
+    suggestions: List[str] = field(default_factory=list)
+
 @dataclass
 class ExpertContext:
     """专家执行上下文：保存当前项目的所有中间产物"""
@@ -312,6 +335,8 @@ class ExpertRegistry:
 
 
 __all__ = [
+    "BaseInput",
+    "BaseOutput",
     "ExpertContext",
     "ExpertOutput",
     "PromptTemplate",

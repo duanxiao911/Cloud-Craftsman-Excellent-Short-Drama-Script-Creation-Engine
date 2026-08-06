@@ -12,7 +12,33 @@
 import re
 import json
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class RevisionEditorInput(BaseInput):
+    """改稿编辑专家的输入"""
+    problem_content: str = ""  # 问题内容
+    revision_notes: List[Dict] = field(default_factory=list)  # 修改意见
+    quality_report: Dict[str, Any] = field(default_factory=dict)  # 质量报告
+    revision_round: int = 0  # 改稿轮次
+
+
+@dataclass
+class RevisionEditorOutput(BaseOutput):
+    """改稿编辑专家的输出"""
+    revised_content: str = ""  # 修正后内容
+    change_log: List[Dict] = field(default_factory=list)  # 变更日志
+    issues_fixed: List[str] = field(default_factory=list)  # 已修复问题
+    remaining_issues: List[str] = field(default_factory=list)  # 残留问题
 
 
 class RevisionEditorExpert(ExpertBase):
@@ -271,3 +297,4 @@ class RevisionEditorExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§9", RevisionEditorExpert)
+

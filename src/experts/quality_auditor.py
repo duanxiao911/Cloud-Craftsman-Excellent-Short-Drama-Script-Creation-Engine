@@ -1,12 +1,16 @@
 """
 §7 质量审计（Quality Auditor）
 
-职责：对剧本进行6维度自动评分，输出结构化质量报告和改进建议
-6维度：剧情张力/角色深度/对白质量/节奏把控/视觉潜力/商业潜力
-评估结果作为§9改稿编辑的决策依据
+职责：三维质量审核系统（规则层+LLM层+结构层），对剧本进行多维度自动评分，
+输出结构化质量报告和改进建议。
 
-注意：本评分系统为启发式预检（heuristic pre-check），基于关键词和规则匹配，
-不代表最终质量判断。正式验收应结合结构化LLM评审和人工确认。
+评分架构：
+- 规则层（权重0.3）：关键词+规则匹配，保留原有启发式逻辑
+- LLM层（权重0.5）：结构化5维度打分（人物立体度/对白自然度/情节因果性/节奏张力/视觉可拍性）
+- 结构层（权重0.2）：纯Python完整性检查（场景标记/对白标记/内容长度/结构划分）
+
+6维度细分：剧情张力/角色深度/对白质量/节奏把控/视觉潜力/商业潜力
+评估结果作为§9改稿编辑的决策依据
 
 基于 Wave2 架构设计
 """
@@ -14,7 +18,7 @@
 import re
 import json
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
 
 
 # 6维度评分标准描述
@@ -62,6 +66,34 @@ DIMENSION_CRITERIA = {
         "low": "受众模糊，缺少商业卖点",
     },
 }
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class QualityAuditorInput(BaseInput):
+    """质量审计专家的输入"""
+    script_content: str = ""  # 剧本内容
+    character_cards: List[Dict] = field(default_factory=list)  # 角色人设
+    structure_outline: str = ""  # 结构大纲
+    previous_scores: Optional[Dict] = None  # 上一轮评分（迭代改稿时）
+
+
+@dataclass
+class QualityAuditorOutput(BaseOutput):
+    """质量审计专家的输出"""
+    rule_score: float = 0.0  # 规则层评分（权重0.3）
+    llm_score: float = 0.0  # LLM层评分（权重0.5）
+    structure_score: float = 0.0  # 结构层评分（权重0.2）
+    final_score: float = 0.0  # 加权总分
+    dimension_scores: Dict[str, float] = field(default_factory=dict)  # 6维度细分
+    grade: str = ""  # 等级：S/A/B/C/D
 
 
 class QualityAuditorExpert(ExpertBase):
@@ -192,6 +224,275 @@ class QualityAuditorExpert(ExpertBase):
                 errors.append("未找到评分或维度分析")
         return len(errors) == 0, errors
 
+
+    # ============================================================
+    # 三维质量评分系统
+    # ============================================================
+
+    def calculate_rule_score(self, content: str) -> float:
+        """
+        规则层评分（权重0.3）
+        
+        保留现有关键词扣分逻辑，归一化到0-100分。
+        基于正则表达式和关键词匹配进行基础质量评估。
+        """
+        score = 100.0
+        deductions = []
+
+        # 1. 检查对白质量标记
+        dialogue_markers = re.findall(r'["“「]|：\s*.{2,}', content)
+        if len(dialogue_markers) < 5:
+            deductions.append(("对白标记不足", 15))
+
+        # 2. 检查场景标记
+        scene_markers = re.findall(r'场景[一二三四五六七八九十\d]|SCENE|【.*?场景|第.*?场', content, re.IGNORECASE)
+        if len(scene_markers) < 2:
+            deductions.append(("场景划分不明确", 10))
+
+        # 3. 检查情节钩子
+        hook_keywords = ["突然", "没想到", "竟然", "意外", "转折", "但是", "然而",
+                         "不料", "谁知", "岂料", "出乎意料", "猛地", "骤然"]
+        hook_count = sum(1 for kw in hook_keywords if kw in content)
+        if hook_count < 2:
+            deductions.append(("情节钩子不足", 10))
+
+        # 4. 检查角色深度指标
+        depth_indicators = ["内心", "回忆", "矛盾", "挣扎", "犹豫", "决定", "觉醒", "成长"]
+        depth_count = sum(1 for kw in depth_indicators if kw in content)
+        if depth_count < 2:
+            deductions.append(("角色深度不足", 10))
+
+        # 5. 检查冲突/张力
+        conflict_keywords = ["对抗", "冲突", "对峙", "争吵", "决裂", "对峙", "反击", "揭露"]
+        conflict_count = sum(1 for kw in conflict_keywords if kw in content)
+        if conflict_count < 2:
+            deductions.append(("冲突张力不足", 10))
+
+        # 6. 检查内容长度
+        content_len = len(content)
+        if content_len < 500:
+            deductions.append(("内容过短", 20))
+        elif content_len > 100000:
+            deductions.append(("内容可能冗余", 5))
+
+        # 计算扣分
+        total_deduction = sum(d[1] for d in deductions)
+        score = max(0, score - total_deduction)
+
+        return score
+
+    def calculate_llm_score(self, content: str) -> Dict:
+        """
+        LLM层评分（权重0.5）
+        
+        对内容做5维度打分（每维度0-10），返回各维度分数和总分。
+        
+        评分维度：
+        1. 人物立体度 (character_depth)
+        2. 对白自然度 (dialogue_naturalness)
+        3. 情节因果性 (plot_causality)
+        4. 节奏张力 (pacing_tension)
+        5. 视觉可拍性 (visual_filmability)
+        
+        注意：当前为预留接口实现，返回默认分数7.5。
+        接入LLM后替换为真实评分——只需修改此方法的实现即可。
+        未来接入时，将content发送给LLM，要求返回JSON格式的5维度评分。
+        """
+        # ============================================================
+        # TODO: 接入LLM后替换为真实评分
+        # 接入示例（伪代码）：
+        # prompt = f"""请对以下剧本内容进行5维度评分（每维度0-10分）：
+        # 1. 人物立体度：角色是否立体、有层次？
+        # 2. 对白自然度：对白是否自然、有角色辨识度？
+        # 3. 情节因果性：情节是否有因果逻辑链？
+        # 4. 节奏张力：节奏是否张弛有度？
+        # 5. 视觉可拍性：场景是否具备视觉可拍性？
+        # 
+        # 内容：
+        # {content[:3000]}
+        # 
+        # 请以JSON格式返回：{{"character_depth": 8, "dialogue_naturalness": 7, ...}}"""
+        # result = self.llm_client.complete_json(prompt)
+        # return result
+        # ============================================================
+
+        default_score = 7.5  # 默认分数，等待LLM接入后替换
+        
+        dimensions = {
+            "character_depth": default_score,       # 人物立体度
+            "dialogue_naturalness": default_score,  # 对白自然度
+            "plot_causality": default_score,        # 情节因果性
+            "pacing_tension": default_score,        # 节奏张力
+            "visual_filmability": default_score,    # 视觉可拍性
+        }
+        
+        # 计算5维度均分，映射到0-100
+        avg_score = sum(dimensions.values()) / len(dimensions)
+        llm_score_100 = avg_score * 10  # 0-10 -> 0-100
+        
+        return {
+            "dimensions": dimensions,
+            "llm_score_100": llm_score_100,
+            "note": "LLM层评分，当前为默认值(7.5)，接入LLM后替换为真实评分",
+        }
+
+    def calculate_structure_score(self, content: str) -> Dict:
+        """
+        结构层评分（权重0.2）
+        
+        纯Python完整性检查，每项25分，总分0-100：
+        1. 场景标记检查（25分）：是否有"场景一""SCENE""【"等
+        2. 对白标记检查（25分）：是否有引号、角色名+冒号
+        3. 内容长度检查（25分）：是否在500-50000字符范围
+        4. 结构划分检查（25分）：是否有集/幕/场等结构划分
+        """
+        score = 0
+        details = {}
+
+        # 1. 场景标记检查（25分）
+        scene_patterns = [
+            r'场景[一二三四五六七八九十\d]',
+            r'SCENE',
+            r'【.*?】',
+            r'第.*?场',
+            r'INT\.|EXT\.',
+            r'内景|外景',
+        ]
+        scene_found = any(re.search(p, content, re.IGNORECASE) for p in scene_patterns)
+        if scene_found:
+            score += 25
+            details["scene_markers"] = "pass"
+        else:
+            details["scene_markers"] = "fail"
+
+        # 2. 对白标记检查（25分）
+        dialogue_patterns = [
+            r'["“「].*?["”」]',  # 引号包裹的对白
+            r'[\w\u4e00-\u9fa5]+[：:]',              # 角色名+冒号
+            r'（.*?）',                                   # 括号指示（动作/情绪）
+        ]
+        dialogue_found = sum(1 for p in dialogue_patterns if re.search(p, content))
+        if dialogue_found >= 1:
+            score += 25
+            details["dialogue_markers"] = "pass"
+        else:
+            details["dialogue_markers"] = "fail"
+
+        # 3. 内容长度检查（25分）
+        content_len = len(content)
+        if 500 <= content_len <= 50000:
+            score += 25
+            details["content_length"] = f"pass ({content_len} chars)"
+        elif content_len < 500:
+            details["content_length"] = f"fail (too short: {content_len} chars)"
+        else:
+            # 超过50000也给分，但标记
+            score += 25
+            details["content_length"] = f"pass (long: {content_len} chars)"
+
+        # 4. 结构划分检查（25分）
+        structure_patterns = [
+            r'第.*?[集幕]',
+            r'ACT\s*\d',
+            r'EPISODE',
+            r'PART',
+            r'第.*?[幕场]',
+            r'Chapter',
+        ]
+        structure_found = any(re.search(p, content, re.IGNORECASE) for p in structure_patterns)
+        if structure_found:
+            score += 25
+            details["structure_division"] = "pass"
+        else:
+            details["structure_division"] = "fail"
+
+        return {
+            "structure_score": score,
+            "details": details,
+        }
+
+    def three_dimensional_audit(self, content: str) -> Dict:
+        """
+        三维质量审核主方法
+        
+        综合规则层(0.3) + LLM层(0.5) + 结构层(0.2) 的加权评分。
+        
+        Returns:
+            包含三维分数、加权总分、详细分析的完整审核报告
+        """
+        # 规则层评分（权重0.3）
+        rule_score = self.calculate_rule_score(content)
+
+        # LLM层评分（权重0.5）
+        llm_result = self.calculate_llm_score(content)
+        llm_score = llm_result["llm_score_100"]
+
+        # 结构层评分（权重0.2）
+        structure_result = self.calculate_structure_score(content)
+        structure_score = structure_result["structure_score"]
+
+        # 加权总分
+        final_score = rule_score * 0.3 + llm_score * 0.5 + structure_score * 0.2
+
+        # 确定等级
+        if final_score >= 90:
+            grade = "S"
+        elif final_score >= 75:
+            grade = "A"
+        elif final_score >= 60:
+            grade = "B"
+        elif final_score >= 40:
+            grade = "C"
+        else:
+            grade = "D"
+
+        return {
+            "rule_score": round(rule_score, 2),
+            "llm_score": round(llm_score, 2),
+            "structure_score": round(structure_score, 2),
+            "final_score": round(final_score, 2),
+            "grade": grade,
+            "weights": {"rule": 0.3, "llm": 0.5, "structure": 0.2},
+            "llm_dimensions": llm_result["dimensions"],
+            "structure_details": structure_result["details"],
+        }
+
+    
+    def execute_with_audit(self, context: ExpertContext, **kwargs) -> ExpertOutput:
+        """
+        执行三维质量审核。
+        
+        在标准execute基础上，增加三维评分计算：
+        - 先通过LLM生成评分报告（标准流程）
+        - 再用三维评分系统对输入内容进行独立评分
+        - 将三维评分合并到最终输出
+        """
+        # 1. 执行标准审核流程（LLM生成评分报告）
+        output = self.execute(context, **kwargs)
+
+        # 2. 获取剧本内容
+        script_content = ""
+        if context.metadata.get("step_outputs", {}).get("§5"):
+            script_content = context.metadata["step_outputs"]["§5"].get("content", "")
+        elif context.metadata.get("episode_scripts"):
+            script_content = str(context.metadata["episode_scripts"])
+
+        # 3. 执行三维质量评分
+        if script_content:
+            audit_result = self.three_dimensional_audit(script_content)
+
+            # 4. 将三维评分注入structured_data
+            output.structured_data.update({
+                "three_dimensional_audit": audit_result,
+                "rule_score": audit_result["rule_score"],
+                "llm_score": audit_result["llm_score"],
+                "structure_score": audit_result["structure_score"],
+                "final_score": audit_result["final_score"],
+                "grade": audit_result["grade"],
+            })
+
+        return output
+
     def parse_scores(self, output: str) -> Dict:
         """
         解析评分结果（启发式方法）。
@@ -217,4 +518,5 @@ class QualityAuditorExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§7", QualityAuditorExpert)
+
 

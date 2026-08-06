@@ -11,7 +11,7 @@
 import json
 import time
 from typing import List, Dict, Optional, Any
-from .base import ExpertBase, ExpertContext, ExpertOutput, ExpertRegistry
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput, ExpertRegistry
 
 
 # 专家执行顺序定义
@@ -45,6 +45,32 @@ RETRY_CONFIG = {
     "retry_intervals": [5, 15, 30],  # 秒
     "on_failure": "skip_and_mark",  # skip_and_mark / abort
 }
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class MissionCommanderInput(BaseInput):
+    """实战指挥专家的输入"""
+    mission_instruction: str = ""  # 任务指令
+    workflow_config: Dict[str, Any] = field(default_factory=dict)  # 工作流配置
+    resume_from_stage: Optional[str] = None  # 断点续跑起始阶段
+
+
+@dataclass
+class MissionCommanderOutput(BaseOutput):
+    """实战指挥专家的输出"""
+    execution_result: Dict[str, Any] = field(default_factory=dict)  # 任务执行结果
+    stage_history: List[Dict] = field(default_factory=list)  # 阶段执行历史
+    success: bool = True  # 是否成功
+    error_recovery: List[Dict] = field(default_factory=list)  # 异常恢复记录
+    progress: float = 0.0  # 进度百分比
 
 
 class MissionCommanderExpert(ExpertBase):
@@ -170,3 +196,4 @@ class MissionCommanderExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§10", MissionCommanderExpert)
+

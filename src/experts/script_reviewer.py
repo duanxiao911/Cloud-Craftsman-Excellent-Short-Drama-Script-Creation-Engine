@@ -3,8 +3,33 @@
 12维度量化评估体系，诊断剧本商业潜力
 """
 
-from .base import BaseExpert
+from .base import BaseExpert, BaseInput, BaseOutput
 from typing import Dict, Any, List
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class ScriptReviewerInput(BaseInput):
+    """剧本审核专家的输入"""
+    full_script: str = ""  # 完整剧本
+    project_info: Dict[str, Any] = field(default_factory=dict)  # 项目信息
+    target_platform: str = ""  # 目标平台
+
+
+@dataclass
+class ScriptReviewerOutput(BaseOutput):
+    """剧本审核专家的输出"""
+    review_opinions: List[Dict] = field(default_factory=list)  # 审核意见
+    dimension_scores: Dict[str, float] = field(default_factory=dict)  # 12维度评分
+    commercial_diagnosis: Dict[str, Any] = field(default_factory=dict)  # 商业诊断
+    modification_plan: List[Dict] = field(default_factory=list)  # 修改方案
 
 
 class ScriptReviewer(BaseExpert):
@@ -222,3 +247,4 @@ class ScriptReviewer(BaseExpert):
                 "contains_required_sections": is_valid
             }
         }
+

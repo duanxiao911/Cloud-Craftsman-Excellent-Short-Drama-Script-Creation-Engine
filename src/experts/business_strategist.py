@@ -12,7 +12,7 @@
 import re
 import json
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
 
 
 # 主流平台信息库（2026年7月更新）
@@ -66,6 +66,32 @@ PLATFORM_DATABASE = {
         "min_episodes": 30,
     },
 }
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class BusinessStrategistInput(BaseInput):
+    """商业操盘专家的输入"""
+    project_positioning: str = ""  # 项目定位
+    genre: str = ""  # 题材类型
+    target_platform: str = ""  # 目标平台
+
+
+@dataclass
+class BusinessStrategistOutput(BaseOutput):
+    """商业操盘专家的输出"""
+    market_analysis: Dict[str, Any] = field(default_factory=dict)  # 市场分析
+    distribution_strategy: Dict[str, Any] = field(default_factory=dict)  # 投放策略
+    monetization_path: List[str] = field(default_factory=list)  # 变现路径
+    risk_assessment: Dict[str, Any] = field(default_factory=dict)  # 风险评估
+    competitor_reference: List[str] = field(default_factory=list)  # 竞品参考
 
 
 class BusinessStrategistExpert(ExpertBase):
@@ -212,3 +238,4 @@ class BusinessStrategistExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§14", BusinessStrategistExpert)
+

@@ -8,7 +8,34 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class EpisodeWriterInput(BaseInput):
+    """分集编剧专家的输入"""
+    story_outline: str = ""  # 故事大纲
+    character_cards: List[Dict] = field(default_factory=list)  # 角色卡片
+    beat_table: List[Dict] = field(default_factory=list)  # 节拍表
+    episode_number: int = 0  # 当前集数
+    episode_count: int = 30  # 总集数
+
+
+@dataclass
+class EpisodeWriterOutput(BaseOutput):
+    """分集编剧专家的输出"""
+    episode_outlines: List[Dict] = field(default_factory=list)  # 分集大纲
+    scene_list: List[Dict] = field(default_factory=list)  # 场景列表
+    dialogue_draft: str = ""  # 对白草稿
+    hook_chains: List[str] = field(default_factory=list)  # 钩子链
 
 
 class EpisodeWriterExpert(ExpertBase):
@@ -344,3 +371,4 @@ class EpisodeWriterExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§5", EpisodeWriterExpert)
+

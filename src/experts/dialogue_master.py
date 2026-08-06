@@ -8,7 +8,33 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class DialogueMasterInput(BaseInput):
+    """对白大师专家的输入"""
+    scene_description: str = ""  # 场景描写
+    character_profiles: List[Dict] = field(default_factory=list)  # 角色人设
+    scene_context: str = ""  # 场景上下文
+    emotional_tone: str = ""  # 情绪基调
+
+
+@dataclass
+class DialogueMasterOutput(BaseOutput):
+    """对白大师专家的输出"""
+    dialogue_lines: List[Dict] = field(default_factory=list)  # 对白列表
+    style_cards: Dict[str, Any] = field(default_factory=dict)  # 对白风格卡
+    subtext_notes: List[str] = field(default_factory=list)  # 潜文本注释
+    hook_dialogues: List[str] = field(default_factory=list)  # 钩子对白
 
 
 class DialogueMasterExpert(ExpertBase):

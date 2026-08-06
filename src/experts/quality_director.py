@@ -11,7 +11,7 @@
 
 import re
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
 
 
 # 终审通过条件
@@ -63,6 +63,32 @@ CONSISTENCY_CHECKLIST = {
         ],
     },
 }
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class QualityDirectorInput(BaseInput):
+    """品控总监专家的输入"""
+    audit_report: Dict[str, Any] = field(default_factory=dict)  # 质量审计报告
+    script_content: str = ""  # 剧本内容
+    iteration_count: int = 0  # 当前迭代次数
+    max_iterations: int = 3  # 最大迭代次数
+
+
+@dataclass
+class QualityDirectorOutput(BaseOutput):
+    """品控总监专家的输出"""
+    decision: str = ""  # 决策：pass/revise/reject
+    consistency_check: Dict[str, Any] = field(default_factory=dict)  # 一致性校验
+    revision_instructions: List[Dict] = field(default_factory=list)  # 修改指令
+    final_verdict: str = ""  # 最终裁定
 
 
 class QualityDirectorExpert(ExpertBase):
@@ -222,3 +248,4 @@ class QualityDirectorExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§15", QualityDirectorExpert)
+

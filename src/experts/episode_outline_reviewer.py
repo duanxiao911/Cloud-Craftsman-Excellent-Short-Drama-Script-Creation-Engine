@@ -3,8 +3,33 @@
 基于37项「爆款漏斗」标准，逐项审查大纲和集纲
 """
 
-from .base import BaseExpert
+from .base import BaseExpert, BaseInput, BaseOutput
 from typing import Dict, Any, List
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class EpisodeOutlineReviewerInput(BaseInput):
+    """集纲审核专家的输入"""
+    episode_outlines: List[Dict] = field(default_factory=list)  # 分集大纲
+    payment_nodes: List[int] = field(default_factory=list)  # 付费节点
+    target_platform: str = ""  # 目标平台
+
+
+@dataclass
+class EpisodeOutlineReviewerOutput(BaseOutput):
+    """集纲审核专家的输出"""
+    review_opinions: List[Dict] = field(default_factory=list)  # 审核意见
+    checklist_results: List[Dict] = field(default_factory=list)  # 37项检查结果
+    weak_episodes: List[int] = field(default_factory=list)  # 薄弱集数
+    modification_suggestions: List[Dict] = field(default_factory=list)  # 修改建议
 
 
 class EpisodeOutlineReviewer(BaseExpert):
@@ -209,3 +234,4 @@ class EpisodeOutlineReviewer(BaseExpert):
                 "contains_required_sections": is_valid
             }
         }
+

@@ -9,7 +9,33 @@
 
 import re
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class CharacterForgerInput(BaseInput):
+    """角色铸造师专家的输入"""
+    story_outline: str = ""  # 故事大纲
+    story_direction: str = ""  # 故事方向
+    genre: str = ""  # 类型
+    character_count: int = 5  # 主要角色数
+
+
+@dataclass
+class CharacterForgerOutput(BaseOutput):
+    """角色铸造师专家的输出"""
+    character_cards: List[Dict] = field(default_factory=list)  # 角色小传
+    dialogue_corpus: Dict[str, Any] = field(default_factory=dict)  # 角色语料库
+    relationship_map: Dict[str, Any] = field(default_factory=dict)  # 人物关系图
+    arc_lines: List[Dict] = field(default_factory=list)  # 角色弧光线
 
 
 class CharacterForgerExpert(ExpertBase):

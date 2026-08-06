@@ -8,7 +8,34 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class StructureArchitectInput(BaseInput):
+    """结构建筑师专家的输入"""
+    story_direction: str = ""  # 故事方向
+    story_premise: str = ""  # 一句话前提
+    character_cards: List[Dict] = field(default_factory=list)  # 角色卡片
+    episode_count: int = 30  # 总集数
+
+
+@dataclass
+class StructureArchitectOutput(BaseOutput):
+    """结构建筑师专家的输出"""
+    beat_table: List[Dict] = field(default_factory=list)  # 15节拍表
+    hero_sequence: List[Dict] = field(default_factory=list)  # 英雄目标23段落
+    arc_tracking: Dict[str, Any] = field(default_factory=dict)  # 弧光追踪
+    structure_type: str = ""  # 结构类型
+    episode_mapping: List[Dict] = field(default_factory=list)  # 集数映射
 
 
 class StructureArchitectExpert(ExpertBase):

@@ -11,7 +11,7 @@
 
 import re
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
 
 
 # 五感系统定义
@@ -47,6 +47,32 @@ FIVE_SENSES = {
         "examples": ["泪水咸味/茶水苦涩/饭食温热"],
     },
 }
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class SceneCraftsmanInput(BaseInput):
+    """场景工匠专家的输入"""
+    episode_outline: str = ""  # 分集大纲
+    scene_list: List[Dict] = field(default_factory=list)  # 场景列表
+    visual_scheme: Dict[str, Any] = field(default_factory=dict)  # 视觉方案
+    cultural_elements: List[str] = field(default_factory=list)  # 文化元素
+
+
+@dataclass
+class SceneCraftsmanOutput(BaseOutput):
+    """场景工匠专家的输出"""
+    scene_descriptions: List[Dict] = field(default_factory=list)  # 场景描写
+    five_senses: Dict[str, List[str]] = field(default_factory=dict)  # 五感描写
+    atmosphere_notes: List[str] = field(default_factory=list)  # 氛围注释
+    environmental_narratives: List[str] = field(default_factory=list)  # 环境叙事
 
 
 class SceneCraftsmanExpert(ExpertBase):
@@ -177,3 +203,4 @@ class SceneCraftsmanExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§11", SceneCraftsmanExpert)
+

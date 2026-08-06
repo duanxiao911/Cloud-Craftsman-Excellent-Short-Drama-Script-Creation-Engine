@@ -8,7 +8,32 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput
+from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
+
+
+# ============================================================
+# 专家类型化IO定义
+# ============================================================
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, List
+
+
+@dataclass
+class FormatCraftsmanInput(BaseInput):
+    """格式工匠专家的输入"""
+    raw_content: str = ""  # 原始格式内容
+    target_format: str = ""  # 目标格式模板
+    platform: str = ""  # 投稿平台
+
+
+@dataclass
+class FormatCraftsmanOutput(BaseOutput):
+    """格式工匠专家的输出"""
+    formatted_content: str = ""  # 标准化格式
+    format_template: str = ""  # 使用的格式模板
+    format_check_passed: bool = True  # 格式检查是否通过
+    format_issues: List[str] = field(default_factory=list)  # 格式问题列表
 
 
 class FormatCraftsmanExpert(ExpertBase):
@@ -207,3 +232,4 @@ X-2 时间 内/外景 地点
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§6", FormatCraftsmanExpert)
+
