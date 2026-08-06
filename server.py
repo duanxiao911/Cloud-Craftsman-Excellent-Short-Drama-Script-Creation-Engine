@@ -454,7 +454,11 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/create")
     async def create_story(request: CreateRequest, background_tasks: BackgroundTasks):
-        """启动完整创作工作流（异步）"""
+        """
+        [Legacy/占位实现] 此接口为兼容保留，当前未连接真实Orchestrator。
+        请使用 /api/v1/stream 逐步调用专家。
+        启动完整创作工作流（异步）
+        """
         workflow_id = f"wf_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         workflows[workflow_id] = {
             "status": "started",
@@ -465,22 +469,32 @@ def create_app() -> FastAPI:
             "workflow_id": workflow_id,
             "status": "started",
             "message": f"工作流已启动，workflow_id: {workflow_id}",
+            "warning": "此接口为占位实现，请使用 /api/v1/stream 逐步调用专家",
         }
 
     @app.post("/api/v1/step/{expert_id}")
     async def run_step(expert_id: str, request: StepRequest):
-        """执行单个专家步骤（同步）"""
+        """
+        [Legacy/占位实现] 此接口为兼容保留，当前未连接真实Orchestrator。
+        请使用 /api/v1/stream 逐步调用专家。
+        执行单个专家步骤（同步）
+        """
         return {
             "expert_id": expert_id,
             "content": f"[同步模式] 专家{expert_id}处理中...",
             "validation_passed": True,
             "validation_errors": [],
             "structured_data": {},
+            "warning": "此接口为占位实现，请使用 /api/v1/stream 逐步调用专家",
         }
 
     @app.get("/api/v1/progress/{workflow_id}")
     async def get_progress(workflow_id: str):
-        """查询工作流进度"""
+        """
+        [Legacy/占位实现] 此接口为兼容保留，当前未连接真实Orchestrator。
+        请使用 /api/v1/stream 逐步调用专家。
+        查询工作流进度
+        """
         if workflow_id not in workflows:
             raise HTTPException(status_code=404, detail=f"工作流 {workflow_id} 未找到")
         wf = workflows[workflow_id]
@@ -491,6 +505,7 @@ def create_app() -> FastAPI:
             "total_steps": 17,
             "current_expert": None,
             "completed_experts": [],
+            "warning": "此接口为占位实现，请使用 /api/v1/stream 逐步调用专家",
         }
 
     @app.get("/api/v1/experts")

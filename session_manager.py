@@ -140,6 +140,9 @@ class Session:
         # SSE事件追踪（用于断线重连）
         self.event_log = []           # [{event_id, event_type, data, timestamp}]
         self.current_stream_id = None
+        
+        # 访问令牌（用于Session接口鉴权）
+        self.access_token: str = uuid.uuid4().hex
 
     def to_dict(self) -> dict:
         """序列化为字典"""
@@ -161,6 +164,7 @@ class Session:
             "api_call_count": self.api_call_count,
             "call_timestamps": self.call_timestamps,
             "event_log": self.event_log[-100:],  # 只保留最近100条事件
+            "access_token": self.access_token,
         }
 
     @classmethod
@@ -183,6 +187,7 @@ class Session:
         session.api_call_count = data.get("api_call_count", 0)
         session.call_timestamps = data.get("call_timestamps", [])
         session.event_log = data.get("event_log", [])
+        session.access_token = data.get("access_token", "")
         return session
 
     def get_state_summary(self) -> dict:
@@ -230,6 +235,17 @@ class SessionManager:
             self._sessions[session_id] = session
             return session
         raise ValueError(f"Session {session_id} 不存在")
+
+    def validate_session_token(self, session_id: str, token: str) -> bool:
+        """校验Session访问令牌
+        
+        TODO: 在session_routes.py相关接口中增加access_token校验（比赛阶段暂不启用）
+        """
+        try:
+            session = self.get_session(session_id)
+            return bool(session.access_token) and session.access_token == token
+        except (ValueError, AttributeError):
+            return False
 
     def _save_session(self, session: Session):
         """持久化到JSON文件"""
@@ -664,3 +680,4 @@ class SessionManager:
 - 当收集到足够信息时，输出一段「故事方向确认」摘要（200字以内），让用户确认
 
 **注意**：不要替用户做决定，只做引导和提炼。"""
+

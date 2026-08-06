@@ -28,12 +28,17 @@ from src.experts.episode_writer import EpisodeWriterExpert
 from src.knowledge.culture_kb import CultureKnowledgeBase
 
 
+MAX_REVISIONS = 1  # 审核失败最大重试次数
+
+
 class WorkflowStatus(Enum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     PAUSED = "paused"
+    BLOCKED = "blocked"
+    NEEDS_REVISION = "needs_revision"
 
 
 @dataclass
@@ -47,6 +52,9 @@ class WorkflowState:
     context_snapshot: Optional[ExpertContext] = None
     step_outputs: Dict[str, ExpertOutput] = field(default_factory=dict)
     error_message: Optional[str] = None
+    failed_validations: List[str] = field(default_factory=list)
+    revision_counts: Dict[str, int] = field(default_factory=dict)
+    blocked_reason: Optional[str] = None
     created_at: str = ""
     updated_at: str = ""
 
@@ -504,15 +512,37 @@ class Orchestrator:
             state.current_step = step_idx
             output = self._execute_step(step_idx, state.context_snapshot, **kwargs)
             state.step_outputs[expert_id] = output
-            state.completed_steps.append(step_idx)
 
+            # 审核验证：失败时最多重试MAX_REVISIONS次
             if not output.validation_passed:
-                pass
+                state.failed_validations.append(expert_id)
+                revision_count = state.revision_counts.get(expert_id, 0)
+                if revision_count < MAX_REVISIONS:
+                    # 重试该步骤
+                    state.revision_counts[expert_id] = revision_count + 1
+                    state.status = WorkflowStatus.NEEDS_REVISION
+                    state.updated_at = datetime.now().isoformat()
+                    retry_output = self._execute_step(step_idx, state.context_snapshot, **kwargs)
+                    state.step_outputs[expert_id] = retry_output
+                    output = retry_output
+                    if not retry_output.validation_passed:
+                        # 重试仍失败，继续记录但不再重试
+                        pass
+                    state.status = WorkflowStatus.RUNNING
+
+                state.completed_steps.append(step_idx)
+            else:
+                state.completed_steps.append(step_idx)
 
             self._save_checkpoint()
 
+            # 红风险阻断：暂停工作流
             if expert_id == "§2" and getattr(state.context_snapshot, "risk_level", None) == "red":
-                pass
+                state.status = WorkflowStatus.BLOCKED
+                state.blocked_reason = f"§2合规守门员检测到红色风险，工作流已阻断"
+                state.updated_at = datetime.now().isoformat()
+                self._save_checkpoint()
+                return state
 
             if stop_at and expert_id == stop_at:
                 state.status = WorkflowStatus.PAUSED
@@ -596,3 +626,4 @@ def create_default_orchestrator(**kwargs) -> Orchestrator:
 
 
 __all__ = ["Orchestrator", "WorkflowState", "WorkflowStatus"]
+

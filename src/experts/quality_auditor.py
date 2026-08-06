@@ -5,6 +5,9 @@
 6维度：剧情张力/角色深度/对白质量/节奏把控/视觉潜力/商业潜力
 评估结果作为§9改稿编辑的决策依据
 
+注意：本评分系统为启发式预检（heuristic pre-check），基于关键词和规则匹配，
+不代表最终质量判断。正式验收应结合结构化LLM评审和人工确认。
+
 基于 Wave2 架构设计
 """
 
@@ -190,7 +193,12 @@ class QualityAuditorExpert(ExpertBase):
         return len(errors) == 0, errors
 
     def parse_scores(self, output: str) -> Dict:
-        """解析评分结果"""
+        """
+        解析评分结果（启发式方法）。
+        
+        注意：此方法为启发式预检实现，基于正则表达式和关键词匹配提取评分，
+        不代表最终质量判断。正式评审应使用结构化LLM评审流程。
+        """
         json_match = re.search(r'\{[\s\S]*\}', output)
         if json_match:
             try:
@@ -209,3 +217,4 @@ class QualityAuditorExpert(ExpertBase):
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§7", QualityAuditorExpert)
+

@@ -178,7 +178,7 @@ def create_app() -> FastAPI:
             try:
                 orchestrator._init_workflow(request.story_direction)
                 orchestrator.state.context_snapshot = context
-                orchestrator.run_full(request.story_direction, stop_at=request.stop_at)
+                await asyncio.to_thread(orchestrator.run_full, request.story_direction, stop_at=request.stop_at)
             except Exception as e:
                 if orchestrator.state:
                     orchestrator.state.status = "failed"
@@ -357,7 +357,7 @@ def create_app() -> FastAPI:
 
                     # 异步执行
                     asyncio.create_task(
-                        orchestrator.run_full(story_direction)
+                        asyncio.to_thread(orchestrator.run_full, story_direction)
                     )
 
                 elif msg_type == "user_input":
