@@ -132,3 +132,10 @@ python -m src.api.server
 ## 赛道
 
 数字文化赛道 - AI+文娱
+
+
+---
+
+**🎬 在线演示**: [云匠引擎 Demo](https://duanxiao911.github.io/loop-studio-demo/) | **源码**: [duanxiao911/drama-engine](https://github.com/duanxiao911/drama-engine)
+
+---
