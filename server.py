@@ -22,11 +22,41 @@ import httpx
 from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 from datetime import datetime
+import time
+from collections import defaultdict
+
+# ============ 安全配置 ============
+GATEWAY_TOKEN = os.environ.get("GATEWAY_TOKEN", "")
+ALLOWED_MODELS = {"deepseek-chat", "deepseek-reasoner"}
+MAX_TOKENS_CAP = 8192  # 单次请求最大token
+RATE_LIMIT_WINDOW = 60  # 限流窗口（秒）
+RATE_LIMIT_MAX = 30  # 窗口内最大请求数
+
+# 简易内存限流
+_rate_buckets: Dict[str, list] = defaultdict(list)
+
+def _check_rate_limit(client_ip: str):
+    now = time.time()
+    bucket = _rate_buckets[client_ip]
+    _rate_buckets[client_ip] = [t for t in bucket if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_buckets[client_ip]) >= RATE_LIMIT_MAX:
+        raise HTTPException(status_code=429, detail="请求过于频繁，请稍后重试")
+    _rate_buckets[client_ip].append(now)
+
+def _verify_token(request: Request):
+    if not GATEWAY_TOKEN:
+        return  # 未配置token则跳过鉴权
+    auth = request.headers.get("Authorization", "")
+    if auth == f"Bearer {GATEWAY_TOKEN}":
+        return
+    if request.query_params.get("token") == GATEWAY_TOKEN:
+        return
+    raise HTTPException(status_code=401, detail="未授权访问")
 
 # 四节点交互模式
 from session_manager import SessionManager
@@ -495,3 +525,4 @@ def run_server(host: str = "0.0.0.0", port: int = None, reload: bool = False):
 
 if __name__ == "__main__":
     run_server()
+

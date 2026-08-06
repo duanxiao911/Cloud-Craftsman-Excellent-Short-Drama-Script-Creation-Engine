@@ -4,62 +4,118 @@
 
 ## 核心能力
 
-- **17专家协同**：题材分析、剧本策划、大纲构建、人物塑造、剧本撰写、质量审核等全环节专家分工协作
-- **六阶段子智能体（子AGENT）**：每个创作阶段收束时，对应子智能体自动上线——持固定验收清单逐项打分（1-10），不合格自动点名责任专家返工，复核闭环（轮次/每轮项数可在设置中配置）；达到返工上限自动生成遗留问题打磨作业清单
+- **17专家协同**：故事策划、剧本大纲、人物塑造、对白、场景、视觉、合规、质量审核等全环节专家分工协作
+- **六阶段子智能体**：每个创作阶段收束时，对应子智能体自动上线——持固定验收清单逐项打分（1-10），不合格自动点名责任专家返工，复核闭环
 - **189个题材标签**智能匹配，6阶段结构化面板实时反馈创作进度
 - **SSE流式输出**实时可见，创作过程全程透明
-- **审核系统**支持子菜单导航（大纲/人物/集纲/正文），一键定位+闪烁高亮+引导带看
 - **全屏画布模式**，A4纸式无限高画布，沉浸式创作体验
 - **深浅色双主题**，现代玻璃拟态UI
-- **智能小助手**全程陪伴：创作时飞入播报条，弹性动效+呼吸灯提示
 - 模块化可扩展架构，支持自定义API接入与知识库热更新
 
-## 六阶段子智能体验收清单
-
-| 阶段 | 子智能体 | 验收项 |
-| --- | --- | --- |
-| 一 · 剧本策划 | 策划子智能体 | 创意差异化 / 题材合规 / 受众匹配 / 钩子潜力 / 落地可行性 |
-| 二 · 剧本大纲 | 大纲子智能体 | 大纲完整度 / 主线清晰度 / 节奏设计 / 集数适配 / 商业定位 |
-| 三 · 角色设定 | 角色子智能体 | 人设立体度 / 主角弧线 / 关系张力 / 角色差异化 / 台词贴脸度 |
-| 四 · 世界设定 | 世界子智能体 | 世界观自洽 / 文化质感 / 对白风格统一 / 结构完整度 / 节拍准确度 |
-| 五 · 剧本正文 | 正文子智能体 | 格式规范 / 场景可拍性 / 对白质量 / 节奏与钩子 / 视觉设计 |
-| 六 · 质量与交付 | 审核子智能体 | 结构完整度 / 人物一致性 / 对白质量 / 钩子与节奏 / 格式规范 / 合规风险 / 文化细节 / 商业潜力 |
-
-## 架构
+## 当前架构
 
 ```
 drama-engine/
+├── server.py              # 网关服务（Docker入口，LLM代理+SSE流式+Session管理）
+├── session_manager.py     # Session持久化管理
+├── session_routes.py      # Session路由
+├── demo-v7.html           # 当前前端（17步专家串行生成模式）
 ├── src/
-│   ├── api/           # FastAPI后端 (SSE流式)
-│   ├── config/        # 配置管理
-│   ├── engine/        # 引擎核心 (评分/规则/类型适配)
-│   ├── experts/       # 17个专家模块
-│   ├── knowledge/     # 知识库 (传统文化/专家Prompt)
-│   ├── pipeline/      # Pipeline Orchestrator 串行编排
-│   └── workflow/      # 工作流编排
+│   ├── api/
+│   │   ├── server.py      # 完整Agent后端（WebSocket+Orchestrator）
+│   │   └── cli.py         # CLI入口
+│   ├── config/            # 配置管理
+│   ├── engine/            # 引擎核心（评分/规则/类型适配）
+│   ├── experts/           # 17个专家模块（Python实现）
+│   ├── knowledge/         # 知识库加载
+│   ├── export/            # 导出模块（最终组装）
+│   ├── pipeline_orchestrator.py  # Pipeline串行编排
+│   └── workflow/          # 工作流编排（Orchestrator）
 ├── knowledge/
-│   ├── culture/       # 中华优秀传统文化知识库
-│   └── experts/       # 专家知识库定义
-├── tests/             # 测试用例
-└── examples/          # 示例配置
+│   ├── culture/           # 中华优秀传统文化知识库
+│   └── experts/           # 专家知识库定义（10个MD）
+├── tests/                 # 测试用例
+└── examples/              # 示例配置
 ```
 
+### 两套后端说明
+
+| 服务 | 入口 | 用途 | Docker部署 |
+|------|------|------|------------|
+| **网关服务** | `server.py` | LLM代理、SSE流式、Session管理、OpenAI兼容接口 | 是（默认入口） |
+| **Agent后端** | `src/api/server.py` | 完整Orchestrator工作流、WebSocket实时对话 | 否（开发/调试用） |
+
+当前Docker/Railway部署的是**网关服务**，前端通过SSE流式接口逐步调用各专家，后端代理转发LLM请求。
+
+### 专家清单（17个）
+
+| 序号 | 专家ID | 名称 | 知识库MD |
+|------|--------|------|----------|
+| 0 | soul_catcher | 灵魂捕手 | 有 |
+| 1 | project_configurator | 项目策划师 | 有 |
+| 2 | story_director | 故事总监 | - |
+| 3 | structure_architect | 剧情架构师 | 有 |
+| 4 | business_strategist | 商业分析师 | - |
+| 5 | character_forger | 人物锻造师 | 有 |
+| 6 | episode_writer | 分集编剧 | - |
+| 7 | dialogue_master | 对白大师 | 有 |
+| 8 | scene_craftsman | 场景工匠 | - |
+| 9 | visual_director | 视觉导演 | 有 |
+| 10 | compliance_guard | 合规守卫 | 有 |
+| 11 | quality_auditor | 质量审计师 | - |
+| 12 | quality_director | 质量总监 | - |
+| 13 | revision_editor | 返工编辑 | - |
+| 14 | script_reviewer | 剧本审核 | 有 |
+| 15 | episode_outline_reviewer | 分集大纲审核 | 有 |
+| 16 | format_craftsman | 格式工匠 | - |
+
 ## 快速开始
+
+### 方式一：Docker部署（推荐）
+
+```bash
+docker build -t drama-engine .
+docker run -p 8000:8000 \
+  -e LLM_API_KEY=your-api-key \
+  -e LLM_BASE_URL=https://api.deepseek.com \
+  -e LLM_MODEL=deepseek-chat \
+  drama-engine
+```
+
+打开浏览器访问 `http://localhost:8000`。
+
+### 方式二：本地开发
 
 ```bash
 # 安装依赖
 pip install -r requirements.txt
 
-# 启动后端服务
-python -m drama-engine.src.api.server
+# 设置环境变量
+export LLM_API_KEY=your-api-key
+export LLM_BASE_URL=https://api.deepseek.com
+export LLM_MODEL=deepseek-chat
 
-# 打开前端（最新版：六阶段子智能体界面）
-open "云匠 · 智能短剧剧本创作引擎.html"
-# 旧版界面
-open demo-v7.html
+# 启动网关服务
+python server.py
+
+# 或启动完整Agent后端（含WebSocket）
+python -m src.api.server
 ```
 
-也可以在 `设置面板` 中直接填入 OpenAI 兼容的 API 配置（如 DeepSeek），无需后端即可开始创作。
+### 前端独立使用
+
+`demo-v7.html` 也可以在设置面板中直接填入 OpenAI 兼容的 API 配置（如 DeepSeek），无需后端即可开始创作。
+
+## 环境变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `LLM_API_KEY` | LLM API密钥 | （必填） |
+| `LLM_BASE_URL` | LLM API地址 | `https://api.deepseek.com` |
+| `LLM_MODEL` | 模型名称 | `deepseek-chat` |
+| `HOST` | 监听地址 | `0.0.0.0` |
+| `PORT` | 监听端口 | `8000` |
+| `GATEWAY_TOKEN` | 网关访问令牌（可选，设置后前端需携带） | （空=不鉴权） |
 
 ## 技术栈
 
@@ -67,6 +123,7 @@ open demo-v7.html
 - **前端**: 原生HTML/CSS/JS (零框架依赖)，CSS变量双主题
 - **知识库**: Markdown结构化专家Prompt + 文化资料库
 - **智能体架构**: 平台级大智能体 → 六阶段子智能体 → 17个专家skill分工
+- **部署**: Docker + Railway
 
 ## 赛道
 

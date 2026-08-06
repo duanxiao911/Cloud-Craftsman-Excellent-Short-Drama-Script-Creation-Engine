@@ -14,6 +14,7 @@ ENV LLM_BASE_URL="https://api.deepseek.com"
 ENV LLM_MODEL="deepseek-chat"
 ENV OPENAI_API_KEY=""
 ENV OPENAI_BASE_URL="https://api.deepseek.com"
+ENV GATEWAY_TOKEN=""
 ENV HOST="0.0.0.0"
 ENV PORT="8000"
 
