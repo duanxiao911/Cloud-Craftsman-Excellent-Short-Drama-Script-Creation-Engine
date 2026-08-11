@@ -4056,6 +4056,35 @@
     box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
     transition: transform 0.15s, box-shadow 0.15s;
   }
+  /* ===== 快速体验按钮 ===== */
+  .quick-mode-btn {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.1));
+    color: #60a5fa;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 10px;
+  }
+  .quick-mode-btn:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(139, 92, 246, 0.2));
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+  }
+  .quick-mode-btn .quick-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
   .restart-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
@@ -6284,6 +6313,10 @@ function renderMarkdown(md) {
             <span>开始创作</span>
             <span>▶</span>
           </button>
+          <button class="quick-mode-btn" onclick="applyGenresToIdea();startQuickMode()">
+            <span>快速体验</span>
+            <span class="quick-badge">60秒</span>
+          </button>
         </div>
       </div>
     </div>
@@ -8373,6 +8406,17 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
 
   var generatedResults = {}; // 存储真实生成的结果
 
+  // ===== 快速体验模式 =====
+  let quickMode = false;
+  const QUICK_STEPS = [1, 7, 17]; // 快速模式只执行这些步骤
+  
+  async function startQuickMode() {
+    quickMode = true;
+    showToast('快速体验模式：将跳过中间步骤，直接生成核心内容');
+    await startCreation();
+    quickMode = false;
+  }
+  
   async function startCreation() {
     if (isCreating) return;
     
@@ -8425,6 +8469,21 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
     
     // 逐步执行每一步
     for (let step = 1; step <= 17; step++) {
+      // 快速模式：跳过非核心步骤
+      if (quickMode && !QUICK_STEPS.includes(step)) {
+        console.log(`[快速模式] 跳过步骤 ${step}`);
+        // 给跳过的步骤填充默认内容，避免后续步骤出错
+        if (step === 6) {
+          generatedResults[step] = '【快速模式】集纲大纲将在步骤7生成';
+        }
+        continue;
+      }
+      if (quickMode && step === 7) {
+        // 步骤7是集纲，需要确保前置步骤的结果存在
+        if (!generatedResults[6]) {
+          generatedResults[6] = '【快速模式预设】都市情感题材，30集体量，强情节快节奏';
+        }
+      }
       // 跳过非生成步骤（实战指挥、商业操盘只输出规划，不影响剧本内容）
       // Pause check
       while (pauseRequested && isCreating) {
