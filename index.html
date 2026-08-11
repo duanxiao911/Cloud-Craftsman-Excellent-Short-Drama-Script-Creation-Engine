@@ -1221,6 +1221,101 @@
     border-color: rgba(16, 185, 129, 0.5);
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
   }
+  
+  /* ===== 执行日志面板 ===== */
+  .execution-log {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    margin-bottom: 8px;
+    background: rgba(30, 30, 46, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+  }
+  .execution-log.running {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+  }
+  .execution-log.done {
+    border-color: rgba(16, 185, 129, 0.4);
+    opacity: 0.85;
+  }
+  .execution-log-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .execution-log.running .execution-log-icon {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+    animation: log-pulse 1.5s ease-in-out infinite;
+  }
+  .execution-log.done .execution-log-icon {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(52, 211, 153, 0.2));
+  }
+  @keyframes log-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+  .execution-log-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .execution-log-title {
+    font-weight: 600;
+    color: var(--text-primary, #e2e8f0);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .execution-log-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #94a3b8);
+    margin-top: 2px;
+  }
+  .execution-log-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .execution-log.running .execution-log-status {
+    color: #60a5fa;
+  }
+  .execution-log.done .execution-log-status {
+    color: #34d399;
+  }
+  .execution-log-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(96, 165, 250, 0.3);
+    border-top-color: #60a5fa;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  [data-theme="light"] .execution-log {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(139, 92, 246, 0.15);
+  }
+  [data-theme="light"] .execution-log-title {
+    color: #1e293b;
+  }
+  [data-theme="light"] .execution-log-subtitle {
+    color: #64748b;
+  }
   @keyframes checkpoint-fadein {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -8481,6 +8576,26 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
     }
     setAssistantState('GENERATING', genText);
     
+    // ===== 执行日志条目 =====
+    const stepStartTime = Date.now();
+    const expertName = prompt.name || step?.meta || 'AI专家';
+    const logEntry = document.createElement('div');
+    logEntry.className = 'execution-log running';
+    logEntry.id = `log-entry-${stepNum}`;
+    logEntry.innerHTML = `
+      <div class="execution-log-icon">${step ? step.icon : "⚙️"}</div>
+      <div class="execution-log-info">
+        <div class="execution-log-title">步骤 ${stepNum}: ${expertName}</div>
+        <div class="execution-log-subtitle">正在创作中...</div>
+      </div>
+      <div class="execution-log-status">
+        <div class="execution-log-spinner"></div>
+        <span>运行中</span>
+      </div>
+    `;
+    outputContainer.appendChild(logEntry);
+    contentArea.scrollTop = contentArea.scrollHeight;
+    
     // 创建输出卡片
     const card = document.createElement('div');
     card.className = 'output-card';
@@ -8560,6 +8675,19 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
     // 保存结果供后续步骤使用（保存原始 Markdown 文本；分段生成时 rawText 已是合并后的完整内容）
     generatedResults[stepNum] = sanitizeLLMOutput(rawText);
 
+    
+    // ===== 更新执行日志：完成状态 =====
+    const stepEndTime = Date.now();
+    const elapsedSeconds = Math.round((stepEndTime - stepStartTime) / 1000);
+    const elapsedText = elapsedSeconds < 60 
+      ? `${elapsedSeconds}秒` 
+      : `${Math.floor(elapsedSeconds / 60)}分${elapsedSeconds % 60}秒`;
+    const logEl = document.getElementById(`log-entry-${stepNum}`);
+    if (logEl) {
+      logEl.className = 'execution-log done';
+      logEl.querySelector('.execution-log-subtitle').textContent = `产出 ${charCount.toLocaleString()} 字`;
+      logEl.querySelector('.execution-log-status').innerHTML = `<span>✓ ${elapsedText}</span>`;
+    }
     
     // 专家完成状态
     if (currentExpert) {
@@ -9428,6 +9556,19 @@ ADVICE|项目名|具体建议`;
     
     // 移除光标
     document.getElementById(`cursor-${stepNum}`).remove();
+    
+    // ===== 更新执行日志：完成状态 =====
+    const stepEndTime = Date.now();
+    const elapsedSeconds = Math.round((stepEndTime - stepStartTime) / 1000);
+    const elapsedText = elapsedSeconds < 60 
+      ? `${elapsedSeconds}秒` 
+      : `${Math.floor(elapsedSeconds / 60)}分${elapsedSeconds % 60}秒`;
+    const logEl = document.getElementById(`log-entry-${stepNum}`);
+    if (logEl) {
+      logEl.className = 'execution-log done';
+      logEl.querySelector('.execution-log-subtitle').textContent = `产出 ${charCount.toLocaleString()} 字`;
+      logEl.querySelector('.execution-log-status').innerHTML = `<span>✓ ${elapsedText}</span>`;
+    }
     
     // 专家完成状态
     if (currentExpert) {
