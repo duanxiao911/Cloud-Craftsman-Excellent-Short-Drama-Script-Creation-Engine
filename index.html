@@ -8637,7 +8637,6 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
     
     // ===== 执行日志条目 =====
     const stepStartTime = Date.now();
-    const expertName = prompt.name || step?.meta || 'AI专家';
     const logEntry = document.createElement('div');
     logEntry.className = 'execution-log running';
     logEntry.id = `log-entry-${stepNum}`;
@@ -9615,19 +9614,6 @@ ADVICE|项目名|具体建议`;
     
     // 移除光标
     document.getElementById(`cursor-${stepNum}`).remove();
-    
-    // ===== 更新执行日志：完成状态 =====
-    const stepEndTime = Date.now();
-    const elapsedSeconds = Math.round((stepEndTime - stepStartTime) / 1000);
-    const elapsedText = elapsedSeconds < 60 
-      ? `${elapsedSeconds}秒` 
-      : `${Math.floor(elapsedSeconds / 60)}分${elapsedSeconds % 60}秒`;
-    const logEl = document.getElementById(`log-entry-${stepNum}`);
-    if (logEl) {
-      logEl.className = 'execution-log done';
-      logEl.querySelector('.execution-log-subtitle').textContent = `产出 ${charCount.toLocaleString()} 字`;
-      logEl.querySelector('.execution-log-status').innerHTML = `<span>✓ ${elapsedText}</span>`;
-    }
     
     // 专家完成状态
     if (currentExpert) {
