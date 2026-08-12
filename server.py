@@ -167,10 +167,10 @@ def create_app() -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def serve_frontend():
         """直接提供前端HTML页面"""
-        html_path = pathlib.Path(__file__).parent / "demo-v7.html"
+        html_path = pathlib.Path(__file__).parent / "index.html"
         if html_path.exists():
             return FileResponse(html_path, media_type="text/html")
-        return HTMLResponse("<h1>demo-v7.html 未找到，请将其放到 server.py 同目录下</h1>", status_code=404)
+        return HTMLResponse("<h1>index.html 未找到，请将其放到 server.py 同目录下</h1>", status_code=404)
 
     # 初始化httpx客户端已在lifespan中完成
 
