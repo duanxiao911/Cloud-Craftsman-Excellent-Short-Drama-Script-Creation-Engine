@@ -9,33 +9,7 @@
 
 import re
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class CharacterForgerInput(BaseInput):
-    """角色铸造师专家的输入"""
-    story_outline: str = ""  # 故事大纲
-    story_direction: str = ""  # 故事方向
-    genre: str = ""  # 类型
-    character_count: int = 5  # 主要角色数
-
-
-@dataclass
-class CharacterForgerOutput(BaseOutput):
-    """角色铸造师专家的输出"""
-    character_cards: List[Dict] = field(default_factory=list)  # 角色小传
-    dialogue_corpus: Dict[str, Any] = field(default_factory=dict)  # 角色语料库
-    relationship_map: Dict[str, Any] = field(default_factory=dict)  # 人物关系图
-    arc_lines: List[Dict] = field(default_factory=list)  # 角色弧光线
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class CharacterForgerExpert(ExpertBase):
@@ -131,28 +105,19 @@ class CharacterForgerExpert(ExpertBase):
 
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
         errors = []
-        # 检查是否包含角色定义（放宽匹配：角色名/主角/反派/人物 均可）
-        has_character = any(kw in output for kw in ["角色名", "主角", "反派", "人物", "对手", "配角"])
-        if not has_character:
-            errors.append("未找到角色定义")
-        # 人设要素检查改为软性（有最好，没有也放行）
-        has_mask = any(kw in output for kw in ["面具", "公共自我", "身份", "职业"])
-        has_drive = any(kw in output for kw in ["驱力", "want", "欲望", "需求", "动机"])
-        has_arc = any(kw in output for kw in ["弧光", "成长", "变化", "转变"])
-        # 检查是否有多个角色（放宽正则，匹配 **主角**、- 角色名 等格式）
-        import re
-        card_patterns = [
-            r'\*\*[^*]{2,10}\*\*[：:]',   # **主角**：
-            r'-\s*[^-\n]{2,10}[：:]',     # - 角色名：
-            r'角色名[：:][^\n]+',           # 角色名：
-            r'###\s*[^#\n]+',              # ### 角色名
-        ]
-        card_count = 0
-        for pattern in card_patterns:
-            card_count += len(re.findall(pattern, output))
-        # 至少2种不同模式匹配或至少2个角色标记
-        if card_count < 1 and "主角" not in output:
-            errors.append("角色信息不足")
+        # 检查是否包含人设卡片必要字段
+        if "角色名：" not in output and "主角" not in output:
+            errors.append("未找到角色名定义")
+        if "面具：" not in output and "公共自我" not in output:
+            errors.append("未找到面具/公共自我定义")
+        if "驱力：" not in output and "want" not in output.lower():
+            errors.append("未找到人物驱动力定义")
+        if "弧光：" not in output and "弧光" not in output:
+            errors.append("未找到人物弧光定义")
+        # 检查是否符合字数要求（人设卡100-200字）
+        card_blocks = re.findall(r'角色名[：:][^\n]+', output)
+        if len(card_blocks) < 2:
+            errors.append(f"角色数量不足，至少需要主角+反派/对手，当前仅{len(card_blocks)}个")
         return len(errors) == 0, errors
 
     def parse_character_cards(self, output: str) -> List[Dict]:

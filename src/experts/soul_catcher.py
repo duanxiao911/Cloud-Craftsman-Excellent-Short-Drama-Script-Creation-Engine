@@ -8,35 +8,7 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class SoulCatcherInput(BaseInput):
-    """灵魂捕手专家的输入"""
-    user_idea: str = ""  # 用户原始创意方向
-    genre_preference: str = ""  # 类型偏好
-    target_audience: str = ""  # 目标受众
-    conversation_rounds: int = 0  # 已对话轮数
-    max_rounds: int = 5  # 最大追问轮数
-
-
-@dataclass
-class SoulCatcherOutput(BaseOutput):
-    """灵魂捕手专家的输出"""
-    story_direction: str = ""  # 确认的故事方向
-    story_premise: str = ""  # 一句话前提
-    genre_confirmed: str = ""  # 确认的类型
-    theme_keywords: List[str] = field(default_factory=list)  # 主题关键词
-    risk_flags: List[str] = field(default_factory=list)  # 风险标记
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class SoulCatcherExpert(ExpertBase):

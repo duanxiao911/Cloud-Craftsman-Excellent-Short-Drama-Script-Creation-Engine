@@ -8,34 +8,7 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class StructureArchitectInput(BaseInput):
-    """结构建筑师专家的输入"""
-    story_direction: str = ""  # 故事方向
-    story_premise: str = ""  # 一句话前提
-    character_cards: List[Dict] = field(default_factory=list)  # 角色卡片
-    episode_count: int = 30  # 总集数
-
-
-@dataclass
-class StructureArchitectOutput(BaseOutput):
-    """结构建筑师专家的输出"""
-    beat_table: List[Dict] = field(default_factory=list)  # 15节拍表
-    hero_sequence: List[Dict] = field(default_factory=list)  # 英雄目标23段落
-    arc_tracking: Dict[str, Any] = field(default_factory=dict)  # 弧光追踪
-    structure_type: str = ""  # 结构类型
-    episode_mapping: List[Dict] = field(default_factory=list)  # 集数映射
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class StructureArchitectExpert(ExpertBase):
@@ -183,21 +156,15 @@ class StructureArchitectExpert(ExpertBase):
 
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
         errors = []
-        # 放宽匹配：节拍表/段落/弧光 可能有不同表述
-        has_beats = any(kw in output for kw in ["节拍表", "节拍", "Beat"])
-        has_paragraphs = any(kw in output for kw in ["段落", "大纲", "段落大纲"])
-        has_arc = any(kw in output for kw in ["弧光", "角色弧光", "人物弧光", "成长线", "角色成长"])
-        if not has_beats:
-            errors.append("缺少节拍表相关内容")
-        if not has_paragraphs:
-            errors.append("缺少段落/大纲内容")
-        if not has_arc:
-            errors.append("缺少弧光/角色成长相关内容")
+        required_fields = ["节拍表", "段落", "弧光"]
+        missing = [f for f in required_fields if f not in output]
+        if missing:
+            errors.append(f"缺少结构输出字段：{missing}")
         # 检查是否有至少6个段落级别的描述
         import re
         paragraph_count = len(re.findall(r'#\d+|段落\d|第\d+幕', output))
-        if paragraph_count < 6:
-            errors.append(f"段落/节拍描述不足（{paragraph_count}处），可能遗漏了结构细节")
+        if paragraph_count < 10:
+            errors.append(f"段落/节拍描述不足，可能遗漏了结构细节")
         return len(errors) == 0, errors
 
     def parse_beat_table(self, output: str) -> List[Dict]:

@@ -8,32 +8,7 @@
 """
 
 from typing import List, Dict
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class ComplianceGuardInput(BaseInput):
-    """合规守门员专家的输入"""
-    content: str = ""  # 待审核内容
-    content_type: str = ""  # 内容类型（大纲/剧本/对白）
-    target_platform: str = ""  # 目标平台
-
-
-@dataclass
-class ComplianceGuardOutput(BaseOutput):
-    """合规守门员专家的输出"""
-    risk_level: str = "green"  # 风险等级：green/yellow/red
-    compliance_report: Dict[str, Any] = field(default_factory=dict)  # 合规检查报告
-    risk_items: List[Dict] = field(default_factory=list)  # 风险条目
-    alternative_suggestions: List[Dict] = field(default_factory=list)  # 合规替代方案
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class ComplianceGuardExpert(ExpertBase):

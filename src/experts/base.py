@@ -13,35 +13,14 @@
 import os
 import re
 import json
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Callable
 from pathlib import Path
+from src.knowledge_retriever import KnowledgeRetriever
+from src.token_usage import TokenUsage
+from src.artifact_schema import validate_artifact
 
-
-
-
-# ============================================================
-# 专家类型化IO基类
-# ============================================================
-
-@dataclass
-class BaseInput:
-    """所有专家输入的基类"""
-    user_input: str = ""
-    context: Optional[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class BaseOutput:
-    """所有专家输出的基类"""
-    content: str = ""
-    structured_data: Dict[str, Any] = field(default_factory=dict)
-    validation_passed: bool = True
-    validation_errors: List[str] = field(default_factory=list)
-    suggestions: List[str] = field(default_factory=list)
 
 @dataclass
 class ExpertContext:
@@ -58,6 +37,9 @@ class ExpertContext:
     risk_level: str = "green"  # green / yellow / red
     risk_warnings: List[Dict] = field(default_factory=list)
     metadata: Dict = field(default_factory=dict)
+    # V3 canonical state. Kept as a dict here for checkpoint/API compatibility.
+    story_state: Dict = field(default_factory=dict)
+    task_context: Dict = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
         return {
@@ -73,6 +55,8 @@ class ExpertContext:
             "risk_level": self.risk_level,
             "risk_warnings": self.risk_warnings,
             "metadata": self.metadata,
+            "story_state": self.story_state,
+            "task_context": self.task_context,
         }
 
     def update(self, **kwargs):
@@ -149,6 +133,10 @@ class LLMClient(ABC):
         """调用LLM生成结构化JSON"""
         pass
 
+    def get_last_usage(self) -> Optional[TokenUsage]:
+        """Return provider-reported usage when available."""
+        return None
+
 
 class OpenAIClient(LLMClient):
     """OpenAI API兼容的LLM客户端"""
@@ -158,6 +146,7 @@ class OpenAIClient(LLMClient):
         self.base_url = base_url
         self.temperature = temperature
         self._client = None
+        self._last_usage: Optional[TokenUsage] = None
 
     def _get_client(self):
         if self._client is None:
@@ -170,31 +159,29 @@ class OpenAIClient(LLMClient):
         return self._client
 
     def complete(self, prompt: str, **kwargs) -> str:
-        """调用LLM生成内容，失败自动重试最多3次"""
+        """调用LLM生成内容"""
         client = self._get_client()
         if client is None:
             return self._mock_complete(prompt)
-        
-        max_retries = 3
-        last_error = None
-        
-        for attempt in range(max_retries):
-            try:
-                response = client.chat.completions.create(
+        try:
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=kwargs.get("temperature", self.temperature),
+                max_tokens=kwargs.get("max_tokens", 4000),
+            )
+            usage = getattr(response, "usage", None)
+            if usage:
+                self._last_usage = TokenUsage(
+                    prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+                    completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+                    total_tokens=int(getattr(usage, "total_tokens", 0) or 0),
+                    evidence="observed",
                     model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=kwargs.get("temperature", self.temperature),
-                    max_tokens=kwargs.get("max_tokens", 4000),
                 )
-                return response.choices[0].message.content
-            except Exception as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    wait_time = 5 * (attempt + 1)  # 5秒, 10秒, 15秒递增
-                    print(f"  ⚠ API调用失败({e})，{wait_time}秒后重试 ({attempt+1}/{max_retries})...")
-                    time.sleep(wait_time)
-        
-        return f"[LLM调用失败: {last_error}] 请检查API配置"
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"[LLM调用失败: {e}] 请检查API配置"
 
     def complete_json(self, prompt: str, **kwargs) -> Dict:
         """调用LLM生成结构化JSON"""
@@ -210,7 +197,14 @@ class OpenAIClient(LLMClient):
 
     def _mock_complete(self, prompt: str) -> str:
         """Mock模式：用于无API环境下的测试"""
-        return f"[Mock LLM响应] 已收到Prompt，长度={len(prompt)}字符。请配置有效的API Key以获取真实LLM响应。"
+        content = f"[Mock LLM响应] 已收到Prompt，长度={len(prompt)}字符。请配置有效的API Key以获取真实LLM响应。"
+        prompt_tokens = max(1, len(prompt) // 2)
+        completion_tokens = max(1, len(content) // 2)
+        self._last_usage = TokenUsage(prompt_tokens, completion_tokens, prompt_tokens + completion_tokens, "estimated", self.model)
+        return content
+
+    def get_last_usage(self) -> Optional[TokenUsage]:
+        return self._last_usage
 
 
 class ExpertBase(ABC):
@@ -239,6 +233,7 @@ class ExpertBase(ABC):
         self.knowledge_base_path = knowledge_base_path
         self.culture_kb = culture_kb  # 中华优秀传统文化知识库（第5.5层）
         self._prompt_template: Optional[PromptTemplate] = None
+        self.knowledge_retriever = KnowledgeRetriever()
 
     def get_prompt_template(self) -> PromptTemplate:
         """获取Prompt模板（懒加载）"""
@@ -275,6 +270,50 @@ class ExpertBase(ABC):
             return Path(kb_path).read_text(encoding="utf-8")
         return ""
 
+    def parse_structured_output(self, content: str) -> Dict[str, Any]:
+        """Convert every expert response into a stable native artifact envelope."""
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content)
+        candidate = match.group(1) if match else content.strip()
+        try:
+            value = json.loads(candidate)
+            if isinstance(value, dict):
+                return value
+            return {"items": value}
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+        parser_map = {
+            "§1": ("parse_character_cards", "characters"),
+            "§4": ("parse_dialogue_corpus", "dialogue_corpus"),
+            "§11": ("parse_scene_list", "scenes"),
+            "§6": ("parse_format_report", "format_report"),
+            "§9": ("parse_revision_list", "revisions"),
+            "§13": ("parse_visual_scheme", "visual_scheme"),
+            "§14": ("parse_business_report", "business_report"),
+            "§15": ("parse_final_verdict", "final_verdict"),
+            "§10": ("parse_workflow_status", "workflow_status"),
+        }
+        if self.expert_id in parser_map:
+            method_name, key = parser_map[self.expert_id]
+            method = getattr(self, method_name, None)
+            if method:
+                return {key: method(content)}
+        if self.expert_id == "§2":
+            return {"risk_level": getattr(self, "parse_risk_level")(content), "warnings": getattr(self, "parse_warnings")(content)}
+        if self.expert_id == "§3":
+            return {"beat_table": getattr(self, "parse_beat_table")(content), "arc_tracking": getattr(self, "parse_arc_tracking")(content)}
+        if self.expert_id == "§7":
+            return {"scores": getattr(self, "parse_scores")(content), "total_score": getattr(self, "parse_total_score")(content)}
+        if self.expert_id == "§8":
+            return {"project_config": getattr(self, "parse_config")(content)}
+        if self.expert_id == "§0":
+            fields = {}
+            for key, label in (("story_direction", "故事方向"), ("logline", "一句话前提"), ("drama_type", "推荐类型"), ("emotional_anchor", "核心情感锚点")):
+                found = re.search(rf"{label}[：:]\s*(.+)", content)
+                fields[key] = found.group(1).strip() if found else ""
+            return fields
+        return {"raw": content}
+
     def execute(self, context: ExpertContext, **kwargs) -> ExpertOutput:
         """执行专家逻辑：生成Prompt → 调用LLM → 验证输出"""
         output = ExpertOutput(expert_name=self.expert_name)
@@ -285,6 +324,16 @@ class ExpertBase(ABC):
         # 2. 构建完整Prompt（含系统提示词）
         system_prompt = self.get_system_prompt()
         knowledge = self.load_knowledge()
+        budgeter = kwargs.pop("_token_budgeter", None)
+        budget = kwargs.pop("_token_budget", None)
+        output_tokens = kwargs.get("max_tokens", 4000)
+        if budgeter and budget and knowledge:
+            query = json.dumps(context.task_context, ensure_ascii=False) + "\n" + user_prompt
+            chunks = self.knowledge_retriever.retrieve(
+                knowledge, query, budget.knowledge, budgeter.estimate
+            )
+            output.structured_data["knowledge_retrieval"] = self.knowledge_retriever.serialize(chunks)
+            knowledge = "\n\n".join(chunk.text for chunk in chunks)
         if knowledge:
             system_prompt = f"{system_prompt}\n\n=== 专家知识库 ===\n{knowledge}"
 
@@ -293,15 +342,62 @@ class ExpertBase(ABC):
             culture_summary = self.culture_kb.get_summary()
             system_prompt = f"{system_prompt}\n\n=== 中华优秀传统文化知识库（第5.5层） ===\n{culture_summary}\n\n调用方式：根据当前故事类型和主题，从文化知识库中提取相关元素融入创作。文化不是展示是叙事动力——仪式的荒诞推动觉醒，节令的更替推动转折，禁忌的存在推动冲突。"
 
+        # Versioned style packs are backend constraints, not a UI prompt suffix.
+        style_pack = context.project_config.get("style_pack", {}) if context.project_config else {}
+        if style_pack:
+            global_rules = style_pack.get("global_rules", [])
+            expert_rules = style_pack.get("expert_directives", {}).get(self.expert_id, [])
+            rules = list(global_rules) + list(expert_rules)
+            if rules:
+                rendered = "\n".join(f"{index + 1}. {rule}" for index, rule in enumerate(rules))
+                system_prompt = (
+                    f"{system_prompt}\n\n=== 风格经验包（硬约束） ===\n"
+                    f"{style_pack.get('name', style_pack.get('id', '未命名'))} "
+                    f"v{style_pack.get('version', '1.0.0')}\n{rendered}\n"
+                    "若风格规则与合规、事实或用户明确要求冲突，以后者为准。"
+                )
+                output.structured_data["style_pack"] = {
+                    "id": style_pack.get("id"), "version": style_pack.get("version"),
+                    "checksum": style_pack.get("checksum"), "rules_applied": len(rules),
+                }
+
         full_prompt = f"{system_prompt}\n\n=== 用户输入 ===\n{user_prompt}"
 
+        if budgeter and budget:
+            report = budgeter.preflight(
+                self.get_system_prompt(), knowledge, user_prompt, output_tokens, budget
+            )
+            output.structured_data["token_budget"] = report.__dict__
+
         # 3. 调用LLM
-        output.content = self.llm_client.complete(full_prompt)
+        output.content = self.llm_client.complete(full_prompt, max_tokens=output_tokens)
+        usage = self.llm_client.get_last_usage()
+        if usage is None:
+            estimator = budgeter.estimate if budgeter else lambda text: max(1, len(text) // 2)
+            prompt_tokens = estimator(full_prompt)
+            completion_tokens = estimator(output.content)
+            usage = TokenUsage(prompt_tokens, completion_tokens, prompt_tokens + completion_tokens, "estimated")
+        output.structured_data["token_usage"] = usage.to_dict()
 
         # 4. 验证输出
         passed, errors = self.validate_output(output.content)
         output.validation_passed = passed
         output.validation_errors = errors
+        artifact = self.parse_structured_output(output.content)
+        schema_errors = validate_artifact(self.expert_id, artifact)
+        native_json = output.content.lstrip().startswith("{") or output.content.lstrip().startswith("```json")
+        if native_json and not schema_errors:
+            output.validation_passed = True
+            output.validation_errors = []
+        if schema_errors:
+            output.validation_passed = False
+            output.validation_errors.extend(schema_errors)
+        output.structured_data.update({
+            "artifact_schema_version": "1.0",
+            "expert_id": self.expert_id,
+            "artifact": artifact,
+            "artifact_schema_valid": not schema_errors,
+        })
 
         return output
 
@@ -335,8 +431,6 @@ class ExpertRegistry:
 
 
 __all__ = [
-    "BaseInput",
-    "BaseOutput",
     "ExpertContext",
     "ExpertOutput",
     "PromptTemplate",

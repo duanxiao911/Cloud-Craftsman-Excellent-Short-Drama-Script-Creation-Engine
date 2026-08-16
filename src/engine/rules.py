@@ -127,16 +127,25 @@ class RedLineSystem:
     def scan(self, text: str) -> List[Dict]:
         """扫描文本中的潜在红线触发点（仅返回警示与合规替代建议）"""
         warnings = []
+        keywords = {
+            RedLineCategory.SUPERNATURAL_GODHAND: ["异能", "修仙", "血脉觉醒", "觉醒", "金手指", "开挂"],
+            RedLineCategory.VIGILANTE_VIOLENCE: ["以暴制暴", "复仇杀死", "私刑", "个人复仇"],
+            RedLineCategory.DANGEROUS_PROP_BLOOD: ["匕首", "尖刀", "弹簧刀", "毒针", "迷药", "出血", "流血", "血流"],
+            RedLineCategory.PERSONALITY_HUMILIATION_BULLYING: ["下跪", "当众羞辱", "掌掴", "校园霸凌", "职场欺压"],
+            RedLineCategory.OBSCENE_BORDERLINE: ["露骨", "暧昧姿势", "低俗封面"],
+            RedLineCategory.FEUDAL_SUPERSTITION: ["诅咒", "算命", "风水", "宗教妖魔"],
+        }
         for category, item in self.red_lines.items():
-            if any(keyword in text for keyword in item.prohibited.split("、")[:3]):  # 简化关键词检出
+            if any(keyword in text for keyword in keywords[category]):
                 warnings.append({
                     "category": category,
                     "reason": f"疑似包含“{item.category}”相关内容",
                     "alternative": item.alternative,
                     "severity": item.severity
                 })
+        topic_aliases = {"缅北题材": ["缅北"], "境外猎奇": ["境外猎奇"]}
         for topic in self.prohibited_topics:
-            if topic in text:
+            if topic in text or any(alias in text for alias in topic_aliases.get(topic, [])):
                 warnings.append({
                     "category": "题材禁区",
                     "reason": f"触及题材禁区：{topic}",
@@ -186,8 +195,17 @@ class AIDetectionRedLine:
         if "突然" in text:
             issues.append("出现“突然”，检查是否有前置铺垫")
             score -= 0.1
-        repeated = [s for s in text.split("。") if s.strip()][:10]
-        if len(set(repeated)) < len(repeated) * 0.7:
+        repeated = [s.strip() for s in text.split("。") if s.strip()][:10]
+        has_repetition = len(set(repeated)) < len(repeated) * 0.7
+        if not has_repetition:
+            for index, sentence in enumerate(repeated):
+                for other in repeated[index + 1:]:
+                    if min(len(sentence), len(other)) >= 4 and (sentence[:4] == other[:4] or sentence in other or other in sentence):
+                        has_repetition = True
+                        break
+                if has_repetition:
+                    break
+        if has_repetition:
             issues.append("疑似重复句式，检查对白/独白多样性")
             score -= 0.1
         return {"score": max(0.0, score), "issues": issues}
