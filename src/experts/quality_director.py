@@ -1,251 +1,216 @@
 """
-§15 品控总监（Quality Director）
+⑮ 品控总监专家
 
-职责：终审把关专家
-创作流水线的最后一道关卡
-全剧一致性校验（角色/时间线/空间/情感）+ 最终质量确认 + 签发
-通过品控的剧本才能定稿输出
+职责：终审把关 + 全剧一致性校验 + 最终签发
+作为最后一道关卡确保作品质量达标
 
-基于 Wave2 架构设计
+基于WAVE2开发计划 + 精品短剧品控标准
 """
 
-import re
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# 终审通过条件
-PASS_CRITERIA = {
-    "min_overall_score": 7.0,
-    "min_episode_score": 6.0,
-    "required_checks": [
-        "角色一致性",
-        "时间线一致性",
-        "空间逻辑",
-        "情感连贯性",
-    ],
-}
-
-# 一致性校验清单
-CONSISTENCY_CHECKLIST = {
-    "character": {
-        "name": "角色一致性",
-        "items": [
-            "每个角色的性格特征在全剧中保持一致",
-            "角色弧光按设计轨迹发展，不跳跃不突兀",
-            "对白风格不跑偏（A角色不会说出B角色的语气）",
-            "角色关系变化有铺垫，不突兀",
-        ],
-    },
-    "timeline": {
-        "name": "时间线一致性",
-        "items": [
-            "事件先后顺序正确",
-            "时间跨度合理（不会一夜之间学会需要数年的技能）",
-            "季节/天气与剧情时间线吻合",
-            "回忆/闪回与现实时间线区分清晰",
-        ],
-    },
-    "spatial": {
-        "name": "空间逻辑",
-        "items": [
-            "场景地理位置合理（不会瞬移）",
-            "同一场景内的道具布置保持一致",
-            "角色的移动时间合理",
-        ],
-    },
-    "emotional": {
-        "name": "情感连贯性",
-        "items": [
-            "情绪变化有触发事件，不会无故大喜大悲",
-            "情感高潮前有足够铺垫",
-            "悲伤场景不会突然变搞笑（除非有合理过渡）",
-        ],
-    },
-}
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class QualityDirectorInput(BaseInput):
-    """品控总监专家的输入"""
-    audit_report: Dict[str, Any] = field(default_factory=dict)  # 质量审计报告
-    script_content: str = ""  # 剧本内容
-    iteration_count: int = 0  # 当前迭代次数
-    max_iterations: int = 3  # 最大迭代次数
-
-
-@dataclass
-class QualityDirectorOutput(BaseOutput):
-    """品控总监专家的输出"""
-    decision: str = ""  # 决策：pass/revise/reject
-    consistency_check: Dict[str, Any] = field(default_factory=dict)  # 一致性校验
-    revision_instructions: List[Dict] = field(default_factory=list)  # 修改指令
-    final_verdict: str = ""  # 最终裁定
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class QualityDirectorExpert(ExpertBase):
-    """§15 品控总监"""
+    """⑮ 品控总监专家"""
     expert_id = "§15"
     expert_name = "quality_director"
     prompt_file = "quality_director.md"
 
     def get_system_prompt(self) -> str:
-        checklist_text = ""
-        for key, category in CONSISTENCY_CHECKLIST.items():
-            checklist_text += f"\n【{category['name']}】\n"
-            for item in category["items"]:
-                checklist_text += f"  □ {item}\n"
+        return """你是一位专精品质把控的资深总编审，代号⑮品控总监。
 
-        return f"""你是一位终审把关专家，代号§15品控总监。
+你的核心能力：作为最后一道关卡，对全剧进行终审把关，确保作品质量达标后签发。
 
-你是云匠引擎创作流水线的最后一道关卡。通过你签发的剧本才能定稿输出。
+【品控总监职责】
+你是整个创作流程的最后一环，负责：
+1. 全剧一致性校验：确保15个专家产出的一致性
+2. 红线终审：最后一次合规检查
+3. 品质评级：给出最终品质等级
+4. 签发/打回：决定是否可以投稿
 
-【终审通过条件】
-1. §7质量审计总分 ≥ {PASS_CRITERIA['min_overall_score']}
-2. 所有单集分数 ≥ {PASS_CRITERIA['min_episode_score']}
-3. 以下一致性校验全部通过：
-{checklist_text}
+【全剧一致性校验清单】
 
-4. 所有集完整、无遗漏、无格式错误
-5. 合规审查通过（无红线问题）
+一、人物一致性
+- [ ] 角色性格全剧统一（无前后矛盾）
+- [ ] 角色弧光递进自然（无跳跃/倒退）
+- [ ] 角色对白风格一致（换人测试通过）
+- [ ] 角色动机可追溯（每个选择都有前置铺垫）
+- [ ] 配角不工具人化（有独立动机）
+
+二、叙事一致性
+- [ ] 因果链完整（无突然转折/天降神兵）
+- [ ] 时间线清晰（无时间矛盾）
+- [ ] 空间逻辑合理（场景转换不混乱）
+- [ ] 信息量控制（观众知道的=角色知道的+适度信息差）
+- [ ] 伏笔回收（埋下的伏笔都有回收）
+
+三、风格一致性
+- [ ] 情感基调统一（不突然变调）
+- [ ] 叙事节奏一致（不突然加速/减速）
+- [ ] 对白风格统一（不出现与角色不符的用词）
+- [ ] 视觉风格统一（光影/色彩系统一致）
+
+四、合规一致性
+- [ ] 全剧无六大红线触发
+- [ ] 敏感内容全部使用侧面叙事
+- [ ] 无题材禁区内容
+- [ ] 符合目标平台尺度要求
+
+五、商业一致性
+- [ ] 钩子链完整（每集有钩子，下集有回应）
+- [ ] 追更节奏合理（不出现连续平淡段落）
+- [ ] 目标受众匹配（内容适合目标人群）
+
+【终审评级体系】
+| 评级 | 标准 | 处理 |
+| S级签发 | 全部通过，可直接投稿 | 立即投稿 |
+| A级签发 | 基本通过，小改后可投稿 | 附修改建议后投稿 |
+| B级修改 | 有明显问题，需改稿 | 打回§9改稿 |
+| C级重做 | 问题严重，需大幅修改 | 打回对应专家重做 |
+| D级否决 | 根本性问题，建议放弃 | 终止项目 |
 
 【终审流程】
-1. 读取§7质量审计报告，确认总分和各集分数
-2. 读取改稿后的最终剧本
-3. 逐项执行一致性校验清单
-4. 完整性检查：集数齐全、格式统一
-5. 合规终审：六大红线最终扫描
-6. 签发判定：通过 / 有条件通过 / 不通过
+1. 逐项检查一致性清单
+2. 汇总所有检查结果
+3. 确定终审评级
+4. 给出签发/打回决定
+5. 如打回，明确指出需要回退到哪个专家重做
 
-【签发结果格式】
+【输出格式】
+```
+【品控终审报告】
 
-## 终审报告
+项目名称：[项目名称]
+终审日期：[日期]
+终审人：⑮品控总监
 
-### 签发结果：通过/有条件通过/不通过
+【一致性校验结果】
 
-### 一致性校验
-- 角色一致性：通过/未通过 [具体问题]
-- 时间线一致性：通过/未通过 [具体问题]
-- 空间逻辑：通过/未通过 [具体问题]
-- 情感连贯性：通过/未通过 [具体问题]
+一、人物一致性：✅通过/❌未通过
+- [检查细节]
 
-### 完整性检查
-- 总集数：X集（齐全/缺失）
-- 格式统一：是/否
-- 元数据完整：是/否
+二、叙事一致性：✅通过/❌未通过
+- [检查细节]
 
-### 合规终审
-- 六大红线扫描：通过/有X条风险
-- AI含量标注：X%
+三、风格一致性：✅通过/❌未通过
+- [检查细节]
 
-### 条件说明（如有条件通过）
-1. ...
+四、合规一致性：✅通过/❌未通过
+- [检查细节]
 
-### 签发意见
-[最终评语，100字以内]
+五、商业一致性：✅通过/❌未通过
+- [检查细节]
+
+【问题清单】（如有）
+| # | 类型 | 位置 | 问题描述 | 严重程度 | 建议处理 |
+| 1 | [人物/叙事/风格/合规/商业] | [第X集] | [问题] | [严重/中等/轻微] | [建议] |
+
+【终审结论】
+终审评级：[S/A/B/C/D]级
+决定：✅签发 / ❌打回
+
+[如签发]
+投稿建议：[目标平台+投稿路径]
+
+[如打回]
+打回原因：[核心问题]
+建议回退到：[§X 专家名称]
+需要重做内容：[具体内容]
+```
+
+铁律：
+- 品控总监是最后一道防线，必须严格
+- 不能因为是"最后一关了差不多就放过去"
+- 一致性比单个场景的精彩更重要
+- 签发就要对作品负责，打回就要说清楚原因
+- 合规一致性是一票否决项
 """
 
     def get_user_prompt(self, context: ExpertContext, **kwargs) -> str:
-        # 获取质量审计报告
-        audit_report = ""
-        if context.metadata.get("step_outputs", {}).get("§7"):
-            audit_report = context.metadata["step_outputs"]["§7"].get("content", "")[:5000]
-        elif kwargs.get("quality_report"):
-            audit_report = str(kwargs["quality_report"])[:5000]
+        story_premise = context.story_premise or kwargs.get("story_premise", "")
+        project_config = context.project_config or {}
+        all_outputs = kwargs.get("all_outputs", {})
+        quality_scores = kwargs.get("quality_scores", {})
 
-        # 获取最终剧本
-        final_script = ""
-        if context.metadata.get("step_outputs", {}).get("§9"):
-            final_script = context.metadata["step_outputs"]["§9"].get("content", "")[:8000]
-        elif context.metadata.get("step_outputs", {}).get("§6"):
-            final_script = context.metadata["step_outputs"]["§6"].get("content", "")[:8000]
-        elif context.metadata.get("step_outputs", {}).get("§5"):
-            final_script = context.metadata["step_outputs"]["§5"].get("content", "")[:8000]
+        # 构建各专家输出摘要
+        outputs_summary = ""
+        for expert_id, output in all_outputs.items():
+            if hasattr(output, 'content'):
+                outputs_summary += f"\n--- {expert_id} ---\n{output.content[:500]}...\n"
 
-        # 角色人设（一致性校验参考）
-        chars_text = ""
-        if context.character_cards:
-            chars_text = "\n".join([
-                f"- {card.get('name_line', '未命名')}"
-                for card in context.character_cards[:10]
-            ])
+        prompt = f"""请对以下项目进行品控终审：
 
-        # 合规报告
-        compliance_report = ""
-        if context.metadata.get("step_outputs", {}).get("§2"):
-            compliance_report = context.metadata["step_outputs"]["§2"].get("content", "")[:2000]
+【项目名称】
+{project_config.get('project_name', '未命名')}
 
-        prompt = f"""请执行终审签发。
+【一句话前提】
+{story_premise}
 
-【质量审计报告】
-{audit_report if audit_report else "暂无审计报告"}
+【各专家产出摘要】
+{outputs_summary if outputs_summary else "请基于项目上下文进行终审"}
 
-【最终剧本】
-{final_script if final_script else "暂无剧本内容"}
-
-【角色人设参考】
-{chars_text if chars_text else "请从剧本提取"}
-
-【合规审查报告】
-{compliance_report if compliance_report else "暂无合规报告"}
+【§7质量审计评分】
+{quality_scores if quality_scores else "未提供"}
 
 任务：
-1. 确认质量审计总分和各集分数是否达标
-2. 逐项执行四类一致性校验（角色/时间线/空间/情感）
-3. 完整性检查（集数/格式/元数据）
-4. 合规终审（六大红线最终扫描）
-5. 给出签发结果：通过/有条件通过/不通过
-6. 如有条件通过，列出必须修改的条件
+1. 逐项检查五大一致性（人物/叙事/风格/合规/商业）
+2. 列出发现的所有问题
+3. 确定终审评级（S/A/B/C/D）
+4. 给出签发或打回决定
+5. 如打回，明确指出需要回退到哪个专家重做
+
+注意：
+- 一致性是第一优先级
+- 合规是一票否决项
+- 签发就要对作品负责
+- 打回要说清楚原因和修改方向
 """
+
         return prompt
 
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
         errors = []
-        # 检查是否有签发结果
-        has_verdict = any(kw in output for kw in ["签发结果", "通过", "不通过", "有条件"])
-        if not has_verdict:
-            errors.append("未找到签发结果")
-        # 检查是否有一致性校验
-        has_consistency = any(kw in output for kw in ["角色一致性", "时间线", "空间逻辑", "情感连贯"])
-        if not has_consistency:
+        # 必须包含一致性校验
+        if "一致性" not in output:
             errors.append("缺少一致性校验")
-        # 检查是否有完整性检查
-        has_completeness = any(kw in output for kw in ["完整性", "集数", "齐全", "格式统一"])
-        if not has_completeness:
-            errors.append("缺少完整性检查")
+        # 必须包含终审结论
+        if "终审" not in output and "结论" not in output:
+            errors.append("缺少终审结论")
+        # 必须包含评级
+        if not any(grade in output for grade in ["S级", "A级", "B级", "C级", "D级"]):
+            errors.append("缺少终审评级")
+        # 必须包含签发或打回决定
+        if "签发" not in output and "打回" not in output:
+            errors.append("缺少签发/打回决定")
         return len(errors) == 0, errors
 
-    def make_verdict(self, output: str) -> Dict:
-        """解析签发结果"""
-        verdict = "unknown"
-        if "不通过" in output:
-            verdict = "rejected"
-        elif "有条件通过" in output:
-            verdict = "conditional"
-        elif "通过" in output:
-            verdict = "approved"
+    def parse_final_verdict(self, output: str) -> Dict:
+        """解析终审结论"""
+        import re
+        verdict = {"raw": output}
 
-        conditions = []
-        # 提取条件
-        condition_matches = re.findall(r'(?:条件|必须|需)[：:]?\s*(.+)', output)
-        conditions = [m.strip() for m in condition_matches if len(m.strip()) > 5]
+        # 提取评级
+        grade_match = re.search(r'终审评级[：:]\s*([SABC])级', output)
+        if grade_match:
+            verdict["grade"] = grade_match.group(1)
 
-        return {
-            "verdict": verdict,
-            "conditions": conditions,
-            "raw": output[:3000],
-        }
+        # 提取决定
+        if "✅签发" in output or ("签发" in output and "打回" not in output):
+            verdict["decision"] = "approved"
+        elif "❌打回" in output or ("打回" in output and "签发" not in output):
+            verdict["decision"] = "rejected"
+        else:
+            verdict["decision"] = "unknown"
+
+        # 提取回退建议
+        rollback_match = re.search(r'回退到[：:]\s*(§?\d+)', output)
+        if rollback_match:
+            verdict["rollback_to"] = rollback_match.group(1)
+
+        return verdict
 
 
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§15", QualityDirectorExpert)
-

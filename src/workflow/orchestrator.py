@@ -1,34 +1,22 @@
 """
-工作流编排器 v2.0
+工作流编排器
 
 管理专家执行顺序、上下文传递、状态追踪和断点续传
 
-整合特性：
-- 知识库真实加载（从 knowledge/experts/{expert_id}.md 读取）
-- 三维质量评分（规则层0.3 + LLM层0.5 + 结构层0.2）
-- 返工回滚机制（质量不达标时自动回退重试）
-- 类型化IO接口（BaseInput/BaseOutput）
-- Token使用追踪
-
 基于《架构设计.md》用户交互流程：
-§0灵魂捕手→§2合规守门员→§8项目配置师→§1角色铸造师→§4对白大师→§3结构建筑师→§13视觉导演
+§0灵魂捕手→§2合规守门员→§8项目配置师→§1角色铸造师→§4对白大师→§3结构建筑师→⑪场景工匠→§6格式工匠→§7质量审计→§9改稿编辑→§13视觉导演→⑭商业操盘→⑮品控总监
 """
 
 import json
 import os
-import re
-import copy
-import time
+import hashlib
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Any, Callable, Tuple
+from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 from pathlib import Path
 from enum import Enum
 
-from src.experts.base import (
-    ExpertBase, ExpertContext, ExpertOutput, ExpertRegistry,
-    BaseInput, BaseOutput,
-)
+from src.experts.base import ExpertBase, ExpertContext, ExpertOutput, ExpertRegistry
 from src.experts.soul_catcher import SoulCatcherExpert
 from src.experts.character_forger import CharacterForgerExpert
 from src.experts.compliance_guard import ComplianceGuardExpert
@@ -36,66 +24,56 @@ from src.experts.structure_architect import StructureArchitectExpert
 from src.experts.dialogue_master import DialogueMasterExpert
 from src.experts.project_configurator import ProjectConfiguratorExpert
 from src.experts.visual_director import VisualDirectorExpert
+# Wave2 专家导入
+from src.experts.format_craftsman import FormatCraftsmanExpert
+from src.experts.quality_auditor import QualityAuditorExpert
+from src.experts.revision_editor import RevisionEditorExpert
+from src.experts.battle_commander import BattleCommanderExpert
+from src.experts.scene_craftsman import SceneCraftsmanExpert
+from src.experts.business_operator import BusinessOperatorExpert
+from src.experts.quality_director import QualityDirectorExpert
 from src.experts.episode_writer import EpisodeWriterExpert
+from src.experts.episode_outline_reviewer import EpisodeOutlineReviewerExpert
+from src.experts.script_reviewer import ScriptReviewerExpert
 from src.knowledge.culture_kb import CultureKnowledgeBase
-
-
-MAX_REVISIONS = 2  # 审核失败最大重试次数（v2.0提升为2次）
-QUALITY_THRESHOLD = 0.6  # 质量分低于此值触发回滚
-KNOWLEDGE_DIR_CANDIDATES = [
-    "knowledge/experts",
-    "drama-engine/knowledge/experts",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "knowledge", "experts"),
-]
+from src.context_budget import ContextSelector, TokenBudget, TokenBudgeter
+from src.patch_engine import PatchEngine, StoryPatch
+from src.story_state import StoryNode, StoryState
+from src.expert_protocol import ExpertStateAdapter
+from src.development_gate import GenerationGate, ProjectEvaluator, StoryEngineValidator
+from src.audience_quality import AudienceExperienceTracker, DiagnosisRepairPlanner
+from src.signing_audit import SigningGate
+from src.acceptance_benchmark import AcceptanceBenchmark
+from src.token_usage import TokenUsageLedger
+from src.development_service import ProjectDevelopmentService
+from src.audience_service import AudienceAuditService
+from src.signing_service import SigningQualityService
+from src.workflow.collaboration import CollaborationCoordinator
 
 
 class WorkflowStatus(Enum):
+    """工作流状态"""
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
     PAUSED = "paused"
-    BLOCKED = "blocked"
-    NEEDS_REVISION = "needs_revision"
-    ROLLED_BACK = "rolled_back"
-
-
-@dataclass
-class QualityScore:
-    """三维质量评分"""
-    rule_score: float = 0.0      # 规则层（0.3权重）：字数、格式、关键字段
-    llm_score: float = 0.0       # LLM层（0.5权重）：预留接口，暂用规则近似
-    structure_score: float = 0.0 # 结构层（0.2权重）：JSON结构完整度
-    total: float = 0.0           # 加权总分
-    details: Dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> Dict:
-        return {
-            "rule_score": round(self.rule_score, 3),
-            "llm_score": round(self.llm_score, 3),
-            "structure_score": round(self.structure_score, 3),
-            "total": round(self.total, 3),
-            "details": self.details,
-        }
+    CANCELED = "canceled"
 
 
 @dataclass
 class WorkflowState:
+    """工作流状态快照"""
     workflow_id: str
     status: WorkflowStatus = WorkflowStatus.PENDING
     current_step: int = 0
-    total_steps: int = 8
+    total_steps: int = 13
     expert_sequence: List[str] = field(default_factory=list)
     completed_steps: List[int] = field(default_factory=list)
     context_snapshot: Optional[ExpertContext] = None
     step_outputs: Dict[str, ExpertOutput] = field(default_factory=dict)
-    quality_scores: Dict[str, QualityScore] = field(default_factory=dict)
+    collaboration_trace: Dict[str, Any] = field(default_factory=dict)
     error_message: Optional[str] = None
-    failed_validations: List[str] = field(default_factory=list)
-    revision_counts: Dict[str, int] = field(default_factory=dict)
-    rollback_history: List[Dict] = field(default_factory=list)
-    blocked_reason: Optional[str] = None
-    token_usage: Dict[str, int] = field(default_factory=lambda: {"prompt": 0, "completion": 0, "total_requests": 0})
     created_at: str = ""
     updated_at: str = ""
 
@@ -106,38 +84,48 @@ class WorkflowState:
 
 
 class Orchestrator:
-    """工作流编排器 v2.0
+    """
+    工作流编排器
 
-    集成能力：
-    - 知识库真实加载：从 knowledge/experts/ 目录读取专家prompt
-    - 三维质量评分：规则层(0.3) + LLM层(0.5,预留) + 结构层(0.2)
-    - 返工回滚：质量不达标时自动回退到上一步快照重试
-    - 类型化IO：通过 BaseInput/BaseOutput 与专家交互
+    管理专家执行顺序、上下文传递、状态追踪和断点续传
+
+    完整15专家序列（Wave2扩展版）：
+    §0 → §2 → §8 → §1 → §4 → §3 → ⑪ → §6 → §7 → §9(循环) → §13 → ⑭ → ⑮
     """
 
-    DEFAULT_SEQUENCE = ["§0", "§2", "§8", "§1", "§4", "§3", "§5", "§13"]
+    # 默认专家执行序列（MVP 7步闭环）
+    DEFAULT_SEQUENCE = ["§0", "§2", "§8", "§1", "§4", "§3", "§13"]
 
+    # 完整15专家序列（Wave2扩展）
+    FULL_SEQUENCE = ["§10", "§0", "§2", "§8", "§1", "§3", "§4", "§5", "§12", "§11", "§6", "§7", "§9", "§13", "§14", "§16", "§15"]
+    BULK_GENERATION_EXPERTS = {"§11", "§6", "§13"}
+
+    # 序列说明
     SEQUENCE_DESCRIPTIONS = {
         "§0": "灵魂捕手：对话式追问，确认故事方向",
         "§2": "合规守门员：红线扫描，输出风险评级",
         "§8": "项目配置师：将方向拆解为完整项目设定",
         "§1": "角色铸造师：三层四维度人设+弧光线",
         "§4": "对白大师：语料库生成+对白风格卡+钩子链",
+        "§5": "分集编剧：结构化分集目标、选择、代价和钩子",
         "§3": "结构建筑师：救猫咪节拍表+23段落+弧光追踪",
-        "§5": "分集编剧：将大纲展开为完整分场剧本",
+        "§11": "场景工匠：场景氛围细化+五感系统+环境描写",
+        "§12": "集纲审核：逐集定位结构问题并给出修复方案",
+        "§6": "格式工匠：专业剧本格式标准化",
+        "§7": "质量审计：6维度自动评分+改进建议",
+        "§9": "改稿编辑：基于评分的针对性改稿",
         "§13": "视觉导演：光影系统+镜头系统+声音系统",
+        "§14": "商业操盘：市场分析+投放策略+变现路径",
+        "§15": "品控总监：终审把关+一致性校验+签发",
+        "§16": "剧本审核：人物、因果、可拍性和商业诊断",
+        "§10": "实战指挥：工作流策略、进度和下一步行动",
     }
 
-    # 每个专家的最低质量期望（字数阈值）
-    EXPERT_MIN_LENGTH = {
-        "§0": 200,
-        "§2": 100,
-        "§8": 500,
-        "§1": 800,
-        "§4": 600,
-        "§3": 1000,
-        "§5": 3000,
-        "§13": 500,
+    # 质量门禁定义
+    QUALITY_GATES = {
+        "§2": {"condition": "risk_level != red", "on_fail": "pause"},
+        "§7": {"condition": "total_score >= 6.0", "on_fail": "loop_to_§9"},
+        "§15": {"condition": "grade in [S, A]", "on_fail": "rollback"},
     }
 
     def __init__(
@@ -148,283 +136,73 @@ class Orchestrator:
         project_path: Optional[str] = None,
         enable_checkpoint: bool = True,
         enable_culture_kb: bool = True,
-        enable_quality_gate: bool = True,
-        enable_rollback: bool = True,
+        use_full_sequence: bool = False,
+        token_budget: Optional[TokenBudget] = None,
+        enable_agent_collaboration: bool = False,
+        max_targeted_retries: int = 2,
     ):
-        self.expert_sequence = expert_sequence or self.DEFAULT_SEQUENCE
+        if expert_sequence:
+            self.expert_sequence = expert_sequence
+        elif use_full_sequence:
+            self.expert_sequence = self.FULL_SEQUENCE
+        else:
+            self.expert_sequence = self.DEFAULT_SEQUENCE
         self.llm_client = llm_client
         self.knowledge_base_path = knowledge_base_path
         self.project_path = project_path or "./workspace"
         self.enable_checkpoint = enable_checkpoint
-        self.enable_quality_gate = enable_quality_gate
-        self.enable_rollback = enable_rollback
+        self.token_budget = token_budget or TokenBudget()
+        self.context_selector = ContextSelector()
+        self.token_budgeter = TokenBudgeter()
+        self.patch_engine = PatchEngine()
+        self.expert_state_adapter = ExpertStateAdapter()
+        self.generation_gate = GenerationGate()
+        self.audience_tracker = AudienceExperienceTracker()
+        self.repair_planner = DiagnosisRepairPlanner()
+        self.signing_gate = SigningGate()
+        self.acceptance_benchmark = AcceptanceBenchmark()
+        self.token_usage_ledger = TokenUsageLedger()
+        self.enable_agent_collaboration = enable_agent_collaboration
+        self.collaboration = CollaborationCoordinator(max_targeted_retries=max_targeted_retries)
 
         # 第5.5层：中华优秀传统文化知识库
         self.culture_kb = CultureKnowledgeBase() if enable_culture_kb else None
 
-        # 知识库缓存：{expert_id: (content, mtime)}
-        self._knowledge_cache: Dict[str, Tuple[str, float]] = {}
-
         self.state: Optional[WorkflowState] = None
         self._expert_instances: Dict[str, ExpertBase] = {}
+        self._revision_count: int = 0  # 改稿迭代计数
+        self._max_revisions: int = 3   # 最大改稿轮次
+        self._repair_cycle_active: bool = False
+        self._cancel_requested: bool = False
+        self._cancel_reason: Optional[str] = None
         self._callbacks: Dict[str, List[Callable]] = {
             "on_step_start": [],
             "on_step_complete": [],
             "on_step_error": [],
-            "on_step_rollback": [],
+            "on_checkpoint": [],
             "on_workflow_complete": [],
+            "on_quality_gate": [],
+            "on_revision_loop": [],
+            "on_decision_plan": [],
+            "on_supervision": [],
+            "on_feedback": [],
+            "on_cancelled": [],
         }
 
-    # ============================================================
-    # 知识库真实加载
-    # ============================================================
-
-    def _load_expert_knowledge(self, expert_id: str) -> Optional[str]:
-        """从 knowledge/experts/{expert_id}.md 真实读取专家知识库
-
-        使用 mtime 缓存，文件修改后自动重新加载。
-        返回 None 表示该专家没有外部知识库（使用内嵌prompt）。
-        """
-        # 映射 expert_id (如 §0) 到文件名
-        expert_name_map = {
-            "§0": "soul_catcher",
-            "§1": "character_forger",
-            "§2": "compliance_guard",
-            "§3": "structure_architect",
-            "§4": "dialogue_master",
-            "§5": "episode_writer",
-            "§6": "format_craftsman",
-            "§7": "quality_auditor",
-            "§8": "project_configurator",
-            "§9": "revision_editor",
-            "§10": "battle_commander",
-            "§11": "scene_craftsman",
-            "§13": "visual_director",
-            "§14": "business_operator",
-            "§15": "quality_director",
-            "§16": "script_reviewer",
-            "§17": "episode_outline_reviewer",
-        }
-
-        filename = expert_name_map.get(expert_id)
-        if not filename:
-            return None
-
-        # 尝试多个候选路径
-        filepath = None
-        for candidate_dir in KNOWLEDGE_DIR_CANDIDATES:
-            candidate_path = os.path.join(candidate_dir, f"{filename}.md")
-            if os.path.exists(candidate_path):
-                filepath = candidate_path
-                break
-        
-        if filepath is None:
-            return None
-
-        # 检查缓存
-        try:
-            current_mtime = os.path.getmtime(filepath)
-        except OSError:
-            return None
-
-        if expert_id in self._knowledge_cache:
-            cached_content, cached_mtime = self._knowledge_cache[expert_id]
-            if cached_mtime == current_mtime:
-                return cached_content
-
-        # 读取文件
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                content = f.read()
-            self._knowledge_cache[expert_id] = (content, current_mtime)
-            return content
-        except (OSError, IOError):
-            return None
-
-    # ============================================================
-    # 三维质量评分
-    # ============================================================
-
-    def _calc_quality_score(self, expert_id: str, output: ExpertOutput, context: ExpertContext) -> QualityScore:
-        """计算三维质量评分
-
-        三个维度：
-        1. 规则层（权重0.3）：字数达标、格式规范、关键字段存在
-        2. LLM层（权重0.5）：预留接口，暂用规则近似（后续接入LLM评审）
-        3. 结构层（权重0.2）：structured_data完整度、可解析性
-
-        返回 QualityScore 对象，包含各维度分数和加权总分。
-        """
-        details = {}
-
-        # --- 规则层（0.3）---
-        content = output.content or ""
-        content_len = len(content)
-        min_len = self.EXPERT_MIN_LENGTH.get(expert_id, 200)
-
-        # 字数得分：达标=1.0，不足按比例扣
-        length_score = min(1.0, content_len / max(min_len, 1))
-
-        # 格式得分：有标题/分段/列表
-        format_score = 0.0
-        if re.search(r'^#\s+', content, re.MULTILINE):
-            format_score += 0.3  # 有标题
-        if re.search(r'^##\s+', content, re.MULTILINE):
-            format_score += 0.2  # 有子标题
-        if re.search(r'^[-*]\s+', content, re.MULTILINE):
-            format_score += 0.2  # 有列表
-        if re.search(r'^\d+[.、]\s+', content, re.MULTILINE):
-            format_score += 0.2  # 有编号
-        if '\n\n' in content:
-            format_score += 0.1  # 有分段
-        format_score = min(1.0, format_score)
-
-        rule_score = (length_score * 0.6 + format_score * 0.4)
-        details["rule"] = {
-            "content_length": content_len,
-            "min_expected": min_len,
-            "length_score": round(length_score, 3),
-            "format_score": round(format_score, 3),
-        }
-
-        # --- LLM层（0.5，预留接口）---
-        # 当前使用规则近似：检查关键领域词/结构标记
-        llm_score = 0.0
-        if expert_id == "§0":
-            # 灵魂捕手：应有故事方向、人物、冲突
-            keywords = ["故事", "主角", "冲突", "方向", "主题"]
-            llm_score = sum(0.2 for kw in keywords if kw in content)
-        elif expert_id == "§1":
-            # 角色铸造师：应有角色名、性格、背景
-            keywords = ["性格", "背景", "动机", "弧光", "关系"]
-            llm_score = sum(0.2 for kw in keywords if kw in content)
-        elif expert_id == "§3":
-            # 结构建筑师：应有节拍、段落、转折
-            keywords = ["节拍", "铺垫", "转折", "高潮", "结局"]
-            llm_score = sum(0.2 for kw in keywords if kw in content)
-        elif expert_id == "§5":
-            # 分集编剧：应有集数、场景、对白
-            keywords = ["第", "集", "场景", "对白", "镜头"]
-            llm_score = sum(0.2 for kw in keywords if kw in content)
-        else:
-            # 通用：有实质内容（非空、非纯模板）
-            llm_score = 0.5 if content_len > min_len else content_len / (min_len * 2)
-        llm_score = min(1.0, llm_score)
-        details["llm"] = {"approximated": True, "score": round(llm_score, 3)}
-
-        # --- 结构层（0.2）---
-        struct_score = 0.0
-        sd = output.structured_data or {}
-        if sd:
-            struct_score += 0.4  # 有structured_data
-            if "raw" in sd:
-                struct_score += 0.2  # 有原始内容备份
-            # 检查关键子字段
-            expected_keys = {
-                "§0": ["story_direction", "raw"],
-                "§1": ["character_cards", "raw"],
-                "§2": ["risk_level", "raw"],
-                "§3": ["beat_table", "episode_outlines", "raw"],
-                "§4": ["dialogue_corpus", "raw"],
-                "§5": ["episode_scripts", "raw"],
-                "§8": ["raw"],
-                "§13": ["visual_scheme", "raw"],
-            }
-            keys = expected_keys.get(expert_id, ["raw"])
-            key_hit = sum(1 for k in keys if k in sd)
-            struct_score += 0.4 * (key_hit / max(len(keys), 1))
-        else:
-            # 没有structured_data但有content，给部分分
-            struct_score = 0.2 if content else 0.0
-        struct_score = min(1.0, struct_score)
-        details["structure"] = {
-            "has_structured_data": bool(sd),
-            "keys_present": list(sd.keys()) if sd else [],
-            "score": round(struct_score, 3),
-        }
-
-        # --- 加权总分 ---
-        total = rule_score * 0.3 + llm_score * 0.5 + struct_score * 0.2
-
-        return QualityScore(
-            rule_score=rule_score,
-            llm_score=llm_score,
-            structure_score=struct_score,
-            total=total,
-            details=details,
-        )
-
-    # ============================================================
-    # 返工回滚机制
-    # ============================================================
-
-    def run_with_rollback(
-        self,
-        step_index: int,
-        context: ExpertContext,
-        max_retries: int = MAX_REVISIONS,
-        **kwargs,
-    ) -> Tuple[ExpertOutput, QualityScore]:
-        """执行专家步骤，质量不达标时回滚重试
-
-        流程：
-        1. 保存当前context快照
-        2. 执行专家
-        3. 计算质量分
-        4. 若低于阈值，恢复快照并重试（最多max_retries次）
-        5. 返回最终输出和质量分
-
-        返回：(output, quality_score)
-        """
-        expert_id = self.expert_sequence[step_index]
-        best_output = None
-        best_score = None
-        context_snapshot = copy.deepcopy(context)
-
-        for attempt in range(max_retries + 1):
-            output = self._execute_step(step_index, context, **kwargs)
-            score = self._calc_quality_score(expert_id, output, context)
-
-            if best_score is None or score.total > best_score.total:
-                best_output = output
-                best_score = score
-
-            # 质量达标，直接返回
-            if score.total >= QUALITY_THRESHOLD or not self.enable_rollback:
-                if attempt > 0 and self.state:
-                    self.state.rollback_history.append({
-                        "expert_id": expert_id,
-                        "attempts": attempt + 1,
-                        "final_score": score.to_dict(),
-                        "timestamp": datetime.now().isoformat(),
-                    })
-                return output, score
-
-            # 质量不达标，回滚重试
-            if attempt < max_retries:
-                # 恢复context
-                for attr in ["story_direction", "story_premise", "project_config",
-                             "character_cards", "dialogue_corpus", "beat_table",
-                             "episode_outlines", "visual_scheme", "risk_level", "risk_warnings"]:
-                    setattr(context, attr, getattr(context_snapshot, attr))
-
-                self._trigger_callback("on_step_rollback", expert_id, attempt + 1, score)
-
-                if self.state:
-                    self.state.rollback_history.append({
-                        "expert_id": expert_id,
-                        "attempt": attempt + 1,
-                        "score": score.to_dict(),
-                        "action": "retry",
-                        "timestamp": datetime.now().isoformat(),
-                    })
-
-        # 所有重试完成，返回最佳结果
-        return best_output, best_score
-
-    # ============================================================
-    # 专家实例管理
-    # ============================================================
+    def cancel(self, reason: str = "用户取消") -> WorkflowState:
+        """Cooperatively cancel a workflow, preserving all completed outputs."""
+        if not self.state:
+            raise ValueError("工作流尚未初始化")
+        if self.state.status in {WorkflowStatus.COMPLETED, WorkflowStatus.FAILED, WorkflowStatus.CANCELED}:
+            return self.state
+        self._cancel_requested = True
+        self._cancel_reason = reason
+        self.state.status = WorkflowStatus.CANCELED
+        self.state.error_message = reason
+        self.state.updated_at = datetime.now().isoformat()
+        self._save_checkpoint()
+        self._trigger_callback("on_cancelled", self.state, reason)
+        return self.state
 
     def _get_expert_instance(self, expert_id: str) -> Optional[ExpertBase]:
         """获取专家实例（懒加载+缓存）"""
@@ -433,28 +211,25 @@ class Orchestrator:
 
         expert_class = ExpertRegistry.get(expert_id)
         if expert_class:
-            # 尝试注入知识库内容
-            knowledge = self._load_expert_knowledge(expert_id)
             instance = expert_class(
                 llm_client=self.llm_client,
                 knowledge_base_path=self.knowledge_base_path,
-                culture_kb=self.culture_kb,
+                culture_kb=self.culture_kb,  # 注入文化知识库
             )
-            # 如果知识库有内容，注入到实例
-            if knowledge and hasattr(instance, '_system_prompt'):
-                instance._system_prompt = knowledge
             self._expert_instances[expert_id] = instance
             return instance
         return None
 
-    # ============================================================
-    # 工作流执行
-    # ============================================================
-
     def _init_workflow(self, user_input: str, **kwargs) -> WorkflowState:
+        """初始化工作流状态"""
         workflow_id = f"wf_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        story_state = StoryState(
+            project={"name": kwargs.get("project_name", ""), "raw_material": user_input},
+            premise={"mainline": user_input},
+        )
         context = ExpertContext(
             story_direction=user_input,
+            story_state=story_state.to_dict(),
             metadata={
                 "user_input": user_input,
                 "created_at": datetime.now().isoformat(),
@@ -468,6 +243,8 @@ class Orchestrator:
             status=WorkflowStatus.PENDING,
         )
         self.state = state
+        self._revision_count = 0
+        self._repair_cycle_active = False
         return state
 
     def _execute_step(self, step_index: int, context: ExpertContext, **kwargs) -> ExpertOutput:
@@ -483,16 +260,69 @@ class Orchestrator:
                 validation_errors=[f"专家{expert_id}未注册"],
             )
 
+        # 触发回调
         self._trigger_callback("on_step_start", expert_id, step_index, context)
 
         try:
-            # §5分集编剧：使用分批生成逻辑
-            if expert_id == "§5":
-                output = self._execute_episode_batch(expert_instance, context, **kwargs)
-            else:
-                output = expert_instance.execute(context, **kwargs)
+            # 构建专家特定参数
+            expert_kwargs = dict(kwargs)
+            contract = self.expert_state_adapter.contract(expert_id)
+            task = expert_kwargs.pop("task", contract.task)
+            node_ids = expert_kwargs.pop("node_ids", None)
+            include_raw = bool(expert_kwargs.pop("include_raw", False))
+            state = StoryState.from_dict(context.story_state) if context.story_state else StoryState()
+            if expert_id in self.BULK_GENERATION_EXPERTS and not expert_kwargs.pop("bypass_generation_gate", False):
+                gate = self.generation_gate.check(state)
+                if not gate.passed:
+                    return ExpertOutput(
+                        expert_name=expert_id,
+                        content="[前置门禁阻止] 立项或故事发动机未达到正文生成标准",
+                        structured_data={"generation_gate": gate.to_dict()},
+                        validation_passed=False,
+                        validation_errors=[item.message for item in gate.issues],
+                    )
+            if expert_id == "§15" and not expert_kwargs.pop("bypass_signing_gate", False):
+                signing_node = state.nodes.get("SYS-SIGNING-AUDIT")
+                signing_data = signing_node.data if signing_node else {}
+                fresh = signing_data.get("state_fingerprint") == self._signing_fingerprint(state)
+                if not signing_data.get("release_ready", False) or not fresh:
+                    return ExpertOutput(
+                        expert_name=expert_id,
+                        content="[签约门禁阻止] 项目尚未通过第五期硬门槛",
+                        structured_data={"signing_gate": {**signing_data, "passed": False, "fresh": fresh, "reason": "missing_or_stale_release_audit"}},
+                        validation_passed=False,
+                        validation_errors=["前3集、同质化、平台、成本、故事发动机及观众体验必须全部通过"],
+                    )
+            if expert_id == "§9":
+                audience_audit = self.audience_tracker.audit(state)
+                repair_plans = self.repair_planner.build(state, audience_audit)
+                if node_ids is None:
+                    node_ids = sorted({plan["target"] for plan in repair_plans})
+                    if "ART-AUDIT" in state.nodes:
+                        node_ids.append("ART-AUDIT")
+                expert_kwargs["revision_focus"] = json.dumps(
+                    {"audience_audit": audience_audit.to_dict(), "repair_plans": repair_plans},
+                    ensure_ascii=False,
+                )
+            selected_ids = self.expert_state_adapter.node_ids_for(state, expert_id, node_ids)
+            context.task_context = self.context_selector.build(state, task, selected_ids, include_raw)
+            expert_kwargs["_token_budgeter"] = self.token_budgeter
+            expert_kwargs["_token_budget"] = self.token_budget
+            
+            # §9 改稿编辑需要§7审计报告
+            if expert_id == "§9":
+                if "§7" in self.state.step_outputs:
+                    expert_kwargs["audit_report"] = self.state.step_outputs["§7"].content
+                    expert_kwargs["iteration_round"] = self._revision_count + 1
 
+            output = expert_instance.execute(context, **expert_kwargs)
+
+            # 自动更新context
             self._update_context_from_output(expert_id, output, context)
+            self.expert_state_adapter.write(state, expert_id, output)
+            context.story_state = state.to_dict()
+
+            # 触发回调
             self._trigger_callback("on_step_complete", expert_id, step_index, output)
 
             return output
@@ -507,178 +337,463 @@ class Orchestrator:
             self._trigger_callback("on_step_error", expert_id, step_index, e)
             return error_output
 
-    def _execute_episode_batch(self, expert, context: ExpertContext, **kwargs) -> ExpertOutput:
-        """
-        §5分集编剧分批生成：每次5集，循环生成完整分场剧本。
-        每批传入前文内容以保持风格连贯。
-        """
-        total_episodes = 30
-        if context.project_config:
-            ep_val = context.project_config.get("episodes") or context.project_config.get("total_episodes")
-            if ep_val:
-                try:
-                    total_episodes = int(ep_val)
-                except (ValueError, TypeError):
-                    pass
+    @staticmethod
+    def _task_for_expert(expert_id: str) -> str:
+        if expert_id in {"§0", "§2", "§8"}:
+            return "ideation"
+        if expert_id in {"§1", "§3", "§4"}:
+            return "outline"
+        if expert_id in {"§11", "§6"}:
+            return "scene"
+        if expert_id == "§9":
+            return "patch"
+        return "audit"
 
-        batch_size = 5
-        all_content = []
+    def apply_patch(self, patch: StoryPatch) -> Dict:
+        """Apply a local change and return its exact downstream impact."""
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        context = self.state.context_snapshot
+        story_state = StoryState.from_dict(context.story_state)
+        record = self.patch_engine.apply(story_state, patch)
+        context.story_state = story_state.to_dict()
+        self._save_checkpoint()
+        return asdict(record)
 
-        for batch_start in range(1, total_episodes + 1, batch_size):
-            batch_end = min(batch_start + batch_size - 1, total_episodes)
-            episodes = list(range(batch_start, batch_end + 1))
+    def assess_project(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist a commissioning assessment and its evidence-backed gate result."""
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        result = ProjectEvaluator().evaluate(proposal)
+        state.premise["assessment"] = dict(proposal)
+        payload = {"proposal": dict(proposal), "gate": result.to_dict()}
+        self._upsert_system_node(state, "SYS-ASSESSMENT", "project_assessment", payload)
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return result.to_dict()
 
-            print(f"  [§5] 生成第{batch_start}-{batch_end}集剧本...")
+    def configure_story_engine(self, engine: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist and validate the long-running story mechanism."""
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        result = StoryEngineValidator().validate(engine)
+        state.engine = dict(engine)
+        self._upsert_system_node(state, "SYS-STORY-ENGINE", "story_engine", {"engine": dict(engine), "gate": result.to_dict()})
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return result.to_dict()
 
-            prev_content = "\n".join(all_content[-2000:]) if all_content else ""
+    def check_generation_gate(self) -> Dict[str, Any]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        state = StoryState.from_dict(self.state.context_snapshot.story_state)
+        return self.generation_gate.check(state).to_dict()
 
-            output = expert.execute(
-                context,
-                target_episodes=episodes,
-                previous_content=prev_content,
-                max_tokens=16000,
-            )
-            all_content.append(output.content)
-            print(f"  [§5] 第{batch_start}-{batch_end}集完成，字数约{len(output.content)}")
+    def auto_develop_project(self, idea: Optional[str] = None, project: Optional[Dict[str, Any]] = None,
+                             max_attempts: int = 3) -> Dict[str, Any]:
+        """Assess and build the engine; never proceeds to body generation."""
+        if not self.state:
+            if not idea:
+                raise ValueError("首次开发必须提供idea")
+            self._init_workflow(idea, project_name=(project or {}).get("name", ""))
+        context = self.state.context_snapshot
+        actual_idea = idea or context.story_direction
+        service = ProjectDevelopmentService(self.llm_client or self._get_expert_instance("§0").llm_client, max_attempts)
+        result = service.develop(actual_idea, project)
+        context.story_direction = result.developed_idea
+        self.assess_project(result.assessment)
+        if result.engine is not None:
+            self.configure_story_engine(result.engine)
+        return result.to_dict()
 
-        combined_content = "\n\n".join(all_content)
-        print(f"  [§5] 全部{total_episodes}集剧本生成完成，总字数约{len(combined_content)}")
+    def record_audience_experience(self, episode_id: int, node_id: str,
+                                   scores: Dict[str, float], evidence: Dict[str, str],
+                                   signals: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        self.audience_tracker.record(state, episode_id, node_id, scores, evidence, signals)
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return self.audience_tracker.audit(state).to_dict()
 
-        return ExpertOutput(
-            expert_name="§5",
-            content=combined_content,
-            structured_data={"episode_scripts": {"raw": combined_content}, "raw": combined_content},
-            validation_passed=True,
-        )
+    def audit_audience_experience(self) -> Dict[str, Any]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        audit = self.audience_tracker.audit(state)
+        self._upsert_system_node(state, "SYS-AUDIENCE-AUDIT", "audience_audit", audit.to_dict())
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return audit.to_dict()
+
+    def auto_audit_audience_experience(self, node_ids: List[str]) -> Dict[str, Any]:
+        """Use the configured model to score only explicit existing nodes."""
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        client = self.llm_client or self._get_expert_instance("§7").llm_client
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        audit = AudienceAuditService(client).audit_nodes(state, node_ids)
+        self._upsert_system_node(state, "SYS-AUDIENCE-AUDIT", "audience_audit", audit.to_dict())
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return audit.to_dict()
+
+    def build_quality_repair_plan(self) -> List[Dict[str, Any]]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        state = StoryState.from_dict(self.state.context_snapshot.story_state)
+        return self.repair_planner.build(state, self.audience_tracker.audit(state))
+
+    def apply_quality_repair(self, issue_id: str, changes: Dict[str, Any]) -> Dict[str, Any]:
+        plans = self.build_quality_repair_plan()
+        plan = next((item for item in plans if item["issue_id"] == issue_id), None)
+        if not plan:
+            raise KeyError(f"未找到可修复问题: {issue_id}")
+        record = self.apply_patch(self.repair_planner.to_patch(plan, changes))
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        for points in state.audience_curves.values():
+            points[:] = [point for point in points if point.get("node_id") != plan["target"]]
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        record["requires_reaudit"] = True
+        record["invalidated_node"] = plan["target"]
+        return record
+
+    def auto_repair_quality_issue(self, issue_id: str, reaudit: bool = True) -> Dict[str, Any]:
+        """Generate and apply one node-scoped patch, then require fresh evidence."""
+        plans = self.build_quality_repair_plan()
+        plan = next((item for item in plans if item["issue_id"] == issue_id), None)
+        if not plan:
+            raise KeyError(f"未找到可修复问题: {issue_id}")
+        state = StoryState.from_dict(self.state.context_snapshot.story_state)
+        client = self.llm_client or self._get_expert_instance("§9").llm_client
+        changes = AudienceAuditService(client).propose_repair(state, plan)
+        patch_record = self.apply_quality_repair(issue_id, changes)
+        result = {"patch": patch_record, "changes": changes, "reaudit": None}
+        if reaudit:
+            result["reaudit"] = self.auto_audit_audience_experience([plan["target"]])
+        return result
+
+    def upsert_episode(self, episode_id: int, data: Dict[str, Any], depends_on: Optional[List[str]] = None) -> Dict[str, Any]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        if episode_id < 1:
+            raise ValueError("episode_id 必须大于0")
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        node_id = f"E{episode_id:02}"
+        payload = dict(data)
+        payload["episode_id"] = episode_id
+        if node_id in state.nodes:
+            state.nodes[node_id].data = payload
+            state.nodes[node_id].version += 1
+        else:
+            state.add_node(StoryNode(node_id, "episode", payload, depends_on or []))
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return state.nodes[node_id].data
+
+    def run_signing_audit(self, platform: str, corpus: List[Dict[str, str]],
+                          cost_limits: Dict[str, int],
+                          platform_profile: Optional[Dict[str, Any]] = None,
+                          narrative_quality: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        context = self.state.context_snapshot
+        state = StoryState.from_dict(context.story_state)
+        commercial = self.signing_gate.audit(state, platform, corpus, cost_limits, platform_profile).to_dict()
+        development = self.generation_gate.check(state).to_dict()
+        audience = self.audience_tracker.audit(state).to_dict()
+        hard_failures = list(commercial["hard_failures"])
+        if not development["passed"]:
+            hard_failures.append("development")
+        if not audience["passed"]:
+            hard_failures.append("audience_experience")
+        narrative_gate = (narrative_quality or {}).get("gate")
+        if narrative_gate and not narrative_gate.get("passed", False):
+            hard_failures.append("narrative_quality")
+        result = {
+            "passed": commercial["passed"] and development["passed"] and audience["passed"] and (not narrative_gate or narrative_gate.get("passed", False)),
+            "release_ready": commercial["passed"] and development["passed"] and audience["passed"] and bool(narrative_gate and narrative_gate.get("passed", False)),
+            "score": round((commercial["score"] + development["score"] * 100 + audience["average"] * 10) / 3, 1),
+            "hard_failures": hard_failures,
+            "commercial": commercial,
+            "development": development,
+            "audience_experience": audience,
+            "narrative_quality": narrative_quality,
+            "state_fingerprint": self._signing_fingerprint(state),
+        }
+        self._upsert_system_node(state, "SYS-SIGNING-AUDIT", "signing_audit", result)
+        context.story_state = state.to_dict()
+        self._save_checkpoint()
+        return result
+
+    def auto_run_signing_audit(self, platform: str, corpus: List[Dict[str, str]],
+                               cost_limits: Dict[str, int],
+                               platform_profile: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        if not self.state or not self.state.context_snapshot:
+            raise RuntimeError("工作流尚未初始化")
+        state = StoryState.from_dict(self.state.context_snapshot.story_state)
+        client = self.llm_client or self._get_expert_instance("§15").llm_client
+        narrative = SigningQualityService(client).assess(state)
+        return self.run_signing_audit(platform, corpus, cost_limits, platform_profile, narrative)
+
+    @staticmethod
+    def _signing_fingerprint(state: StoryState) -> str:
+        nodes = {node_id: {"kind": node.kind, "data": node.data, "version": node.version}
+                 for node_id, node in sorted(state.nodes.items())
+                 if node_id != "SYS-SIGNING-AUDIT"}
+        payload = {"project": state.project, "premise": state.premise, "engine": state.engine,
+                   "audience_curves": state.audience_curves, "nodes": nodes}
+        encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def run_acceptance_benchmark(self, baseline_tokens: int, v3_tokens: int,
+                                 relevant_text_chars: int, regenerated_chars: int,
+                                 evidence: str = "estimated") -> Dict[str, Any]:
+        result = self.acceptance_benchmark.evaluate(
+            baseline_tokens, v3_tokens, relevant_text_chars, regenerated_chars, evidence
+        ).to_dict()
+        if self.state and self.state.context_snapshot:
+            context = self.state.context_snapshot
+            state = StoryState.from_dict(context.story_state)
+            self._upsert_system_node(state, "SYS-ACCEPTANCE-BENCHMARK", "acceptance_benchmark", result)
+            context.story_state = state.to_dict()
+            self._save_checkpoint()
+        return result
+
+    def get_token_usage_report(self) -> Dict[str, Any]:
+        if not self.state:
+            return self.token_usage_ledger.summarize([])
+        return self.token_usage_ledger.summarize(self.state.step_outputs.values())
+
+    @staticmethod
+    def _upsert_system_node(state: StoryState, node_id: str, kind: str, data: Dict[str, Any]) -> None:
+        if node_id in state.nodes:
+            state.nodes[node_id].data = data
+            state.nodes[node_id].version += 1
+        else:
+            state.add_node(StoryNode(node_id, kind, data))
 
     def _update_context_from_output(self, expert_id: str, output: ExpertOutput, context: ExpertContext):
         """从专家输出更新context"""
+        # §0 灵魂捕手输出
         if expert_id == "§0":
-            sd = {}
-            if "故事方向：" in output.content or "故事方向:" in output.content:
+            if "故事方向：" in output.content:
+                import re
                 dir_match = re.search(r'故事方向[：:]\s*(.+)', output.content)
                 if dir_match:
-                    sd["story_direction"] = dir_match.group(1).strip()
                     context.story_direction = dir_match.group(1).strip()
-                    if not context.story_premise:
-                        context.story_premise = dir_match.group(1).strip()
-            if "一句话前提：" in output.content or "一句话前提:" in output.content:
+            if "一句话前提：" in output.content:
+                import re
                 prem_match = re.search(r'一句话前提[：:]\s*(.+)', output.content)
                 if prem_match:
-                    sd["story_premise"] = prem_match.group(1).strip()
                     context.story_premise = prem_match.group(1).strip()
-            if "推荐类型：" in output.content or "推荐类型:" in output.content:
+            if "推荐类型：" in output.content:
+                import re
                 type_match = re.search(r'推荐类型[：:]\s*(.+)', output.content)
                 if type_match:
-                    sd["drama_type"] = type_match.group(1).strip()
                     if not context.project_config:
                         context.project_config = {}
                     context.project_config["drama_type"] = type_match.group(1).strip()
-            sd["raw"] = output.content
-            output.structured_data = sd
 
+        # §2 合规守门员输出
         elif expert_id == "§2":
             context.risk_level = self._parse_risk_level(output.content)
             context.risk_warnings = self._parse_warnings(output.content)
-            output.structured_data = {
-                "risk_level": context.risk_level,
-                "risk_warnings": context.risk_warnings,
-                "raw": output.content,
-            }
 
+        # §8 项目配置师输出
         elif expert_id == "§8":
             if "project_config" not in context.metadata:
                 context.metadata["project_config"] = {}
             context.metadata["project_config"]["raw"] = output.content
-            sd = {"raw": output.content}
-            if not context.story_premise:
-                prem_match = re.search(r'一句话前提[：:]\s*(.+)', output.content)
-                if prem_match:
-                    context.story_premise = prem_match.group(1).strip()
-                    sd["story_premise"] = context.story_premise
-                else:
-                    overview_match = re.search(r'(?:项目概述|故事概述|核心前提)[：:]\s*(.+)', output.content)
-                    if overview_match:
-                        context.story_premise = overview_match.group(1).strip()
-                        sd["story_premise"] = context.story_premise
-            for key, patterns in {
-                "title": [r'剧名[：:]\s*(.+)'],
-                "episodes": [r'集数[：:]\s*(\d+)', r'(\d+)\s*集'],
-                "genre": [r'类型[：:]\s*(.+)'],
-            }.items():
-                for p in patterns:
-                    m = re.search(p, output.content)
-                    if m:
-                        sd[key] = m.group(1).strip()
-                        break
-            output.structured_data = sd
 
+        # §1 角色铸造师输出
         elif expert_id == "§1":
             cards = self._parse_character_cards(output.content)
             context.character_cards = cards
-            if not context.metadata.get("step_outputs"):
-                context.metadata["step_outputs"] = {}
-            context.metadata["step_outputs"]["§1"] = {"content": output.content}
-            output.structured_data = {
-                "character_cards": cards,
-                "character_count": len(cards),
-                "raw": output.content,
-            }
 
+        # §4 对白大师输出
         elif expert_id == "§4":
             context.dialogue_corpus = {"raw": output.content}
-            output.structured_data = {
-                "dialogue_corpus": {"raw": output.content},
-                "raw": output.content,
-            }
 
+        # §3 结构建筑师输出
         elif expert_id == "§3":
             beats = self._parse_beats(output.content)
             outlines = self._parse_outlines(output.content, context.project_config.get("total_episodes", 30) if context.project_config else 30)
             context.beat_table = beats
             context.episode_outlines = outlines
-            if not context.metadata.get("step_outputs"):
-                context.metadata["step_outputs"] = {}
-            context.metadata["step_outputs"]["§3"] = {"content": output.content}
-            output.structured_data = {
-                "beat_table": beats,
-                "episode_outlines": outlines,
-                "beat_count": len(beats),
-                "outline_count": len(outlines),
-                "raw": output.content,
-            }
 
-        elif expert_id == "§5":
-            if "episode_scripts" not in context.metadata:
-                context.metadata["episode_scripts"] = {}
-            context.metadata["episode_scripts"]["raw"] = output.content
-            output.structured_data = {
-                "episode_scripts": {"raw": output.content},
-                "raw": output.content,
-            }
-
+        # §13 视觉导演输出
         elif expert_id == "§13":
             context.visual_scheme = {"raw": output.content}
-            output.structured_data = {
-                "visual_scheme": {"raw": output.content},
-                "raw": output.content,
-            }
 
-    # ============================================================
-    # 解析工具方法
-    # ============================================================
+        # §6 格式工匠输出
+        elif expert_id == "§6":
+            context.metadata["format_report"] = output.content
+
+        # §7 质量审计输出
+        elif expert_id == "§7":
+            context.metadata["quality_audit"] = output.content
+
+        # §9 改稿编辑输出
+        elif expert_id == "§9":
+            context.metadata["revision_report"] = output.content
+
+        # §11 场景工匠输出
+        elif expert_id == "§11":
+            context.metadata["scene_design"] = output.content
+
+        # §14 商业操盘输出
+        elif expert_id == "§14":
+            context.metadata["business_report"] = output.content
+
+        # §15 品控总监输出
+        elif expert_id == "§15":
+            context.metadata["final_verdict"] = output.content
+
+    def _check_quality_gate(self, expert_id: str, output: ExpertOutput) -> Dict:
+        """检查质量门禁"""
+        supervision = output.structured_data.get("collaboration_supervision")
+        if supervision and supervision.get("action") == "escalate":
+            result = {
+                "passed": False,
+                "action": "pause",
+                "reason": supervision.get("reason", "监督层要求人工处理"),
+                "details": supervision,
+            }
+            self._trigger_callback("on_quality_gate", expert_id, result)
+            return result
+        generation_gate = output.structured_data.get("generation_gate")
+        if generation_gate and not generation_gate.get("passed", False):
+            result = {
+                "passed": False,
+                "action": "pause",
+                "reason": "正文生成前置门禁未通过",
+                "details": generation_gate,
+            }
+            self._trigger_callback("on_quality_gate", expert_id, result)
+            return result
+        signing_gate = output.structured_data.get("signing_gate")
+        if signing_gate and not signing_gate.get("passed", False):
+            result = {"passed": False, "action": "pause", "reason": "签约硬门禁未通过", "details": signing_gate}
+            self._trigger_callback("on_quality_gate", expert_id, result)
+            return result
+        if expert_id not in self.QUALITY_GATES:
+            return {"passed": True}
+
+        gate = self.QUALITY_GATES[expert_id]
+        result = {"passed": True, "gate": gate}
+
+        if expert_id == "§2":
+            risk = self._parse_risk_level(output.content)
+            if risk == "red":
+                result["passed"] = False
+                result["action"] = "pause"
+                result["reason"] = "合规风险🔴，需人工确认"
+
+        elif expert_id == "§7":
+            if self.state and self.state.context_snapshot:
+                state = StoryState.from_dict(self.state.context_snapshot.story_state)
+                audience_audit = self.audience_tracker.audit(state)
+                output.structured_data["audience_audit"] = audience_audit.to_dict()
+                if not audience_audit.passed:
+                    result["passed"] = False
+                    result["action"] = "loop_to_§9"
+                    result["reason"] = f"观众体验审计发现{len(audience_audit.issues)}个具体问题"
+            import re
+            score_match = re.search(r'加权总分.*?(\d+\.?\d*)', output.content)
+            if score_match:
+                total_score = float(score_match.group(1))
+                if total_score < 6.0:
+                    result["passed"] = False
+                    result["action"] = "loop_to_§9"
+                    result["reason"] = f"质量总分{total_score}低于6.0，触发改稿循环"
+
+        elif expert_id == "§15":
+            if "D级" in output.content:
+                result["passed"] = False
+                result["action"] = "terminate"
+                result["reason"] = "品控总监D级否决"
+            elif "C级" in output.content:
+                result["passed"] = False
+                result["action"] = "rollback"
+                result["reason"] = "品控总监C级打回，需大幅修改"
+
+        self._trigger_callback("on_quality_gate", expert_id, result)
+        return result
+
+    def _ensure_collaboration_plan(self, state: WorkflowState) -> None:
+        """Create one inspectable decision-layer plan for the workflow."""
+        if not self.enable_agent_collaboration:
+            return
+        if self.collaboration.plan:
+            state.collaboration_trace = self.collaboration.to_dict()
+            return
+        context = state.context_snapshot or ExpertContext()
+        plan = self.collaboration.build_plan(
+            context.story_direction,
+            context.project_config,
+            self.expert_sequence,
+            self.SEQUENCE_DESCRIPTIONS,
+        )
+        state.collaboration_trace = self.collaboration.to_dict()
+        self._trigger_callback("on_decision_plan", plan.to_dict())
+
+    def _execute_with_supervision(self, step_index: int, context: ExpertContext, **kwargs) -> ExpertOutput:
+        """Run one expert and let the supervision layer target only its invalid artifact."""
+        output = self._execute_step(step_index, context, **kwargs)
+        if not self.enable_agent_collaboration:
+            return output
+        expert_id = self.expert_sequence[step_index]
+        # Hard gates are handled after execution; retrying them cannot repair missing prerequisites.
+        if output.structured_data.get("generation_gate") or output.structured_data.get("signing_gate"):
+            return output
+        verdict = self.collaboration.supervise_output(expert_id, output)
+        self._trigger_callback("on_supervision", verdict.to_dict())
+        while verdict.action == "retry_responsible_expert":
+            feedback = {
+                "reason": verdict.reason,
+                "validation_errors": verdict.evidence.get("validation_errors", []),
+                "retry": verdict.retry,
+            }
+            self.collaboration.record(
+                "feedback_dispatch",
+                layer="supervision",
+                target_expert=expert_id,
+                feedback=feedback,
+            )
+            self._trigger_callback("on_feedback", expert_id, feedback)
+            retry_kwargs = dict(kwargs)
+            retry_kwargs["collaboration_feedback"] = json.dumps(feedback, ensure_ascii=False)
+            output = self._execute_step(step_index, context, **retry_kwargs)
+            verdict = self.collaboration.supervise_output(expert_id, output)
+            self._trigger_callback("on_supervision", verdict.to_dict())
+        if verdict.action == "escalate":
+            output.structured_data["collaboration_supervision"] = verdict.to_dict()
+        if self.state:
+            self.state.collaboration_trace = self.collaboration.to_dict()
+        return output
+
+    def _supervise_gate(self, expert_id: str, gate_result: Dict[str, Any]) -> None:
+        if not self.enable_agent_collaboration:
+            return
+        verdict = self.collaboration.supervise_gate(expert_id, gate_result)
+        if self.state:
+            self.state.collaboration_trace = self.collaboration.to_dict()
+        self._trigger_callback("on_supervision", verdict.to_dict())
 
     @staticmethod
     def _parse_risk_level(content: str) -> str:
-        m = re.search(r'风险评级[：:]\s*(.+)', content)
-        if m:
-            line = m.group(1)
-            if "🔴" in line or "红" in line or "red" in line.lower():
-                return "red"
-            if "🟡" in line or "黄" in line or "yellow" in line.lower():
-                return "yellow"
-            if "🟢" in line or "绿" in line or "green" in line.lower():
-                return "green"
         if "🔴" in content:
             return "red"
         elif "🟡" in content:
@@ -688,6 +803,7 @@ class Orchestrator:
     @staticmethod
     def _parse_warnings(content: str) -> List[Dict]:
         warnings = []
+        import re
         lines = content.split('\n')
         for line in lines:
             if '→' in line and any(r in line for r in ['红线', '风险', '禁区']):
@@ -696,80 +812,18 @@ class Orchestrator:
 
     @staticmethod
     def _parse_character_cards(content: str) -> List[Dict]:
-        """
-        宽松的多策略角色卡解析器。
-        策略1: 角色名[：:]xxx
-        策略2: 按 ### 分割
-        策略3: 按 **名字** 模式
-        策略4: 按 ## 大标题分割
-        策略5: 兜底 - 整段内容作为单个角色卡
-        """
+        import re
         cards = []
-
-        # 策略1
         blocks = re.split(r'角色名[：:]', content)
-        if len(blocks) > 1:
-            for block in blocks[1:]:
-                name_match = re.match(r'\s*(\S+)', block)
-                if name_match:
-                    cards.append({"name": name_match.group(1), "raw": block.strip()})
-            if cards:
-                return cards
-
-        # 策略2
-        sections = re.split(r'###\s+', content)
-        if len(sections) > 1:
-            for section in sections[1:]:
-                first_line = section.split('\n')[0].strip()
-                skip_patterns = ['语料库', '角色分析总结', '使用方法', '输出说明', '总结', '附注', '注释']
-                if any(p in first_line for p in skip_patterns):
-                    continue
-                section_content = section.strip()
-                if len(section_content) > 20:
-                    name_match = re.match(r'([^\n（(：:，,]{2,20})', first_line)
-                    if name_match:
-                        name = name_match.group(1).strip().strip('*').strip()
-                        if name and len(name) >= 2:
-                            cards.append({"name": name, "name_line": first_line, "raw": section_content})
-            if cards:
-                return cards
-
-        # 策略3
-        bold_blocks = re.split(r'\*\*([^*]+)\*\*', content)
-        if len(bold_blocks) > 2:
-            for i in range(1, len(bold_blocks), 2):
-                name = bold_blocks[i].strip()
-                if len(name) >= 2 and len(name) <= 15 and i + 1 < len(bold_blocks):
-                    block_content = bold_blocks[i + 1].strip()
-                    if len(block_content) > 20:
-                        cards.append({"name": name, "raw": block_content})
-            if cards:
-                return cards
-
-        # 策略4
-        h2_sections = re.split(r'##\s+', content)
-        if len(h2_sections) > 2:
-            for section in h2_sections[1:]:
-                first_line = section.split('\n')[0].strip()
-                skip_patterns = ['角色', '人物', '总', '附录', '说明', '使用']
-                if any(p in first_line for p in skip_patterns):
-                    continue
-                if len(section.strip()) > 30:
-                    name_match = re.match(r'([^\n（(：:，,]{2,20})', first_line)
-                    if name_match:
-                        name = name_match.group(1).strip().strip('*').strip()
-                        cards.append({"name": name, "name_line": first_line, "raw": section.strip()})
-            if cards:
-                return cards
-
-        # 策略5（兜底）
-        if content.strip():
-            cards.append({"name": "主要角色", "raw": content.strip()})
-
+        for block in blocks[1:]:
+            name_match = re.match(r'\s*(\S+)', block)
+            if name_match:
+                cards.append({"name": name_match.group(1), "raw": block.strip()})
         return cards
 
     @staticmethod
     def _parse_beats(content: str) -> List[Dict]:
+        import re
         beats = []
         beat_nums = re.findall(r'#?\d+[.、]\s*', content)
         for i, _ in enumerate(beat_nums[:15]):
@@ -778,6 +832,7 @@ class Orchestrator:
 
     @staticmethod
     def _parse_outlines(content: str, total_episodes: int = 30) -> List[Dict]:
+        import re
         outlines = []
         ep_pattern = r'【?第?\s*(\d+)\s*集[】:]?\s*(.{10,100})'
         matches = re.findall(ep_pattern, content)
@@ -788,11 +843,8 @@ class Orchestrator:
             })
         return outlines
 
-    # ============================================================
-    # 回调系统
-    # ============================================================
-
     def _trigger_callback(self, event: str, *args):
+        """触发回调"""
         for callback in self._callbacks.get(event, []):
             try:
                 callback(*args)
@@ -800,14 +852,12 @@ class Orchestrator:
                 pass
 
     def on(self, event: str, callback: Callable):
+        """注册回调"""
         if event in self._callbacks:
             self._callbacks[event].append(callback)
 
-    # ============================================================
-    # 断点续传
-    # ============================================================
-
     def _save_checkpoint(self):
+        """保存断点"""
         if not self.enable_checkpoint or not self.state:
             return
         checkpoint_path = os.path.join(self.project_path, f"{self.state.workflow_id}.checkpoint.json")
@@ -821,12 +871,13 @@ class Orchestrator:
                 "completed_steps": self.state.completed_steps,
                 "context": self.state.context_snapshot.to_dict() if self.state.context_snapshot else {},
                 "step_outputs": {k: v.to_dict() for k, v in self.state.step_outputs.items()},
-                "quality_scores": {k: v.to_dict() for k, v in self.state.quality_scores.items()},
-                "rollback_history": self.state.rollback_history,
-                "token_usage": self.state.token_usage,
+                "revision_count": self._revision_count,
+                "repair_cycle_active": self._repair_cycle_active,
+                "collaboration_trace": self.collaboration.to_dict() if self.enable_agent_collaboration else self.state.collaboration_trace,
             }, f, ensure_ascii=False, indent=2)
 
     def _load_checkpoint(self, workflow_id: str) -> Optional[WorkflowState]:
+        """加载断点"""
         checkpoint_path = os.path.join(self.project_path, f"{workflow_id}.checkpoint.json")
         if not os.path.exists(checkpoint_path):
             return None
@@ -834,7 +885,6 @@ class Orchestrator:
             data = json.load(f)
         context = ExpertContext(**data.get("context", {}))
         outputs = {k: ExpertOutput(**v) for k, v in data.get("step_outputs", {}).items()}
-        quality_scores = {k: QualityScore(**v) for k, v in data.get("quality_scores", {}).items()}
         state = WorkflowState(
             workflow_id=data["workflow_id"],
             status=WorkflowStatus(data["status"]),
@@ -843,79 +893,146 @@ class Orchestrator:
             completed_steps=data["completed_steps"],
             context_snapshot=context,
             step_outputs=outputs,
-            quality_scores=quality_scores,
-            rollback_history=data.get("rollback_history", []),
-            token_usage=data.get("token_usage", {"prompt": 0, "completion": 0, "total_requests": 0}),
+            collaboration_trace=data.get("collaboration_trace", {}),
         )
+        self._revision_count = data.get("revision_count", 0)
+        self._repair_cycle_active = bool(data.get("repair_cycle_active", False))
+        if self.enable_agent_collaboration:
+            self.collaboration.restore(data.get("collaboration_trace"))
         return state
 
-    # ============================================================
-    # 主执行入口
-    # ============================================================
-
     def run_full(self, user_input: str, stop_at: Optional[str] = None, **kwargs) -> WorkflowState:
-        """执行完整工作流
-
-        流程：
-        1. 初始化workflow state
-        2. 按序列执行每个专家
-        3. 每步执行后计算质量分（enable_quality_gate=True时）
-        4. 质量不达标时触发回滚重试（enable_rollback=True时）
-        5. 红风险时阻断工作流
-        6. 保存checkpoint
         """
-        state = self._init_workflow(user_input)
+        运行完整工作流
+
+        Args:
+            user_input: 用户初始输入（故事方向）
+            stop_at: 可选，在指定专家处停止
+            **kwargs: 传递给各专家的额外参数
+
+        Returns:
+            WorkflowState: 最终工作流状态
+        """
+        requested_workflow_id = kwargs.pop("workflow_id", None)
+        requested_project_config = kwargs.pop("project_config", None)
+        preserve_state = bool(kwargs.pop("preserve_state", False))
+        # 初始化
+        state = self.state if preserve_state and self.state else self._init_workflow(user_input)
+        if requested_workflow_id:
+            state.workflow_id = requested_workflow_id
+        if requested_project_config:
+            state.context_snapshot.project_config.update(requested_project_config)
         state.status = WorkflowStatus.RUNNING
+        self._ensure_collaboration_plan(state)
 
-        for step_idx, expert_id in enumerate(self.expert_sequence):
-            state.current_step = step_idx
-
-            # 使用回滚机制执行步骤
-            if self.enable_quality_gate:
-                output, score = self.run_with_rollback(step_idx, state.context_snapshot, **kwargs)
-                state.quality_scores[expert_id] = score
-            else:
-                output = self._execute_step(step_idx, state.context_snapshot, **kwargs)
-                score = self._calc_quality_score(expert_id, output, state.context_snapshot)
-                state.quality_scores[expert_id] = score
-
-            state.step_outputs[expert_id] = output
-
-            # 审核验证：失败时最多重试MAX_REVISIONS次
-            if not output.validation_passed:
-                state.failed_validations.append(expert_id)
-                revision_count = state.revision_counts.get(expert_id, 0)
-                if revision_count < MAX_REVISIONS:
-                    state.revision_counts[expert_id] = revision_count + 1
-                    state.status = WorkflowStatus.NEEDS_REVISION
-                    state.updated_at = datetime.now().isoformat()
-                    retry_output = self._execute_step(step_idx, state.context_snapshot, **kwargs)
-                    state.step_outputs[expert_id] = retry_output
-                    output = retry_output
-                    state.status = WorkflowStatus.RUNNING
-
-            state.completed_steps.append(step_idx)
-            self._save_checkpoint()
-
-            # 红风险阻断：暂停工作流
-            if expert_id == "§2" and getattr(state.context_snapshot, "risk_level", None) == "red":
-                state.status = WorkflowStatus.BLOCKED
-                state.blocked_reason = f"§2合规守门员检测到红色风险，工作流已阻断"
-                state.updated_at = datetime.now().isoformat()
+        # 执行序列
+        self._cancel_requested = False
+        self._cancel_reason = None
+        step_idx = 0
+        while step_idx < len(self.expert_sequence):
+            if self._cancel_requested or state.status == WorkflowStatus.CANCELED:
+                state.status = WorkflowStatus.CANCELED
+                state.error_message = self._cancel_reason or "用户取消"
                 self._save_checkpoint()
-                return state
+                break
+            expert_id = self.expert_sequence[step_idx]
 
             if stop_at and expert_id == stop_at:
+                state.current_step = step_idx
                 state.status = WorkflowStatus.PAUSED
-                state.updated_at = datetime.now().isoformat()
-                return state
+                state.error_message = f"human_checkpoint:{expert_id}"
+                self._save_checkpoint()
+                self._trigger_callback("on_checkpoint", expert_id, step_idx, state)
+                break
 
-        state.status = WorkflowStatus.COMPLETED
+            state.current_step = step_idx
+            output = self._execute_with_supervision(step_idx, state.context_snapshot, **kwargs)
+            state.step_outputs[expert_id] = output
+            if step_idx not in state.completed_steps:
+                state.completed_steps.append(step_idx)
+
+            # 质量门禁检查
+            gate_result = self._check_quality_gate(expert_id, output)
+            self._supervise_gate(expert_id, gate_result)
+            if not gate_result.get("passed", True):
+                action = gate_result.get("action", "")
+
+                if action == "pause":
+                    # A blocked generation step has not completed and must be retried after repair.
+                    if gate_result.get("details") and state.completed_steps and state.completed_steps[-1] == step_idx:
+                        state.completed_steps.pop()
+                        state.step_outputs.pop(expert_id, None)
+                    state.status = WorkflowStatus.PAUSED
+                    state.error_message = gate_result.get("reason", "质量门禁未通过")
+                    self._save_checkpoint()
+                    break
+
+                elif action == "loop_to_§9":
+                    # 改稿循环：跳到§9，然后回到§7
+                    if self._revision_count < self._max_revisions:
+                        self._revision_count += 1
+                        self._trigger_callback("on_revision_loop", self._revision_count)
+                        # 找到§9和§7在序列中的位置
+                        if "§9" in self.expert_sequence and "§7" in self.expert_sequence:
+                            idx_9 = self.expert_sequence.index("§9")
+                            if step_idx in state.completed_steps:
+                                state.completed_steps.remove(step_idx)
+                            # 监督层只把问题派给§9；§9完成后由下方逻辑返回§7复审。
+                            self._repair_cycle_active = True
+                            step_idx = idx_9
+                            continue
+                    state.status = WorkflowStatus.PAUSED
+                    state.error_message = f"监督层：已完成{self._revision_count}轮定向返工，仍未通过§7，等待人工决策"
+                    self._save_checkpoint()
+                    self._trigger_callback("on_checkpoint", expert_id, step_idx, state)
+                    break
+
+                elif action == "rollback":
+                    state.status = WorkflowStatus.FAILED
+                    state.error_message = gate_result.get("reason", "品控打回")
+                    break
+
+                elif action == "terminate":
+                    state.status = WorkflowStatus.FAILED
+                    state.error_message = gate_result.get("reason", "品控否决")
+                    break
+
+            # 保存断点
+            self._save_checkpoint()
+
+            if expert_id == "§9" and self._repair_cycle_active and "§7" in self.expert_sequence:
+                idx_7 = self.expert_sequence.index("§7")
+                if idx_7 in state.completed_steps:
+                    state.completed_steps.remove(idx_7)
+                step_idx = idx_7
+                continue
+
+            # 返工后的§7复审通过时跳过重复§9；首次通过仍保留一次常规润色。
+            if expert_id == "§7" and gate_result.get("passed", True) and self._repair_cycle_active and "§9" in self.expert_sequence:
+                self._repair_cycle_active = False
+                step_idx = self.expert_sequence.index("§9") + 1
+                continue
+
+            step_idx += 1
+
+        if state.status == WorkflowStatus.RUNNING and step_idx >= len(self.expert_sequence):
+            state.status = WorkflowStatus.COMPLETED
         state.updated_at = datetime.now().isoformat()
         self._trigger_callback("on_workflow_complete", state)
         return state
 
     def run_step(self, expert_id: str, context: Optional[ExpertContext] = None, **kwargs) -> ExpertOutput:
+        """
+        运行单个专家步骤（用于CLI单步执行）
+
+        Args:
+            expert_id: 专家编号（如"§0"）
+            context: 可选，外部传入的context
+            **kwargs: 传递给专家的参数
+
+        Returns:
+            ExpertOutput: 专家输出
+        """
         if expert_id not in self.expert_sequence:
             return ExpertOutput(
                 expert_name=expert_id,
@@ -926,15 +1043,9 @@ class Orchestrator:
 
         step_idx = self.expert_sequence.index(expert_id)
         working_context = context or (self.state.context_snapshot if self.state else ExpertContext())
+        output = self._execute_step(step_idx, working_context, **kwargs)
 
-        # 使用回滚机制
-        if self.enable_quality_gate:
-            output, score = self.run_with_rollback(step_idx, working_context, **kwargs)
-            if self.state:
-                self.state.quality_scores[expert_id] = score
-        else:
-            output = self._execute_step(step_idx, working_context, **kwargs)
-
+        # 更新本地状态
         if self.state:
             self.state.step_outputs[expert_id] = output
             self.state.context_snapshot = working_context
@@ -942,37 +1053,104 @@ class Orchestrator:
 
         return output
 
-    def resume(self, workflow_id: str) -> WorkflowState:
+    def resume(self, workflow_id: str, stop_at: Optional[str] = None) -> WorkflowState:
+        """从断点恢复工作流"""
         state = self._load_checkpoint(workflow_id)
         if not state:
             raise ValueError(f"未找到断点: {workflow_id}")
+        if state.status == WorkflowStatus.CANCELED:
+            raise ValueError(f"工作流已取消，不能恢复: {workflow_id}")
         self.state = state
+        self.expert_sequence = list(state.expert_sequence)
         state.status = WorkflowStatus.RUNNING
+        self._cancel_requested = False
+        self._cancel_reason = None
+        state.error_message = None
+        self._ensure_collaboration_plan(state)
 
-        for step_idx, expert_id in enumerate(self.expert_sequence):
+        # 从断点继续。使用与首次运行相同的监督/返工语义。
+        reached_end = True
+        step_idx = 0
+        while step_idx < len(self.expert_sequence):
+            if self._cancel_requested or state.status == WorkflowStatus.CANCELED:
+                state.status = WorkflowStatus.CANCELED
+                state.error_message = self._cancel_reason or "用户取消"
+                self._save_checkpoint()
+                reached_end = False
+                break
+            expert_id = self.expert_sequence[step_idx]
             if step_idx in state.completed_steps:
+                step_idx += 1
                 continue
+            if stop_at and expert_id == stop_at:
+                state.current_step = step_idx
+                state.status = WorkflowStatus.PAUSED
+                state.error_message = f"human_checkpoint:{expert_id}"
+                self._save_checkpoint()
+                self._trigger_callback("on_checkpoint", expert_id, step_idx, state)
+                reached_end = False
+                break
             state.current_step = step_idx
-
-            if self.enable_quality_gate:
-                output, score = self.run_with_rollback(step_idx, state.context_snapshot)
-                state.quality_scores[expert_id] = score
-            else:
-                output = self._execute_step(step_idx, state.context_snapshot)
-
+            output = self._execute_with_supervision(step_idx, state.context_snapshot)
             state.step_outputs[expert_id] = output
-            state.completed_steps.append(step_idx)
+            if step_idx not in state.completed_steps:
+                state.completed_steps.append(step_idx)
+            gate_result = self._check_quality_gate(expert_id, output)
+            self._supervise_gate(expert_id, gate_result)
+            if not gate_result.get("passed", True):
+                action = gate_result.get("action", "")
+                if action == "pause":
+                    if gate_result.get("details") and step_idx in state.completed_steps:
+                        state.completed_steps.remove(step_idx)
+                        state.step_outputs.pop(expert_id, None)
+                    state.status = WorkflowStatus.PAUSED
+                    state.error_message = gate_result.get("reason", "质量门禁未通过")
+                    self._save_checkpoint()
+                    reached_end = False
+                    break
+                if action == "loop_to_§9" and self._revision_count < self._max_revisions:
+                    self._revision_count += 1
+                    self._trigger_callback("on_revision_loop", self._revision_count)
+                    if "§9" in self.expert_sequence:
+                        if step_idx in state.completed_steps:
+                            state.completed_steps.remove(step_idx)
+                        self._repair_cycle_active = True
+                        step_idx = self.expert_sequence.index("§9")
+                        continue
+                if action == "loop_to_§9":
+                    state.status = WorkflowStatus.PAUSED
+                    state.error_message = f"监督层：已完成{self._revision_count}轮定向返工，仍未通过§7，等待人工决策"
+                    self._save_checkpoint()
+                    self._trigger_callback("on_checkpoint", expert_id, step_idx, state)
+                    reached_end = False
+                    break
+                if action in {"rollback", "terminate"}:
+                    state.status = WorkflowStatus.FAILED
+                    state.error_message = gate_result.get("reason", "监督层终止工作流")
+                    reached_end = False
+                    break
             self._save_checkpoint()
 
-        state.status = WorkflowStatus.COMPLETED
+            if expert_id == "§9" and self._repair_cycle_active and "§7" in self.expert_sequence:
+                idx_7 = self.expert_sequence.index("§7")
+                if idx_7 in state.completed_steps:
+                    state.completed_steps.remove(idx_7)
+                step_idx = idx_7
+                continue
+            if expert_id == "§7" and gate_result.get("passed", True) and self._repair_cycle_active and "§9" in self.expert_sequence:
+                self._repair_cycle_active = False
+                step_idx = self.expert_sequence.index("§9") + 1
+                continue
+            step_idx += 1
+
+        if reached_end and state.status == WorkflowStatus.RUNNING:
+            state.status = WorkflowStatus.COMPLETED
         state.updated_at = datetime.now().isoformat()
+        self._save_checkpoint()
         return state
 
-    # ============================================================
-    # 状态查询
-    # ============================================================
-
     def get_progress(self) -> Dict:
+        """获取当前进度"""
         if not self.state:
             return {"status": "not_started"}
         return {
@@ -983,30 +1161,34 @@ class Orchestrator:
             "current_expert": self.expert_sequence[self.state.current_step] if self.state.current_step < len(self.expert_sequence) else None,
             "completed_experts": [self.expert_sequence[i] for i in self.state.completed_steps],
             "completed_count": len(self.state.completed_steps),
-            "quality_scores": {k: v.to_dict() for k, v in self.state.quality_scores.items()},
-            "rollback_count": len(self.state.rollback_history),
-            "token_usage": dict(self.state.token_usage),
+            "revision_count": self._revision_count,
+            "collaboration": self.collaboration.to_dict() if self.enable_agent_collaboration else self.state.collaboration_trace,
         }
 
     def list_available_experts(self) -> List[Dict]:
+        """列出所有可用的专家"""
         experts = []
         for expert_id, desc in self.SEQUENCE_DESCRIPTIONS.items():
             name = desc.split("：")[1] if "：" in desc else expert_id
-            knowledge = self._load_expert_knowledge(expert_id)
             experts.append({
                 "id": expert_id,
                 "name": name,
                 "description": desc,
                 "in_sequence": expert_id in self.expert_sequence,
-                "has_knowledge_file": knowledge is not None,
-                "knowledge_size": len(knowledge) if knowledge else 0,
             })
         return experts
 
 
+# 快捷工厂函数
 def create_default_orchestrator(**kwargs) -> Orchestrator:
-    """创建默认配置的工作流编排器"""
+    """创建默认配置的工作流编排器（MVP 7步）"""
     return Orchestrator(**kwargs)
 
 
-__all__ = ["Orchestrator", "WorkflowState", "WorkflowStatus", "QualityScore"]
+def create_full_orchestrator(**kwargs) -> Orchestrator:
+    """创建完整15专家的工作流编排器（Wave2扩展）"""
+    kwargs["use_full_sequence"] = True
+    return Orchestrator(**kwargs)
+
+
+__all__ = ["Orchestrator", "WorkflowState", "WorkflowStatus"]

@@ -1,300 +1,175 @@
 """
-§9 改稿编辑（Revision Editor）
+§9 改稿编辑专家
 
-职责：基于§7质量审计报告的低分维度，针对性修改剧本
-执行"评估-改稿-再评估"迭代循环，直到所有维度达到7.0分以上
-最多3轮迭代，每轮聚焦最严重的3个问题
-保留原有文风和角色语感，记录变更日志
+职责：基于质量审计评分的自动改稿迭代循环
+根据§7质量审计的改进建议，对剧本进行针对性修改
 
-基于 Wave2 架构设计
+基于WAVE2开发计划 + 精品短剧改稿方法论
 """
 
-import re
-import json
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class RevisionEditorInput(BaseInput):
-    """改稿编辑专家的输入"""
-    problem_content: str = ""  # 问题内容
-    revision_notes: List[Dict] = field(default_factory=list)  # 修改意见
-    quality_report: Dict[str, Any] = field(default_factory=dict)  # 质量报告
-    revision_round: int = 0  # 改稿轮次
-
-
-@dataclass
-class RevisionEditorOutput(BaseOutput):
-    """改稿编辑专家的输出"""
-    revised_content: str = ""  # 修正后内容
-    change_log: List[Dict] = field(default_factory=list)  # 变更日志
-    issues_fixed: List[str] = field(default_factory=list)  # 已修复问题
-    remaining_issues: List[str] = field(default_factory=list)  # 残留问题
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class RevisionEditorExpert(ExpertBase):
-    """§9 改稿编辑"""
+    """§9 改稿编辑专家"""
     expert_id = "§9"
     expert_name = "revision_editor"
     prompt_file = "revision_editor.md"
 
     def get_system_prompt(self) -> str:
-        return """你是一位剧本改稿专家，代号§9改稿编辑。
+        return """你是一位专精剧本改稿的资深编辑，代号§9改稿编辑。
 
-你的核心能力：基于质量审计报告，针对性修改剧本。执行"评估-改稿-再评估"迭代循环。
+你的核心能力：基于质量审计的评分和建议，对剧本进行精准、针对性的修改迭代。
 
-【改稿优先级矩阵】
-- P0 必修：逻辑漏洞、角色行为矛盾、情节断裂
-- P1 重要：对白平淡、节奏拖沓、场景描写不足
-- P2 优化：视觉细节、情绪铺垫、悬念加强
+【改稿核心原则】
+1. 改稿不是重写：保留原文中好的部分，只改需要改的
+2. 改稿有优先级：先改硬伤（逻辑/人设/红线），再改软伤（对白/节奏/留白）
+3. 改稿有边界：每轮只聚焦1-2个维度，不能一次改所有东西
+4. 改稿要可验证：改完再跑§7评分，分数必须提升
 
-【改稿手法库】
-1. 对白强化：增加角色个性化表达，去模板化
-2. 节奏调整：删减冗余场景，合并可合并的段落
-3. 张力提升：在薄弱集增加钩子/悬念/反转
-4. 视觉补强：为纯文字叙述补充镜头语言和动作细节
-5. 角色补全：为消失的配角补充存在感和支线
+【改稿优先级体系】
+| 优先级 | 类型 | 示例 |
+| P0 | 逻辑硬伤 | 因果断裂、人设矛盾、情节漏洞 |
+| P1 | 合规红线 | 触及六大红线的内容 |
+| P2 | 人物弧光 | 弧光跳跃、驱动力模糊 |
+| P3 | 结构节奏 | 节拍偏移、钩子缺失 |
+| P4 | 对白质量 | 说明性对白、千人一面 |
+| P5 | 情感力度 | 情绪跳跃、空洞抒情 |
+| P6 | 细节打磨 | 用词精准度、意象统一 |
 
-【改稿铁律】
-1. 只改低分部分，不动高分内容
-2. 保留原有文风和角色语感
-3. 每次修改必须记录 before → after + 修改原因
-4. 最多3轮迭代，每轮聚焦最严重的3个问题
-5. 改完自检：修改是否引入了新问题
+【改稿方法论】
+
+一、人物修复法
+- 面具层修复：补充公共自我细节，让人物更立体
+- 隐私层修复：增加亲密关系场景，暴露私人自我
+- 内核层修复：设计极限压力场景，逼出核心自我
+- 弧光修复：检查每个转折是否有前置铺垫，补充"不得不"的压力
+
+二、结构修复法
+- 节拍偏移修复：将偏离的节拍拉回15节拍表的标准位置
+- 钩子修复：为缺失钩子的集添加追更断点
+- 节奏修复：按0-30秒-转折-闭环-钩子公式调整单集节奏
+
+三、对白修复法
+- 说明性对白→行动性对白（角色不是在说话，是在用语言做事）
+- 千人一面→角色区分（换人测试）
+- 无潜文本→冰山模型（嘴上说的和心里想的不一样）
+- 文艺腔→生活化（砍掉不自然的书面语）
+
+四、情感修复法
+- 情绪递进：检查是否有跳跃，补充过渡
+- 共情点：检查是否精准触发，补充细节
+- 留白：检查是否过度解释，删除多余说明
+
+【迭代循环机制】
+1. §7评分 → 识别最低分维度
+2. §9改稿 → 针对最低分维度修改
+3. §7再评分 → 验证分数是否提升
+4. 如果提升：进入下一个最低分维度
+5. 如果未提升：调整改稿策略，重新改
+6. 循环直到总分达到A级以上或迭代次数上限（3轮）
 
 【输出格式】
+```
+【改稿报告 v{版本号}】
 
-## 第X轮改稿报告
+本轮聚焦维度：[§7建议的改稿维度]
+改稿范围：第X集-第Y集 / 全剧
 
-### 本轮目标（Top 3问题）
-1. [P0/P1/P2] 问题描述 → 目标集数
+【修改清单】
+| # | 位置 | 问题描述 | 修改内容 | 优先级 |
+| 1 | 第X集 | [问题] | [改前→改后] | P? |
+| 2 | ... | ... | ... | ... |
 
-### 变更日志
-| 位置 | Before | After | 原因 |
-|------|--------|-------|------|
-| 第X集场景Y | 原文 | 改后 | 修改原因 |
+【修改后内容】
+[修改后的剧本/大纲/对白内容]
 
-### 修改后剧本（仅改动部分）
-[仅输出修改后的场景/段落，不重复未改动的内容]
+【修改说明】
+[解释每处修改的理由和预期效果]
 
-### 自检结果
-- 是否引入新矛盾：是/否
-- 角色一致性：通过/需关注
-- 建议下一轮关注点：...
+【预期评分提升】
+修改后预计[维度名]分数从X提升到Y
+```
+
+铁律：
+- 每轮改稿只聚焦1-2个维度，不能贪多
+- 修改必须具体到位置和内容，不能笼统说"提高质量"
+- 保留原文中好的部分，不要为了改而改
+- 改完必须说明预期效果，供§7验证
 """
 
     def get_user_prompt(self, context: ExpertContext, **kwargs) -> str:
-        # 获取质量审计报告
-        audit_report = ""
-        if context.metadata.get("step_outputs", {}).get("§7"):
-            audit_report = context.metadata["step_outputs"]["§7"].get("content", "")[:5000]
-        elif kwargs.get("quality_report"):
-            audit_report = str(kwargs["quality_report"])[:5000]
+        story_premise = context.story_premise or kwargs.get("story_premise", "")
+        script_content = kwargs.get("script_content", "")
+        audit_report = kwargs.get("audit_report", "")
+        revision_focus = kwargs.get("revision_focus", "")
+        iteration_round = kwargs.get("iteration_round", 1)
 
-        # 获取当前剧本
-        script_text = ""
-        if context.metadata.get("step_outputs", {}).get("§6"):
-            script_text = context.metadata["step_outputs"]["§6"].get("content", "")[:8000]
-        elif context.metadata.get("step_outputs", {}).get("§5"):
-            script_text = context.metadata["step_outputs"]["§5"].get("content", "")[:8000]
+        prompt = f"""请基于质量审计报告对剧本进行针对性改稿：
 
-        # 迭代轮次
-        current_round = kwargs.get("revision_round", 1)
-        max_rounds = kwargs.get("max_rounds", 3)
+【一句话前提】
+{story_premise}
 
-        # 历史改稿记录
-        prev_revisions = context.metadata.get("revision_history", [])
-        history_text = ""
-        if prev_revisions:
-            history_text = "\n".join([
-                f"第{r.get('round', '?')}轮：{r.get('summary', '无摘要')}"
-                for r in prev_revisions
-            ])
+【当前剧本内容】
+{script_content if script_content else "请基于已有上下文"}
 
-        prompt = f"""请执行第{current_round}轮改稿（最多{max_rounds}轮）。
+【§7质量审计报告】
+{audit_report if audit_report else "未提供审计报告，请根据剧本内容进行自检并改稿"}
 
-【质量审计报告】
-{audit_report if audit_report else "暂无审计报告，请自行识别剧本问题"}
+【本轮改稿聚焦维度】
+{revision_focus if revision_focus else "最低分维度"}
 
-【当前剧本】
-{script_text if script_text else "暂无剧本内容"}
-
-【历史改稿记录】
-{history_text if history_text else "首轮改稿，无历史记录"}
+【当前迭代轮次】
+第{iteration_round}轮（最多3轮）
 
 任务：
-1. 从审计报告中筛选所有低分维度和不合格集
-2. 按优先级（P0>P1>P2）选出本轮Top 3问题
-3. 针对性修改对应集的剧本内容
-4. 记录完整变更日志（before/after/原因）
-5. 执行自检：是否引入新问题
-6. 判断是否还需要下一轮迭代
+1. 根据审计报告确定本轮改稿优先级
+2. 列出具体修改清单（位置+问题+改前→改后）
+3. 输出修改后的完整内容
+4. 说明每处修改的理由
+5. 给出预期评分提升
+
+注意：
+- 本轮只聚焦1-2个维度
+- 保留原文中好的部分
+- 修改要具体到位置和内容
+- 如果是第3轮（最后一轮），做整体打磨而非大改
 """
+
         return prompt
-
-
-    @staticmethod
-    def _calc_quality_score(content: str) -> float:
-        """
-        计算内容质量分数（基于多维度启发式指标）。
-        用于返工前后的质量对比，防止越改越差。
-        """
-        if not content or not content.strip():
-            return 0.0
-
-        score = 0.0
-        lines = content.split('\n')
-        char_count = len(content)
-
-        # 1. 长度指标：剧本内容需要足够充实 (0-25分)
-        if char_count >= 8000:
-            score += 25
-        elif char_count >= 5000:
-            score += 20
-        elif char_count >= 3000:
-            score += 15
-        elif char_count >= 1000:
-            score += 10
-        else:
-            score += 5
-
-        # 2. 结构完整性：场景标题、对白标记等 (0-25分)
-        scene_markers = len(re.findall(r'(?:第.+集|场景|Scene|EXT\.|INT\.)', content, re.IGNORECASE))
-        dialogue_markers = len(re.findall(r'(?:：|:)', content))
-        if scene_markers >= 5:
-            score += 15
-        elif scene_markers >= 2:
-            score += 10
-        else:
-            score += 5
-
-        if dialogue_markers >= 20:
-            score += 10
-        elif dialogue_markers >= 10:
-            score += 7
-        else:
-            score += 3
-
-        # 3. 情感/冲突关键词密度 (0-25分)
-        emotion_keywords = ['愤怒', '悲伤', '喜悦', '恐惧', '震惊', '绝望', '希望',
-                           '冲突', '矛盾', '反转', '悬念', '紧张', '感动', '痛苦',
-                           'love', 'anger', 'fear', 'hope', 'despair', 'tension']
-        emotion_count = sum(content.lower().count(kw) for kw in emotion_keywords)
-        density = emotion_count / max(char_count / 1000, 1)
-        if density >= 3:
-            score += 25
-        elif density >= 2:
-            score += 20
-        elif density >= 1:
-            score += 15
-        else:
-            score += 8
-
-        # 4. 角色多样性：不同说话者数量 (0-25分)
-        # 中文剧本常见格式：角色名 + 冒号/括号
-        speaker_patterns = re.findall(r'([\u4e00-\u9fff]{2,4})(?:：|:)', content)
-        unique_speakers = len(set(speaker_patterns))
-        if unique_speakers >= 5:
-            score += 25
-        elif unique_speakers >= 3:
-            score += 20
-        elif unique_speakers >= 2:
-            score += 12
-        else:
-            score += 5
-
-        return min(score, 100.0)
-
-    def run_with_rollback(self, context: ExpertContext, **kwargs) -> dict:
-        """
-        带返工回滚的执行方法。
-        在LLM修正前后分别计算质量分数，如果修正后质量下降超过10%，则回滚到原文。
-        """
-        # 获取当前剧本内容
-        original_content = ""
-        if context.metadata.get("step_outputs", {}).get("§6"):
-            original_content = context.metadata["step_outputs"]["§6"].get("content", "")
-        elif context.metadata.get("step_outputs", {}).get("§5"):
-            original_content = context.metadata["step_outputs"]["§5"].get("content", "")
-
-        if not original_content:
-            return {"content": "", "rollback": False, "reason": "无原始内容可处理"}
-
-        # 修正前：计算质量分数
-        pre_score = self._calc_quality_score(original_content)
-
-        # 执行正常改稿流程
-        user_prompt = self.get_user_prompt(context, **kwargs)
-        system_prompt = self.get_system_prompt()
-
-        # 调用LLM（由上层orchestrator处理，这里返回改稿后的内容）
-        revised_content = kwargs.get("revised_content", "")
-
-        if not revised_content:
-            return {
-                "content": original_content,
-                "rollback": True,
-                "reason": "改稿未产出新内容，保留原文"
-            }
-
-        # 修正后：计算质量分数
-        post_score = self._calc_quality_score(revised_content)
-
-        # 回滚判定：修正后分数低于修正前的90%
-        if post_score < pre_score * 0.9:
-            return {
-                "content": original_content,  # 回滚
-                "rollback": True,
-                "reason": f"返工后质量下降（{pre_score:.1f}→{post_score:.1f}），已保留原文"
-            }
-
-        return {
-            "content": revised_content,
-            "rollback": False,
-            "pre_score": round(pre_score, 1),
-            "post_score": round(post_score, 1),
-            "reason": f"改稿质量稳定或提升（{pre_score:.1f}→{post_score:.1f}）"
-        }
 
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
         errors = []
-        # 检查是否有变更日志
-        has_changelog = any(kw in output for kw in ["变更", "Before", "After", "修改", "改稿"])
-        if not has_changelog:
-            errors.append("未找到变更日志")
-        # 检查是否有修改后的内容
-        has_content = len(output) > 200
+        # 必须包含修改清单
+        if "修改清单" not in output and "修改" not in output:
+            errors.append("缺少修改清单")
+        # 必须包含修改后内容
+        has_content = any(kw in output for kw in ["修改后", "修改后内容", "改后", "修订"])
         if not has_content:
-            errors.append("改稿内容过短")
-        # 检查是否有自检结果
-        has_selfcheck = any(kw in output for kw in ["自检", "检查", "是否引入"])
-        if not has_selfcheck:
-            errors.append("缺少自检结果")
+            errors.append("缺少修改后内容")
+        # 必须包含修改说明
+        if "修改说明" not in output and "理由" not in output and "预期" not in output:
+            errors.append("缺少修改说明或预期效果")
         return len(errors) == 0, errors
 
-    def extract_changes(self, output: str) -> List[Dict]:
-        """提取变更日志"""
-        changes = []
-        # 尝试从表格或结构化文本中提取变更
-        blocks = re.findall(r'第(\d+)集[^\n]*\n(.*?)(?=第\d+集|##|$)', output, re.DOTALL)
-        for ep_num, block in blocks:
-            changes.append({
-                "episode": int(ep_num),
-                "description": block.strip()[:500],
-            })
-        return changes
+    def parse_revision_list(self, output: str) -> List[Dict]:
+        """解析修改清单"""
+        import re
+        revisions = []
+        # 查找修改清单表格行
+        table_rows = re.findall(r'\|\s*\d+\s*\|(.+)\|', output)
+        for row in table_rows:
+            parts = [p.strip() for p in row.split('|')]
+            if len(parts) >= 3:
+                revisions.append({
+                    "location": parts[0],
+                    "problem": parts[1],
+                    "fix": parts[2] if len(parts) > 2 else "",
+                })
+        return revisions
 
 
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§9", RevisionEditorExpert)
-

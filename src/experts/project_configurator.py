@@ -8,34 +8,7 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class ProjectConfiguratorInput(BaseInput):
-    """项目配置师的输入"""
-    story_direction: str = ""  # 故事方向
-    genre: str = ""  # 类型
-    episode_count: int = 0  # 集数
-    target_platform: str = ""  # 目标平台
-
-
-@dataclass
-class ProjectConfiguratorOutput(BaseOutput):
-    """项目配置师的输出"""
-    config_params: Dict[str, Any] = field(default_factory=dict)  # 项目配置参数
-    core_rules: List[str] = field(default_factory=list)  # 核心规则
-    forbidden_items: List[str] = field(default_factory=list)  # 禁止项
-    material_constraints: Dict[str, Any] = field(default_factory=dict)  # 素材约束
-    dialogue_style: str = ""  # 对白风格指引
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class ProjectConfiguratorExpert(ExpertBase):

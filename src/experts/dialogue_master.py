@@ -8,33 +8,7 @@
 """
 
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class DialogueMasterInput(BaseInput):
-    """对白大师专家的输入"""
-    scene_description: str = ""  # 场景描写
-    character_profiles: List[Dict] = field(default_factory=list)  # 角色人设
-    scene_context: str = ""  # 场景上下文
-    emotional_tone: str = ""  # 情绪基调
-
-
-@dataclass
-class DialogueMasterOutput(BaseOutput):
-    """对白大师专家的输出"""
-    dialogue_lines: List[Dict] = field(default_factory=list)  # 对白列表
-    style_cards: Dict[str, Any] = field(default_factory=dict)  # 对白风格卡
-    subtext_notes: List[str] = field(default_factory=list)  # 潜文本注释
-    hook_dialogues: List[str] = field(default_factory=list)  # 钩子对白
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class DialogueMasterExpert(ExpertBase):
@@ -181,16 +155,14 @@ class DialogueMasterExpert(ExpertBase):
         import re
         # 匹配多种对白格式：台词：xxx、"xxx"、——xxx、角色名：xxx
         dialogue_patterns = [
-            r'["\u201c].{3,}?["\u201d]',  # 引号包裹的对白（中英文引号，最小3字）
-            r'[:：]\s*\*{0,2}[^*\n]{3,}',  # 冒号后的内容（最小3字）
+            r'["\u201c].{5,}?["\u201d]',  # 引号包裹的对白（中英文引号）
+            r'[:：]\s*\*{0,2}[^*\n]{5,}',  # 冒号后的对白内容
             r'——\s*.+',  # 破折号引导的对白
-            r'[（(][^）)]{3,}[）)]',  # 括号内的动作描写
         ]
         dialogue_count = 0
         for pattern in dialogue_patterns:
             dialogue_count += len(re.findall(pattern, output))
-        # 阈值从3降到2，宽松一些
-        if dialogue_count < 2:
+        if dialogue_count < 3:
             errors.append(f"对白示例不足，仅{dialogue_count}处")
         # 钩子链检查改为软性检查（不导致验证失败）
         return len(errors) == 0, errors

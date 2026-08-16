@@ -1,46 +1,27 @@
-"""
-云匠引擎 Pipeline Orchestrator
-17专家调度脚本 - 处理依赖关系、并行执行、数据流转
+"""Historical PipelineOrchestrator API backed by the single V3 core.
 
-执行模式：
-- full: 完整链路（题材→创意→分集→剧本→精修→发行）
-- episode_only: 仅分集开发
-- script_only: 仅剧本开发
-- polish_only: 仅剧本精修
-
-依赖关系DAG：
-Layer 0: ⑩实战指挥（总调度）
-Layer 1: ①角色铸造、⑫世界观锻造、⑧商业包装（独立，可并行）
-Layer 2: ②情感编织（依赖①）
-Layer 3: ③结构建筑（依赖②）
-Layer 4: ④对白大师（依赖①③）、⑪场景工匠（依赖④）
-Layer 5: ⑤分集编剧（依赖①②③④）
-Layer 6: ⑥格式工匠（依赖⑤）、⑬金句萃取（依赖④）
-Layer 7: ⑦质量审计（依赖所有创作专家）、⑯集纲审核（依赖分集）
-Layer 8: ⑨改稿编辑（依赖⑦）、⑭商业操盘（依赖⑧）、⑰剧本审核（依赖⑦）
-Layer 9: ⑮品控总监（依赖⑦⑭）
+This module intentionally contains no scheduler, DAG executor, prompt builder, or
+state implementation. All execution is delegated to workflow.Orchestrator.
 """
+from __future__ import annotations
 
 import json
+import os
 import time
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-import concurrent.futures
+from typing import Any, Dict, List, Optional
 
 
 class ExecutionMode(Enum):
-    """执行模式"""
-    FULL = "full"  # 完整链路
-    EPISODE_ONLY = "episode_only"  # 仅分集
-    SCRIPT_ONLY = "script_only"  # 仅剧本
-    POLISH_ONLY = "polish_only"  # 仅精修
-    EVALUATE_ONLY = "evaluate_only"  # 仅评估
+    FULL = "full"
+    EPISODE_ONLY = "episode_only"
+    SCRIPT_ONLY = "script_only"
+    POLISH_ONLY = "polish_only"
+    EVALUATE_ONLY = "evaluate_only"
 
 
 class ExpertStatus(Enum):
-    """专家执行状态"""
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -50,20 +31,18 @@ class ExpertStatus(Enum):
 
 @dataclass
 class ExpertConfig:
-    """专家配置"""
     expert_id: str
     name: str
-    layer: int  # 依赖层级
-    dependencies: List[str]  # 依赖的专家ID列表
-    system_prompt_file: str  # 系统提示词文件路径
-    input_schema: Dict  # 输入数据结构
-    output_schema: Dict  # 输出数据结构
-    optional: bool = False  # 是否可选（失败不阻塞）
+    layer: int
+    dependencies: List[str]
+    system_prompt_file: str = ""
+    input_schema: Optional[Dict] = None
+    output_schema: Optional[Dict] = None
+    optional: bool = False
 
 
 @dataclass
 class ExpertResult:
-    """专家执行结果"""
     expert_id: str
     status: ExpertStatus
     output: Optional[Dict] = None
@@ -73,544 +52,96 @@ class ExpertResult:
 
 
 class LLMAPIAdapter:
-    """
-    LLM API适配器 - 抽象不同平台的调用方式
-    需要用户实现具体的API调用逻辑
-    """
-    
+    """Legacy split-prompt adapter retained for source compatibility."""
     def __init__(self, config: Dict):
         self.config = config
-        self.platform = config.get("platform", "openai")  # openai/coze/local
-    
+        self.platform = config.get("platform", "openai")
+
     def call(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        """
-        调用LLM API
-        
-        Args:
-            system_prompt: 系统提示词
-            user_prompt: 用户提示词
-            **kwargs: 额外参数（temperature, max_tokens等）
-        
-        Returns:
-            LLM响应文本
-        """
-        if self.platform == "openai":
-            return self._call_openai(system_prompt, user_prompt, **kwargs)
-        elif self.platform == "coze":
-            return self._call_coze(system_prompt, user_prompt, **kwargs)
-        elif self.platform == "local":
-            return self._call_local(system_prompt, user_prompt, **kwargs)
-        else:
-            raise ValueError(f"Unsupported platform: {self.platform}")
-    
-    def _call_openai(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        """OpenAI API调用"""
-        import os
+        if self.platform != "openai":
+            raise NotImplementedError(f"Legacy adapter platform is not implemented: {self.platform}")
         try:
             from openai import OpenAI
-            
-            client = OpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-                base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-            )
-            
-            # 使用配置的模型名，默认为deepseek-chat
-            model = self.config.get("model", "deepseek-chat")
-            
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=kwargs.get("temperature", 0.7),
-                max_tokens=kwargs.get("max_tokens", 16384)
-            )
-            
-            return response.choices[0].message.content
-        except Exception as e:
-            raise RuntimeError(f"OpenAI API call failed: {e}")
-    
-    def _call_coze(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        """Coze API调用 - 需要用户实现"""
-        raise NotImplementedError("Coze API adapter not implemented yet")
-    
-    def _call_local(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        """本地模型调用 - 需要用户实现"""
-        raise NotImplementedError("Local model adapter not implemented yet")
+        except ImportError as exc:
+            raise RuntimeError("请安装 openai 依赖") from exc
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"))
+        response = client.chat.completions.create(
+            model=self.config.get("model", os.getenv("OPENAI_MODEL", "gpt-4o-mini")),
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+            temperature=kwargs.get("temperature", 0.7), max_tokens=kwargs.get("max_tokens", 4000),
+        )
+        return response.choices[0].message.content
+
+
+class _LegacyClientAdapter:
+    def __init__(self, adapter: LLMAPIAdapter):
+        self.adapter = adapter
+        self._last_usage = None
+    def complete(self, prompt: str, **kwargs) -> str:
+        return self.adapter.call("", prompt, **kwargs)
+    def complete_json(self, prompt: str, **kwargs) -> Dict:
+        text = self.complete(prompt, **kwargs)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return {"raw": text}
+    def get_last_usage(self):
+        return self._last_usage
 
 
 class PipelineOrchestrator:
-    """云匠引擎流水线调度器"""
-    
-    def __init__(self, llm_adapter: LLMAPIAdapter, experts_base_path: str = "./experts"):
-        """
-        初始化调度器
-        
-        Args:
-            llm_adapter: LLM API适配器
-            experts_base_path: 专家配置文件根目录
-        """
-        self.llm = llm_adapter
-        self.experts_base = Path(experts_base_path)
-        self.experts: Dict[str, ExpertConfig] = {}
+    """Compatibility facade. `workflow.Orchestrator` is the only executor."""
+    LEGACY_TO_UNIFIED = {
+        "commander": "§10", "soul_catcher": "§0", "compliance_guard": "§2",
+        "project_configurator": "§8", "character_forger": "§1",
+        "structure_architect": "§3", "dialogue_master": "§4",
+        "episode_writer": "§5", "episode_outline_reviewer": "§12",
+        "scene_craftsman": "§11", "format_craftsman": "§6",
+        "quality_auditor": "§7", "revision_editor": "§9",
+        "visual_director": "§13", "business_operator": "§14",
+        "script_reviewer": "§16", "quality_director": "§15",
+    }
+    MODE_EXPERTS = {
+        ExecutionMode.FULL: list(LEGACY_TO_UNIFIED),
+        ExecutionMode.EPISODE_ONLY: ["commander", "soul_catcher", "project_configurator", "character_forger", "structure_architect", "dialogue_master", "episode_writer", "episode_outline_reviewer", "compliance_guard"],
+        ExecutionMode.SCRIPT_ONLY: ["compliance_guard", "episode_writer", "scene_craftsman", "format_craftsman", "script_reviewer", "quality_auditor"],
+        ExecutionMode.POLISH_ONLY: ["revision_editor", "quality_auditor", "script_reviewer"],
+        ExecutionMode.EVALUATE_ONLY: ["episode_outline_reviewer", "script_reviewer", "quality_auditor"],
+    }
+
+    def __init__(self, llm_adapter: LLMAPIAdapter, experts_base_path: str = "./knowledge/experts", **kwargs):
+        from src.workflow.orchestrator import Orchestrator
+        self._core = Orchestrator(expert_sequence=list(self.LEGACY_TO_UNIFIED.values()), llm_client=_LegacyClientAdapter(llm_adapter), knowledge_base_path=experts_base_path, **kwargs)
         self.results: Dict[str, ExpertResult] = {}
-        self._register_experts()
-    
-    def _register_experts(self):
-        """注册所有17个专家 - 匹配实际文件"""
-        
-        # Layer 0: 总调度
-        self._register(ExpertConfig(
-            expert_id="commander",
-            name="⑩实战指挥",
-            layer=0,
-            dependencies=[],
-            system_prompt_file="battle_commander.md",
-            input_schema={"project": "str", "goal": "str"},
-            output_schema={"strategy": "dict", "priorities": "list"}
-        ))
-        
-        # Layer 1: 独立专家
-        self._register(ExpertConfig(
-            expert_id="character_forger",
-            name="§1角色铸造师",
-            layer=1,
-            dependencies=[],
-            system_prompt_file="character_forger.md",
-            input_schema={"synopsis": "str", "genre": "str"},
-            output_schema={"characters": "list", "protagonist": "dict"}
-        ))
-        
-        self._register(ExpertConfig(
-            expert_id="project_configurator",
-            name="⑧项目配置师",
-            layer=1,
-            dependencies=[],
-            system_prompt_file="project_configurator.md",
-            input_schema={"synopsis": "str", "genre": "str"},
-            output_schema={"project_setup": "dict"},
-            optional=True
-        ))
-        
-        # Layer 2: 依赖角色
-        self._register(ExpertConfig(
-            expert_id="soul_catcher",
-            name="§0灵魂捕手",
-            layer=2,
-            dependencies=["character_forger"],
-            system_prompt_file="soul_catcher.md",
-            input_schema={"characters": "list", "synopsis": "str"},
-            output_schema={"soul_arc": "dict", "core_conflict": "str"}
-        ))
-        
-        # Layer 3: 依赖情感
-        self._register(ExpertConfig(
-            expert_id="structure_architect",
-            name="§3结构建筑师",
-            layer=3,
-            dependencies=["soul_catcher"],
-            system_prompt_file="structure_architect.md",
-            input_schema={"soul_arc": "dict", "synopsis": "str"},
-            output_schema={"structure": "dict", "turning_points": "list"}
-        ))
-        
-        # Layer 4: 对白和场景
-        self._register(ExpertConfig(
-            expert_id="dialogue_master",
-            name="§4对白大师",
-            layer=4,
-            dependencies=["character_forger", "structure_architect"],
-            system_prompt_file="dialogue_master.md",
-            input_schema={"characters": "list", "structure": "dict"},
-            output_schema={"dialogue_style": "dict", "signature_lines": "list"}
-        ))
-        
-        self._register(ExpertConfig(
-            expert_id="scene_craftsman",
-            name="⑪场景工匠",
-            layer=4,
-            dependencies=["dialogue_master"],
-            system_prompt_file="scene_craftsman.md",
-            input_schema={"dialogue_style": "dict", "setting": "str"},
-            output_schema={"scene_designs": "list"}
-        ))
-        
-        # Layer 5: 分集编剧（使用compliance_guard作为替代）
-        self._register(ExpertConfig(
-            expert_id="compliance_guard",
-            name="§2合规守门员",
-            layer=5,
-            dependencies=["character_forger", "soul_catcher", "structure_architect", "dialogue_master"],
-            system_prompt_file="compliance_guard.md",
-            input_schema={"all_above": "dict", "episode_count": "int"},
-            output_schema={"compliance_report": "dict", "episodes": "list"},
-            optional=True
-        ))
-        
-        # Layer 6: 格式
-        self._register(ExpertConfig(
-            expert_id="format_craftsman",
-            name="§6格式工匠",
-            layer=6,
-            dependencies=["compliance_guard"],
-            system_prompt_file="format_craftsman.md",
-            input_schema={"episodes": "list"},
-            output_schema={"formatted_script": "str"}
-        ))
-        
-        # Layer 7: 质量审计
-        self._register(ExpertConfig(
-            expert_id="quality_auditor",
-            name="§7质量审计",
-            layer=7,
-            dependencies=["format_craftsman"],
-            system_prompt_file="quality_auditor.md",
-            input_schema={"script": "str", "all_results": "dict"},
-            output_schema={"audit_report": "dict", "score": "float"}
-        ))
-        
-        # Layer 7.5: 集纲审核（在分集完成后审核）
-        self._register(ExpertConfig(
-            expert_id="episode_outline_reviewer",
-            name="⑯集纲审核",
-            layer=7,
-            dependencies=["compliance_guard"],
-            system_prompt_file="episode_outline_reviewer.md",
-            input_schema={"episode_outlines": "list", "project": "dict"},
-            output_schema={"review_report": "dict", "score": "float"},
-            optional=True
-        ))
-        
-        # Layer 8: 改稿和商业操盘
-        self._register(ExpertConfig(
-            expert_id="revision_editor",
-            name="§9改稿编辑",
-            layer=8,
-            dependencies=["quality_auditor"],
-            system_prompt_file="revision_editor.md",
-            input_schema={"script": "str", "audit_report": "dict"},
-            output_schema={"revised_script": "str"}
-        ))
-        
-        self._register(ExpertConfig(
-            expert_id="business_operator",
-            name="⑭商业操盘",
-            layer=8,
-            dependencies=["project_configurator"],
-            system_prompt_file="business_operator.md",
-            input_schema={"project_setup": "dict", "script": "str"},
-            output_schema={"distribution_plan": "dict"},
-            optional=True
-        ))
-        
-        # Layer 8.5: 剧本审核（在剧本完成后审核）
-        self._register(ExpertConfig(
-            expert_id="script_reviewer",
-            name="⑰剧本审核",
-            layer=8,
-            dependencies=["format_craftsman", "quality_auditor"],
-            system_prompt_file="script_reviewer.md",
-            input_schema={"script_content": "str", "project": "dict"},
-            output_schema={"review_report": "dict", "score": "float"},
-            optional=True
-        ))
-        
-        # Layer 9: 品控总监
-        self._register(ExpertConfig(
-            expert_id="quality_director",
-            name="⑮品控总监",
-            layer=9,
-            dependencies=["quality_auditor", "business_operator"],
-            system_prompt_file="quality_director.md",
-            input_schema={"audit_report": "dict", "distribution_plan": "dict"},
-            output_schema={"final_approval": "bool", "release_notes": "str"}
-        ))
-        
-        # 额外专家：视觉导演
-        self._register(ExpertConfig(
-            expert_id="visual_director",
-            name="⑬视觉导演",
-            layer=7,
-            dependencies=["format_craftsman"],
-            system_prompt_file="visual_director.md",
-            input_schema={"formatted_script": "str"},
-            output_schema={"visual_design": "dict"},
-            optional=True
-        ))
-    
-    def _register(self, config: ExpertConfig):
-        """注册单个专家"""
-        self.experts[config.expert_id] = config
-    
-    def _load_system_prompt(self, expert_id: str) -> str:
-        """加载专家系统提示词"""
-        config = self.experts[expert_id]
-        prompt_file = self.experts_base / config.system_prompt_file
-        
-        if prompt_file.suffix == ".py":
-            # Python文件，提取PROMPT变量
-            import ast
-            with open(prompt_file, 'r', encoding='utf-8') as f:
-                tree = ast.parse(f.read())
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Assign):
-                    for target in node.targets:
-                        if isinstance(target, ast.Name) and target.id == "PROMPT":
-                            if isinstance(node.value, ast.Constant):
-                                return node.value.value
-            raise ValueError(f"Cannot find PROMPT variable in {prompt_file}")
-        else:
-            # Markdown文件，直接读取
-            return prompt_file.read_text(encoding='utf-8')
-    
-    def _build_user_prompt(self, expert_id: str, context: Dict) -> str:
-        """构建用户提示词"""
-        config = self.experts[expert_id]
-        
-        # 收集依赖的输出
-        input_data = {}
-        for dep_id in config.dependencies:
-            if dep_id in self.results and self.results[dep_id].output:
-                input_data[dep_id] = self.results[dep_id].output
-        
-        # 加入项目上下文
-        input_data["project"] = context.get("project", {})
-        
-        # 构建用户提示词
-        user_prompt = f"""## 项目背景
-{json.dumps(context.get('project', {}), ensure_ascii=False, indent=2)}
+        self.experts = {key: ExpertConfig(key, key, index, []) for index, key in enumerate(self.LEGACY_TO_UNIFIED)}
 
-## 上游专家输出
-{json.dumps(input_data, ensure_ascii=False, indent=2)}
+    @property
+    def story_state(self) -> Dict:
+        if not self._core.state or not self._core.state.context_snapshot:
+            return {}
+        return self._core.state.context_snapshot.story_state
 
-## 任务要求
-请根据以上信息，完成你的专业工作，并严格按照输出格式要求返回JSON结果。
-"""
-        return user_prompt
-    
-    def _execute_expert(self, expert_id: str, context: Dict) -> ExpertResult:
-        """执行单个专家"""
-        config = self.experts[expert_id]
-        start_time = time.time()
-        
-        try:
-            # 加载系统提示词
-            system_prompt = self._load_system_prompt(expert_id)
-            
-            # 构建用户提示词
-            user_prompt = self._build_user_prompt(expert_id, context)
-            
-            # 调用LLM
-            response = self.llm.call(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                temperature=0.7,
-                max_tokens=4096
-            )
-            
-            # 解析响应
-            output = self._parse_response(expert_id, response)
-            
-            execution_time = time.time() - start_time
-            
-            return ExpertResult(
-                expert_id=expert_id,
-                status=ExpertStatus.SUCCESS,
-                output=output,
-                execution_time=execution_time
-            )
-        
-        except Exception as e:
-            execution_time = time.time() - start_time
-            return ExpertResult(
-                expert_id=expert_id,
-                status=ExpertStatus.FAILED,
-                error=str(e),
-                execution_time=execution_time
-            )
-    
-    def _parse_response(self, expert_id: str, response: str) -> Dict:
-        """解析LLM响应为JSON"""
-        # 尝试提取JSON
-        import re
-        
-        # 查找JSON代码块
-        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response)
-        if json_match:
-            json_str = json_match.group(1).strip()
-        else:
-            # 尝试直接解析
-            json_str = response.strip()
-        
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            # JSON解析失败，尝试修复常见的JSON问题
-            # 1. 移除可能的markdown代码块标记
-            json_str = re.sub(r'^```json\s*', '', json_str)
-            json_str = re.sub(r'\s*```$', '', json_str)
-            
-            try:
-                return json.loads(json_str)
-            except:
-                # 仍然失败，返回原始响应作为文本输出
-                return {
-                    "raw_output": response,
-                    "parse_error": str(e),
-                    "expert_id": expert_id
-                }
-    
-    def execute(self, project: Dict, mode: ExecutionMode = ExecutionMode.FULL, 
-                parallel: bool = True) -> Dict[str, ExpertResult]:
-        """
-        执行流水线
-        
-        Args:
-            project: 项目信息
-            mode: 执行模式
-            parallel: 是否并行执行无依赖的专家
-        
-        Returns:
-            所有专家的执行结果
-        """
-        context = {"project": project, "mode": mode.value}
+    def execute(self, project: Dict, mode: ExecutionMode = ExecutionMode.FULL, parallel: bool = True) -> Dict[str, ExpertResult]:
+        del parallel
+        from src.story_state import StoryState
+        selected = self.MODE_EXPERTS[mode]
+        sequence = [self.LEGACY_TO_UNIFIED[item] for item in selected]
+        self._core.expert_sequence = sequence
+        premise = project.get("synopsis") or project.get("story_direction") or project.get("name", "")
+        self._core._init_workflow(premise, project_name=project.get("name", ""))
+        state = StoryState.from_dict(self._core.state.context_snapshot.story_state)
+        state.project.update(project)
+        self._core.state.context_snapshot.story_state = state.to_dict()
         self.results = {}
-        
-        # 根据模式确定需要执行的专家
-        experts_to_run = self._get_experts_for_mode(mode)
-        
-        # 按层级分组
-        layers = {}
-        for expert_id in experts_to_run:
-            config = self.experts[expert_id]
-            if config.layer not in layers:
-                layers[config.layer] = []
-            layers[config.layer].append(expert_id)
-        
-        # 逐层执行
-        for layer in sorted(layers.keys()):
-            expert_ids = layers[layer]
-            
-            if parallel and len(expert_ids) > 1:
-                # 并行执行同层专家
-                with concurrent.futures.ThreadPoolExecutor(max_workers=len(expert_ids)) as executor:
-                    futures = {
-                        executor.submit(self._execute_expert, eid, context): eid 
-                        for eid in expert_ids
-                    }
-                    for future in concurrent.futures.as_completed(futures):
-                        expert_id = futures[future]
-                        self.results[expert_id] = future.result()
-            else:
-                # 串行执行
-                for expert_id in expert_ids:
-                    self.results[expert_id] = self._execute_expert(expert_id, context)
-            
-            # 检查是否有失败的必需专家
-            for expert_id in expert_ids:
-                result = self.results[expert_id]
-                if result.status == ExpertStatus.FAILED and not self.experts[expert_id].optional:
-                    raise RuntimeError(f"Required expert {expert_id} failed: {result.error}")
-        
+        for legacy_id, unified_id in zip(selected, sequence):
+            started = time.time()
+            output = self._core.run_step(unified_id, bypass_generation_gate=True, bypass_signing_gate=True)
+            status = ExpertStatus.SUCCESS if output.validation_passed else ExpertStatus.FAILED
+            self.results[legacy_id] = ExpertResult(legacy_id, status, output.structured_data, None if status is ExpertStatus.SUCCESS else "; ".join(output.validation_errors), time.time() - started)
         return self.results
-    
-    def _get_experts_for_mode(self, mode: ExecutionMode) -> List[str]:
-        """根据执行模式返回需要运行的专家列表"""
-        if mode == ExecutionMode.FULL:
-            return list(self.experts.keys())
-        elif mode == ExecutionMode.EPISODE_ONLY:
-            # 只跑到分集阶段
-            return ["commander", "character_forger", "project_configurator", "soul_catcher",
-                    "structure_architect", "dialogue_master", "compliance_guard"]
-        elif mode == ExecutionMode.SCRIPT_ONLY:
-            # 只跑分集到剧本
-            return ["compliance_guard", "format_craftsman", "quality_auditor"]
-        elif mode == ExecutionMode.POLISH_ONLY:
-            # 只跑精修
-            return ["revision_editor", "quality_auditor"]
-        elif mode == ExecutionMode.EVALUATE_ONLY:
-            # 只跑评估
-            return ["quality_auditor"]
-        else:
-            raise ValueError(f"Unknown mode: {mode}")
-    
+
     def get_execution_report(self) -> Dict:
-        """生成执行报告"""
-        report = {
-            "total_experts": len(self.experts),
-            "executed": len(self.results),
-            "successful": sum(1 for r in self.results.values() if r.status == ExpertStatus.SUCCESS),
-            "failed": sum(1 for r in self.results.values() if r.status == ExpertStatus.FAILED),
-            "total_time": sum(r.execution_time for r in self.results.values()),
-            "details": []
-        }
-        
-        for expert_id, result in self.results.items():
-            report["details"].append({
-                "expert_id": expert_id,
-                "name": self.experts[expert_id].name,
-                "status": result.status.value,
-                "execution_time": result.execution_time,
-                "error": result.error
-            })
-        
-        return report
+        return {"orchestrator": "src.workflow.orchestrator.Orchestrator", "compatibility_facade": True, "legacy_gate_bypass": True, "declared_experts": 17, "executed": len(self.results), "successful": sum(item.status is ExpertStatus.SUCCESS for item in self.results.values()), "failed": sum(item.status is ExpertStatus.FAILED for item in self.results.values()), "total_time": sum(item.execution_time for item in self.results.values())}
 
 
-# ===== 使用示例 =====
-
-def main():
-    """示例：如何运行引擎"""
-    
-    # 1. 配置LLM适配器
-    llm_config = {
-        "platform": "openai",
-        # 需要在环境变量中设置 OPENAI_API_KEY 和 OPENAI_BASE_URL
-    }
-    
-    # 2. 创建适配器实例
-    adapter = LLMAPIAdapter(llm_config)
-    
-    # 3. 创建调度器
-    orchestrator = PipelineOrchestrator(
-        llm_adapter=adapter,
-        experts_base_path="./experts"  # 专家配置文件目录
-    )
-    
-    # 4. 准备项目信息
-    project = {
-        "name": "岭上之路",
-        "genre": "男频/职场/励志",
-        "synopsis": "一个大专生在深圳打拼，从底层销售做到上市公司CEO的故事...",
-        "target_audience": "18-35岁男性",
-        "episode_count": 30,
-        "theme": "逆袭、奋斗、兄弟情"
-    }
-    
-    # 5. 执行流水线
-    try:
-        results = orchestrator.execute(
-            project=project,
-            mode=ExecutionMode.FULL,
-            parallel=True
-        )
-        
-        # 6. 生成报告
-        report = orchestrator.get_execution_report()
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-        
-        # 7. 获取最终剧本
-        if "format_craftsman" in results and results["format_craftsman"].output:
-            final_script = results["format_craftsman"].output.get("formatted_script", "")
-            print("\n=== 最终剧本 ===")
-            print(final_script[:2000])  # 打印前2000字符
-    
-    except Exception as e:
-        print(f"Pipeline execution failed: {e}")
-        report = orchestrator.get_execution_report()
-        print(json.dumps(report, ensure_ascii=False, indent=2))
-
-
-if __name__ == "__main__":
-    main()
+__all__ = ["ExecutionMode", "ExpertStatus", "ExpertConfig", "ExpertResult", "LLMAPIAdapter", "PipelineOrchestrator"]

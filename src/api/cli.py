@@ -8,34 +8,11 @@ CLI入口
     单步执行: python -m src.api.cli --step soul_catcher "我的故事方向是XXX"
     交互模式: python -m src.api.cli --interactive
     恢复断点: python -m src.api.cli --resume wf_20240101_120000
-
-配置：
-    API Key 通过 .env 文件或环境变量设置，禁止硬编码在源码中。
-    参见 .env.example 文件获取完整配置格式。
 """
 
 import argparse
 import sys
 import os
-
-# ── 加载环境变量（从 .env 文件）──
-# .env 文件已在 .gitignore 中，不会提交到仓库
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # 自动加载项目根目录的 .env
-except ImportError:
-    # python-dotenv 未安装时，回退到纯环境变量
-    pass
-
-# 不再硬编码 API Key —— 必须通过 .env 或环境变量提供
-# 如果未配置，给出明确提示而不是静默失败
-if not os.getenv("DRAMA_LLM_API_KEY"):
-    print("⚠️  未检测到 API Key 配置。")
-    print("   请在项目根目录创建 .env 文件，写入：")
-    print("   DRAMA_LLM_API_KEY=你的API密钥")
-    print("   参考 .env.example 文件获取完整配置项。")
-    sys.exit(1)
-
 from typing import Optional
 
 # 添加项目根目录到路径
@@ -72,7 +49,7 @@ def print_workflow_progress(state):
     print("\n" + "=" * 60)
     print(f"工作流状态: {state.status.value}")
     print(f"进度: {state.current_step + 1}/{state.total_steps}")
-    print(f"当前专家: {state.expert_sequence[state.current_step]}")
+    print(f"当前专家: {orchestrator.expert_sequence[state.current_step]}")
     print("-" * 40)
     for i, expert_id in enumerate(state.expert_sequence):
         status_icon = "✓" if i in state.completed_steps else "○"
@@ -85,11 +62,11 @@ def run_full_workflow(args):
     """运行完整工作流"""
     config = load_config(args.config)
 
-    # 创建LLM客户端 —— Key 从环境变量读取，绝不硬编码
+    # 创建LLM客户端
     llm_client = OpenAIClient(
-        api_key=config.llm.api_key or os.getenv("DRAMA_LLM_API_KEY", ""),
-        model=config.llm.model or os.getenv("DRAMA_LLM_MODEL", "deepseek-chat"),
-        base_url=config.llm.base_url or os.getenv("DRAMA_LLM_BASE_URL", "https://api.deepseek.com"),
+        api_key=config.llm.api_key or os.getenv("OPENAI_API_KEY", ""),
+        model=config.llm.model,
+        base_url=config.llm.base_url,
         temperature=config.llm.temperature,
     )
 
@@ -101,7 +78,7 @@ def run_full_workflow(args):
         enable_checkpoint=config.workflow.enable_checkpoint,
     )
 
-    print(f"\n 开始创作：{args.story[:50]}{'...' if len(args.story) > 50 else ''}")
+    print(f"\n🚀 开始创作：{args.story[:50]}{'...' if len(args.story) > 50 else ''}")
     print()
 
     # 执行工作流
@@ -147,9 +124,9 @@ def run_single_step(args):
     config = load_config(args.config)
 
     llm_client = OpenAIClient(
-        api_key=config.llm.api_key or os.getenv("DRAMA_LLM_API_KEY", ""),
-        model=config.llm.model or os.getenv("DRAMA_LLM_MODEL", "deepseek-chat"),
-        base_url=config.llm.base_url or os.getenv("DRAMA_LLM_BASE_URL", "https://api.deepseek.com"),
+        api_key=config.llm.api_key or os.getenv("OPENAI_API_KEY", ""),
+        model=config.llm.model,
+        base_url=config.llm.base_url,
         temperature=config.llm.temperature,
     )
 
@@ -183,9 +160,9 @@ def run_interactive(args):
     config = load_config(args.config)
 
     llm_client = OpenAIClient(
-        api_key=config.llm.api_key or os.getenv("DRAMA_LLM_API_KEY", ""),
-        model=config.llm.model or os.getenv("DRAMA_LLM_MODEL", "deepseek-chat"),
-        base_url=config.llm.base_url or os.getenv("DRAMA_LLM_BASE_URL", "https://api.deepseek.com"),
+        api_key=config.llm.api_key or os.getenv("OPENAI_API_KEY", ""),
+        model=config.llm.model,
+        base_url=config.llm.base_url,
         temperature=config.llm.temperature,
     )
 
@@ -275,9 +252,9 @@ def resume_workflow(args):
     config = load_config(args.config)
 
     llm_client = OpenAIClient(
-        api_key=config.llm.api_key or os.getenv("DRAMA_LLM_API_KEY", ""),
-        model=config.llm.model or os.getenv("DRAMA_LLM_MODEL", "deepseek-chat"),
-        base_url=config.llm.base_url or os.getenv("DRAMA_LLM_BASE_URL", "https://api.deepseek.com"),
+        api_key=config.llm.api_key or os.getenv("OPENAI_API_KEY", ""),
+        model=config.llm.model,
+        base_url=config.llm.base_url,
     )
 
     orchestrator = Orchestrator(

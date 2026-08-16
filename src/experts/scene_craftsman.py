@@ -1,206 +1,192 @@
 """
-§11 场景工匠（Scene Craftsman）
+⑪ 场景工匠专家
 
-职责：场景氛围细化专家
-将剧本中的场景描写从"够用"提升到"沉浸式"
-通过五感系统（视觉+听觉+嗅觉+触觉+味觉）和环境叙事增强画面代入感
-融入非遗/地域文化元素的文化质感
+职责：场景氛围细化 + 环境描写增强 + 五感系统
+为每个场景设计沉浸式环境描写
 
-基于 Wave2 架构设计
+基于WAVE2开发计划 + 精品短剧场景设计方法论
 """
 
-import re
 from typing import List, Dict, Optional
-from .base import ExpertBase, ExpertContext, ExpertOutput, BaseInput, BaseOutput
-
-
-# 五感系统定义
-FIVE_SENSES = {
-    "visual": {
-        "name": "视觉",
-        "required": True,
-        "elements": ["光影", "色彩", "构图"],
-        "examples": ["自然光/人工光/烛光", "主色调+点缀色", "远景/中景/特写"],
-    },
-    "audio": {
-        "name": "听觉",
-        "required": True,
-        "elements": ["环境音", "动作音", "静默"],
-        "examples": ["街道喧嚣/虫鸣/风声", "脚步/开门/翻书", "刻意留白"],
-    },
-    "smell": {
-        "name": "嗅觉",
-        "required": False,
-        "elements": ["自然气息", "工艺气味", "生活气息"],
-        "examples": ["泥土/花香/雨后空气", "靛蓝染料/棉布/木屑", "饭菜香/旧书"],
-    },
-    "touch": {
-        "name": "触觉",
-        "required": False,
-        "elements": ["温度", "质感", "痛感"],
-        "examples": ["冷风/热铁/凉水面", "粗糙麻布/光滑丝绸", "针刺/绳勒"],
-    },
-    "taste": {
-        "name": "味觉",
-        "required": False,
-        "elements": ["味觉体验"],
-        "examples": ["泪水咸味/茶水苦涩/饭食温热"],
-    },
-}
-
-
-# ============================================================
-# 专家类型化IO定义
-# ============================================================
-
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List
-
-
-@dataclass
-class SceneCraftsmanInput(BaseInput):
-    """场景工匠专家的输入"""
-    episode_outline: str = ""  # 分集大纲
-    scene_list: List[Dict] = field(default_factory=list)  # 场景列表
-    visual_scheme: Dict[str, Any] = field(default_factory=dict)  # 视觉方案
-    cultural_elements: List[str] = field(default_factory=list)  # 文化元素
-
-
-@dataclass
-class SceneCraftsmanOutput(BaseOutput):
-    """场景工匠专家的输出"""
-    scene_descriptions: List[Dict] = field(default_factory=list)  # 场景描写
-    five_senses: Dict[str, List[str]] = field(default_factory=dict)  # 五感描写
-    atmosphere_notes: List[str] = field(default_factory=list)  # 氛围注释
-    environmental_narratives: List[str] = field(default_factory=list)  # 环境叙事
+from .base import ExpertBase, ExpertContext, ExpertOutput
 
 
 class SceneCraftsmanExpert(ExpertBase):
-    """§11 场景工匠"""
+    """⑪ 场景工匠专家"""
     expert_id = "§11"
     expert_name = "scene_craftsman"
     prompt_file = "scene_craftsman.md"
 
     def get_system_prompt(self) -> str:
-        senses_text = "\n".join([
-            f"  {'[必选]' if v['required'] else '[选用]'} {v['name']}：{', '.join(v['elements'])}"
-            for v in FIVE_SENSES.values()
-        ])
+        return """你是一位专精场景设计的资深编剧，代号⑪场景工匠。
 
-        return f"""你是一位场景氛围细化专家，代号§11场景工匠。
+你的核心能力：为每个场景设计沉浸式环境描写，构建五感系统，让场景成为叙事的一部分。
 
-你的核心能力：将剧本中的场景描写从"够用"提升到"沉浸式"，通过五感系统和环境叙事增强画面代入感。
+【场景设计核心理念】
+场景不是背景板，而是叙事的一部分：
+- 场景映射人物内心（外部空间=内心状态的隐喻）
+- 场景推动情节（环境变化=情节转折的信号）
+- 场景承载文化（空间细节=文化基因的载体）
 
 【五感系统】
-{senses_text}
+每个关键场景必须覆盖至少3种感官：
 
-【场景氛围三层结构】
-1. 基础氛围：场景基调（时间+空间+光线+色彩建立的基调）
-2. 情绪氛围：角色带入的情绪（角色进入后，空间因角色情绪产生变化）
-3. 转折氛围：剧情变化导致氛围转变（冲突爆发/和解/揭秘时的氛围骤变）
+| 感官 | 描写要点 | 示例 |
+| 视觉 | 光线、色彩、空间、物体细节 | "蓝白相间的扎染布在风中翻飞" |
+| 听觉 | 环境音、人声、静默 | "染缸里气泡咕嘟作响" |
+| 嗅觉 | 气味标记场景记忆 | "板蓝根发酵的微酸气息" |
+| 触觉 | 质感、温度、湿度 | "粗布磨过指尖的涩感" |
+| 味觉 | 食物/空气的味道 | "嘴里泛起的苦涩" |
 
-【环境叙事原则】
-- 用环境细节暗示角色情绪和剧情走向，不是直接说明
-- 物件承载记忆：旧照片/褪色信/磨旧的手镯——物件比台词更有分量
-- 天气即情绪：暴雨=崩溃/转折，晴转阴=危机将至，日出=重生
-- 文化质感：非遗/地域文化元素融入场景（扎染的靛蓝气息、织机的声响、大理的风）
+【场景氛围设计法】
 
-【场景描写模板】
+一、氛围三要素
+1. 基调：这个场景的整体情绪（压抑/温馨/紧张/荒凉）
+2. 焦点：场景中最抓眼球的一个元素
+3. 反差：与环境基调形成反差的细节（增强张力）
 
-【场景X】内景/外景 地点 时间
+二、场景-情绪映射表
+| 情绪 | 空间特征 | 光线 | 声音 | 色彩 |
+| 孤独 | 空旷/封闭 | 单点光/冷光 | 安静/回声 | 冷灰/蓝 |
+| 温暖 | 狭小/包围 | 暖黄/烛光 | 人声/柴火 | 暖黄/橙 |
+| 紧张 | 逼仄/压迫 | 高对比/闪烁 | 急促/尖锐 | 暗红/黑 |
+| 希望 | 开阔/通透 | 自然光/晨光 | 鸟鸣/风 | 明绿/白 |
+| 悲伤 | 灰暗/潮湿 | 暗调/阴天 | 雨声/静默 | 灰/暗蓝 |
+| 荒诞 | 不协调/错位 | 不自然光 | 不和谐音 | 艳俗色 |
 
-[氛围标注]
-视觉：[光影+色彩+构图]
-听觉：[环境音+动作音]
-[嗅觉/触觉/味觉：场景需要时补充]
+三、场景叙事功能分类
+| 功能 | 设计要点 |
+| 建立场景 | 交代空间+暗示主题，用1-2个标志物建立世界观 |
+| 情感场景 | 环境=内心投射，细节服务于情绪 |
+| 冲突场景 | 环境增加压迫感或制造阻碍 |
+| 转折场景 | 环境出现变化（天气/光线/声音转变） |
+| 过渡场景 | 简洁过渡，不抢戏，用环境变化暗示时间流逝 |
+| 高潮场景 | 五感全开，环境细节最密集 |
+| 留白场景 | 最少的描写，最大的想象空间 |
 
-[环境描写：2-3句建立空间感]
-[情绪氛围：角色带入后的空间变化]
+【非遗/文化场景专项】
+- 技艺展示场景：特写工艺细节，用动作代替解说
+- 传统空间场景：用空间布局暗示文化逻辑（如"三房一照壁"的封闭感）
+- 文化冲突场景：传统空间vs现代空间的对比
+- 文化符号自然融入：不刻意标注，让符号成为生活的一部分
 
-角色名：台词
+【输出格式】
+```
+【场景设计方案】
 
-[转折标注：氛围变化时标注]
+项目名称：[项目名称]
+场景总数：[X]个
 
-【铁律】
-1. 每个场景至少激活3种感官（视觉+听觉为必选）
-2. 环境描写不超过3句，不要喧宾夺主
-3. 氛围为剧情服务，不写与情绪无关的景色
-4. 文化元素是叙事动力，不是装饰品
+【场景清单】
+| 场号 | 场景名称 | 空间类型 | 氛围基调 | 叙事功能 |
+| 1 | [名称] | [内/外+地点] | [情绪关键词] | [功能] |
+| ... | ... | ... | ... | ... |
+
+【重点场景详细设计】（选取5-8个关键场景）
+
+### 场景X：[场景名称]
+- 空间：[具体空间描述]
+- 氛围：[基调+焦点+反差]
+- 五感设计：
+  * 视觉：[光线+色彩+关键物体]
+  * 听觉：[环境音+标志性声音]
+  * 嗅觉：[气味标记]
+  * 触觉：[质感+温度]
+  * 味觉：[如有]
+- 情绪映射：[环境如何映射人物内心]
+- 叙事功能：[这个场景推动什么]
+- 关键细节：[2-3个必须出现的细节]
+
+【场景转换设计】
+[列出关键场景之间的转换方式：硬切/环境过渡/时间跳切]
+
+【环境描写模板】
+[提供3-5段可直接使用的场景描写段落]
+```
+
+铁律：
+- 场景不是装饰，每个场景必须服务叙事
+- 五感描写不是堆砌，选最能传递情绪的3种即可
+- 文化场景不能变成旅游宣传片，文化是叙事动力
+- 环境描写不超过3行（短剧节奏快，不能长篇写景）
 """
 
     def get_user_prompt(self, context: ExpertContext, **kwargs) -> str:
-        # 获取原始剧本
-        script_text = ""
-        if context.metadata.get("step_outputs", {}).get("§5"):
-            script_text = context.metadata["step_outputs"]["§5"].get("content", "")[:8000]
-        elif context.metadata.get("episode_scripts"):
-            script_text = str(context.metadata["episode_scripts"])[:8000]
+        story_premise = context.story_premise or kwargs.get("story_premise", "")
+        story_direction = context.story_direction or kwargs.get("story_direction", "")
+        drama_type = context.project_config.get("drama_type", "现实主义") if context.project_config else "现实主义"
+        episode_outlines = kwargs.get("episode_outlines", context.episode_outlines)
+        beat_table = kwargs.get("beat_table", context.beat_table)
 
-        # 项目配置
-        project_config = context.project_config or {}
-        story_direction = context.story_direction or ""
-        culture_theme = project_config.get("culture_theme", "")
+        outlines_text = ""
+        if episode_outlines:
+            outlines_text = "\n".join([
+                f"第{ol.get('episode', i+1)}集：{ol.get('description', str(ol))}"
+                for i, ol in enumerate(episode_outlines[:10])
+            ])
 
-        # 视觉方案参考
-        visual_scheme = ""
-        if context.visual_scheme:
-            visual_scheme = str(context.visual_scheme)[:2000]
-        elif context.metadata.get("step_outputs", {}).get("§13"):
-            visual_scheme = context.metadata["step_outputs"]["§13"].get("content", "")[:2000]
+        prompt = f"""请为以下故事设计完整的场景系统：
 
-        prompt = f"""请对以下剧本进行场景氛围增强。
+【一句话前提】
+{story_premise}
 
-【故事方向】{story_direction}
-{f'【文化主题】{culture_theme}' if culture_theme else ''}
+【故事方向】
+{story_direction}
 
-【原始剧本】
-{script_text if script_text else "暂无剧本内容"}
+【故事类型】
+{drama_type}
 
-{f'【视觉方案参考】\n{visual_scheme}' if visual_scheme else ''}
+【集纲/结构】
+{outlines_text if outlines_text else "请基于故事方向推断"}
 
 任务：
-1. 逐场景检查当前氛围描写是否达到沉浸标准
-2. 为每个场景补充五感描写（至少视觉+听觉+1种其他感官）
-3. 建立三层氛围结构（基础→情绪→转折）
-4. 融入与故事相关的文化质感元素
-5. 用环境叙事替代直接情绪说明
-6. 输出增强后的完整场景描写
+1. 设计全剧场景清单（场号+名称+空间类型+氛围基调+叙事功能）
+2. 选取5-8个关键场景进行详细的五感设计
+3. 设计场景之间的转换方式
+4. 提供环境描写模板（可直接使用的描写段落）
+
+注意：
+- 每个场景必须服务叙事，不是装饰
+- 五感描写选择最能传递情绪的组合
+- 如涉及非遗/文化元素，场景要体现文化质感
+- 环境描写保持简洁（每处不超过3行）
+- 场景空间变化要暗示人物内心和情节走向
 """
+
         return prompt
 
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
         errors = []
-        # 检查是否有氛围标注
-        has_atmosphere = any(kw in output for kw in ["氛围", "视觉：", "听觉：", "光影", "环境音"])
-        if not has_atmosphere:
-            errors.append("未找到氛围描写标注")
-        # 检查是否有感官元素
-        sense_count = 0
-        for sense in FIVE_SENSES.values():
-            if any(kw in output for kw in sense["examples"][:2]):
-                sense_count += 1
+        # 必须包含场景清单
+        if "场景清单" not in output and "场景" not in output:
+            errors.append("缺少场景清单")
+        # 必须包含五感设计
+        senses = ["视觉", "听觉", "嗅觉", "触觉", "味觉"]
+        sense_count = sum(1 for s in senses if s in output)
         if sense_count < 2:
-            errors.append(f"感官元素不足（仅{sense_count}种，至少3种）")
-        # 检查是否有场景标记
-        scene_count = len(re.findall(r'【场景', output))
-        if scene_count < 1:
-            errors.append("未找到场景标记")
+            errors.append(f"五感设计不足，仅覆盖{sense_count}种感官")
+        # 必须包含氛围设计
+        if "氛围" not in output and "情绪" not in output:
+            errors.append("缺少氛围/情绪设计")
         return len(errors) == 0, errors
 
-    def extract_sense_coverage(self, output: str) -> Dict:
-        """提取五感覆盖情况"""
-        coverage = {}
-        for key, sense in FIVE_SENSES.items():
-            found = any(kw in output for kw in sense["elements"] + sense["examples"][:2])
-            coverage[key] = {
-                "name": sense["name"],
-                "detected": found,
-                "required": sense["required"],
-            }
-        return coverage
+    def parse_scene_list(self, output: str) -> List[Dict]:
+        """解析场景清单"""
+        import re
+        scenes = []
+        # 查找场景表格行
+        table_rows = re.findall(r'\|\s*(\d+)\s*\|(.+)\|', output)
+        for row in table_rows:
+            parts = [p.strip() for p in row[1].split('|')]
+            scenes.append({
+                "scene_num": int(row[0]),
+                "name": parts[0] if parts else "",
+                "space_type": parts[1] if len(parts) > 1 else "",
+                "atmosphere": parts[2] if len(parts) > 2 else "",
+            })
+        return scenes
 
 
 # 注册
 from .base import ExpertRegistry
 ExpertRegistry.register("§11", SceneCraftsmanExpert)
-

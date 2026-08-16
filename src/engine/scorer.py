@@ -91,6 +91,9 @@ class CharacterDepthScorer:
         if "突然" in text and "因为" not in text:
             score_val -= 1.0
             suggestions.append("出现无铺垫的突然转折，需检查角色动机")
+        if any(marker in text for marker in ("心里很", "觉得被", "感觉很", "感到很")):
+            score_val -= 1.5
+            suggestions.append("抽象情绪缺少可拍动作，需转为行为与选择")
 
         # 若提供character_info，进行更精确的评分
         if character_info:
@@ -221,7 +224,8 @@ class NarrativeStructureScorer:
 
         # 前3秒矛盾检测
         first_lines = "\n".join(text.split("\n")[:5])
-        if "冲突" not in first_lines and "矛盾" not in first_lines and episode_num == 1:
+        has_direct_choice = any(word in first_lines for word in ("决定", "必须", "拒绝", "离开", "救"))
+        if "冲突" not in first_lines and "矛盾" not in first_lines and not has_direct_choice and episode_num == 1:
             score_val -= 1.5
             suggestions.append("第1集前3秒未甩出最强矛盾，需直入核心冲突")
 
@@ -308,8 +312,8 @@ class ComplianceScorer:
 
     RED_LINE_KEYWORDS = {
         "超自然金手指": ["觉醒", "异能", "修仙", "金手指"],
-        "暴力私刑": ["以暴制暴", "复仇", "私刑"],
-        "危险道具": ["匕首", "弹簧刀", "毒针", "迷药"],
+        "暴力私刑": ["以暴制暴", "复仇", "私刑", "刺杀"],
+        "危险道具": ["匕首", "弹簧刀", "毒针", "迷药", "血流"],
         "人格羞辱": ["掌掴", "下跪", "踩人"],
         "低俗擦边": ["露骨", "暧昧姿势"],
         "封建迷信": ["算命", "风水", "诅咒"],
@@ -326,7 +330,7 @@ class ComplianceScorer:
         for category, keywords in cls.RED_LINE_KEYWORDS.items():
             for kw in keywords:
                 if kw in text:
-                    score_val -= 1.5
+                    score_val -= 3.0
                     reasons.append(f"疑似触及{category}：{kw}")
                     suggestions.append(f"建议使用合规替代方案处理{category}")
                     critical_found.append(category)
@@ -372,8 +376,8 @@ class LiteraryScorer:
 
         # 检查是否滥用“感觉”“觉得”类抽象词
         abstract_words = ["感觉很", "觉得很", "感到很", "我很难过", "我很开心"]
-        abstract_count = sum(1 for aw in abstract_words if aw in text)
-        if abstract_count > 3:
+        abstract_count = sum(text.count(aw) for aw in abstract_words)
+        if abstract_count >= 2:
             score_val -= 1.5
             suggestions.append("存在多处抽象情绪描写，建议用具象画面/动作替代（§4.10.2工具1）")
 
