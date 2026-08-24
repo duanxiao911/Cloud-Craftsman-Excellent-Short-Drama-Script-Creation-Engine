@@ -128,6 +128,28 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 16px rgba(139,92,246,0.35);
       }
+      .yj-project-account-btn {
+        padding: 7px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(148,163,184,0.28);
+        background: rgba(255,255,255,0.62);
+        color: #64748b;
+        font-size: 13px;
+        cursor: pointer;
+        backdrop-filter: blur(14px) saturate(130%);
+        -webkit-backdrop-filter: blur(14px) saturate(130%);
+        transition: all 0.2s ease;
+      }
+      .yj-project-account-btn:hover {
+        color: #7c3aed;
+        border-color: rgba(139,92,246,0.38);
+        background: rgba(255,255,255,0.88);
+      }
+      [data-theme="dark"] .yj-project-account-btn {
+        background: rgba(30,41,59,0.68);
+        color: #cbd5e1;
+        border-color: rgba(148,163,184,0.2);
+      }
 
       /* ========== 页面容器 ========== */
       .yj-project-page {
@@ -602,6 +624,7 @@
           <li><a data-view="quickdemo">⚡ 快速体验</a></li>
         </ul>
         <div class="yj-project-navbar-right">
+          <button class="yj-project-account-btn" id="yj-nav-account-btn" title="返回登录页并切换创作者">👤 切换创作者</button>
           <button class="yj-project-new-btn" id="yj-nav-new-btn">+ 新建项目</button>
         </div>
       </nav>
@@ -847,6 +870,100 @@
       console.error('[YJ API] DELETE', path, e);
       return null;
     }
+  }
+
+  function hasEnteredStudio() {
+    try {
+      return localStorage.getItem('yunjiangEntered') === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setBackgroundVisible(visible) {
+    ['.bg-gradient', '.bg-grid'].forEach(function(selector) {
+      var el = document.querySelector(selector);
+      if (!el) return;
+      if (visible) {
+        el.style.removeProperty('display');
+        el.style.removeProperty('visibility');
+      } else {
+        el.style.setProperty('display', 'none', 'important');
+      }
+    });
+  }
+
+  function showLoginScreen() {
+    currentView = 'login';
+    var appContainer = document.querySelector('.app-container');
+    var onboardingScreen = document.querySelector('.onboarding-screen');
+    var projectRoot = document.getElementById('yj-project-root');
+
+    if (appContainer) {
+      appContainer.style.setProperty('display', 'none', 'important');
+      appContainer.style.setProperty('visibility', 'hidden', 'important');
+    }
+    if (projectRoot) {
+      projectRoot.style.setProperty('display', 'none', 'important');
+      projectRoot.style.setProperty('visibility', 'hidden', 'important');
+    }
+    if (onboardingScreen) {
+      onboardingScreen.classList.remove('hide');
+      onboardingScreen.style.setProperty('display', 'flex', 'important');
+      onboardingScreen.style.setProperty('visibility', 'visible', 'important');
+      onboardingScreen.style.setProperty('opacity', '1', 'important');
+    }
+    setBackgroundVisible(true);
+
+    try {
+      var creatorInput = document.getElementById('creatorName');
+      var savedName = localStorage.getItem('yunjiangCreatorName') || '';
+      if (creatorInput && savedName && !creatorInput.value) creatorInput.value = savedName;
+      if (typeof window.checkCanEnter === 'function') window.checkCanEnter();
+    } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+
+  function showProjectCenter() {
+    var appContainer = document.querySelector('.app-container');
+    var onboardingScreen = document.querySelector('.onboarding-screen');
+    var projectRoot = document.getElementById('yj-project-root');
+
+    if (appContainer) {
+      appContainer.style.setProperty('display', 'none', 'important');
+      appContainer.style.setProperty('visibility', 'hidden', 'important');
+    }
+    if (onboardingScreen) {
+      onboardingScreen.classList.add('hide');
+      onboardingScreen.style.setProperty('display', 'none', 'important');
+      onboardingScreen.style.setProperty('visibility', 'hidden', 'important');
+    }
+    if (projectRoot) {
+      projectRoot.style.setProperty('display', 'block', 'important');
+      projectRoot.style.setProperty('visibility', 'visible', 'important');
+    }
+    setBackgroundVisible(false);
+    switchView('home');
+    window.scrollTo(0, 0);
+  }
+
+  function logoutToLogin() {
+    try {
+      localStorage.removeItem('yunjiangEntered');
+    } catch (e) {}
+    showLoginScreen();
+    showToast('已返回登录页，项目与创作进度均已保留');
+  }
+
+  function hookLoginFlow() {
+    if (window.__yjLoginFlowHooked || typeof window.enterStudio !== 'function') return;
+    var originalEnterStudio = window.enterStudio;
+    window.enterStudio = function() {
+      var result = originalEnterStudio.apply(this, arguments);
+      setTimeout(showProjectCenter, 0);
+      return result;
+    };
+    window.__yjLoginFlowHooked = true;
   }
 
   // ========== 视图切换 ==========
@@ -1239,6 +1356,10 @@
     var navNewBtn = document.getElementById('yj-nav-new-btn');
     if (navNewBtn) navNewBtn.addEventListener('click', openNewProjectModal);
 
+    // 返回原登录页；仅退出界面状态，不删除项目和创作进度
+    var accountBtn = document.getElementById('yj-nav-account-btn');
+    if (accountBtn) accountBtn.addEventListener('click', logoutToLogin);
+
     // 项目列表新建按钮
     var listNewBtn = document.getElementById('yj-list-new-btn');
     if (listNewBtn) listNewBtn.addEventListener('click', openNewProjectModal);
@@ -1450,27 +1571,11 @@
     injectDOM();
     bindEvents();
     hookStartCreation();
+    hookLoginFlow();
 
-    // 初始显示项目中心、隐藏所有原始页面元素
-    var appContainer = document.querySelector('.app-container');
-    if (appContainer) {
-      appContainer.style.setProperty('display', 'none', 'important');
-      appContainer.style.setProperty('visibility', 'hidden', 'important');
-    }
-    var onboardingScreen = document.querySelector('.onboarding-screen');
-    if (onboardingScreen) {
-      onboardingScreen.style.setProperty('display', 'none', 'important');
-      onboardingScreen.style.setProperty('visibility', 'hidden', 'important');
-    }
-    var bgGradient = document.querySelector('.bg-gradient');
-    if (bgGradient) { bgGradient.style.setProperty('display', 'none', 'important'); }
-    var bgGrid = document.querySelector('.bg-grid');
-    if (bgGrid) { bgGrid.style.setProperty('display', 'none', 'important'); }
-    var projectRoot = document.getElementById('yj-project-root');
-    if (projectRoot) {
-      projectRoot.style.setProperty('display', 'block', 'important');
-      projectRoot.style.setProperty('visibility', 'visible', 'important');
-    }
+    // 首次访问恢复原登录页；已登录用户进入项目中心。
+    if (hasEnteredStudio()) showProjectCenter();
+    else showLoginScreen();
 
     console.log('[云匠引擎] 项目中心模块已加载 ✨');
   }
