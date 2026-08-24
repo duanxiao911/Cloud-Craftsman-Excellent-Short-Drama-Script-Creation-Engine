@@ -8,7 +8,7 @@ license = {text = "MIT"}
 authors = [{name = "xiaoduan"}]
 
 dependencies = [
-    "openai>=1.30.0",
+    "openai>=1.30.0,<2.0.0",
     "fastapi>=0.111.0",
     "uvicorn>=0.30.0",
     "pyyaml>=6.0",
@@ -32,3 +32,5 @@ build-backend = "setuptools.backends._legacy:_Backend"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
