@@ -54,14 +54,191 @@
   window.applyScenePreset=function(key){const el=document.getElementById('ideaInput');el.value=presets[key]||'';el.dataset.scene=key;localStorage.setItem('yunjiang_scene_preset_v1',key);el.dispatchEvent(new Event('input'));showToast('已载入'+({heritage:'非遗短剧',male:'男频爽文',campus:'校园甜宠'}[key])+'深度模板')};
   window.loadSceneExample=function(key){generatedResults={...sceneExamples[key]};stepsCompleted=17;currentStep=17;const el=document.getElementById('ideaInput');el.value=presets[key];el.dataset.scene=key;document.getElementById('welcomeScreen').style.display='none';showAllContent();addRunEvidence('output','载入场景示例','已载入角色、剧情大纲、首集剧本和监督层终审结果',key);saveSession();showToast('完整示例已载入，可直接复核与导出')};
   window.selectStylePack=function(key,silent){activeStylePack=stylePacks[key]?key:'cinematic';localStorage.setItem('yunjiang_style_pack_v1',activeStylePack);document.querySelectorAll('.style-pack-btn').forEach(b=>b.classList.toggle('active',b.dataset.pack===activeStylePack));if(!silent){saveSession();showToast('已启用风格经验包：'+({cinematic:'电影质感',hook:'强钩子爽感',warm:'细腻共情',heritage:'文化叙事'}[activeStylePack]))}};
-  window.startQuickDemo=function(){
-    const demo={...sceneExamples.heritage};
-    generatedResults=demo;stepsCompleted=17;currentStep=17;document.getElementById('ideaInput').value=presets.heritage;document.getElementById('ideaInput').dataset.scene='heritage';document.getElementById('welcomeScreen').style.display='none';showAllContent();
-    run={id:'DEMO-'+Date.now().toString(36).toUpperCase(),startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};
-    const demoExperts=['实战指挥','灵魂捕手','合规守门员','项目配置师','角色铸造师','结构建筑师','对白大师','分集编剧','集纲审核员','场景工匠','格式工匠','质量审计','改稿编辑','视觉导演','商业操盘','剧本审核','质量总监'];
-    demoExperts.forEach((expert,index)=>addRunEvidence('done','专家完成演示步骤 '+String(index+1).padStart(2,'0'),'已执行职责检查并写入可追溯中间产物',expert));
-    [['角色设定检查点','用户可确认、修改或手动编辑人物方向','角色铸造师'],['剧情大纲检查点','三幕结构与集尾钩子通过监督层检查','结构建筑师'],['分集剧本检查点','首集正文已生成，等待人在回路确认','分集编剧'],['监督层终审','文化准确性、节奏与格式检查通过','质量总监']].forEach((x,i)=>addRunEvidence(i===3?'check':'checkpoint',x[0],x[1],x[2]));
-    document.getElementById('runEvidencePanel').classList.add('open');saveSession();showToast('60秒评审演示已就绪：三个检查点与执行证据均可检视');
+  window.startQuickDemo=async function(options){
+    options=options||{};
+    if(window.__yjQuickDemoRunning)return window.__yjQuickDemoPromise;
+    window.__yjQuickDemoRunning=true;
+    const delay=options.instant?30:1200;
+    const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const idea=options.idea||'非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。';
+    const phases=[
+      {
+        key:'outline',step:1,icon:'📖',title:'故事大纲',expert:'soul_catcher',expertName:'灵魂捕手',
+        summary:'确认核心冲突、四段式结构与情感落点',
+        content:`# 《最后一炉》故事大纲
+
+## 一句话故事
+27岁的景泰蓝传人林砚，为保住祖父留下的老作坊，与只相信商业效率的投资人顾沉舟签下30天生死对赌；两人在修复“最后一炉”的过程中，发现十年前火灾与顾沉舟母亲遗作之间的秘密。
+
+## 核心冲突
+- **外部目标**：30天内完成失传的大器型景泰蓝“万山归蓝”，让作坊达到可持续经营条件。
+- **人物矛盾**：林砚坚持手艺价值，顾沉舟强调市场结果，两人必须从对抗转向共同解决问题。
+- **隐藏悬念**：顾沉舟并非偶然投资，他一直在寻找母亲生前未完成的最后一件作品。
+
+## 四段式结构
+1. **立局**：作坊被贴封条，林砚守着尚有余温的炉火；顾沉舟提出30天对赌。
+2. **破局**：工艺直播意外出圈，但核心釉料配方外泄，师徒关系出现裂痕。
+3. **逆局**：十年前火灾真相浮出水面，顾沉舟发现母亲遗作就在待修铜胎之中。
+4. **终局**：众人放弃复制旧作，选择共同完成一件属于当代的新作品，作坊转型为开放工坊。
+
+## 核心情感
+守住传统，不是把它锁进过去，而是让它继续被今天的人使用。`
+      },
+      {
+        key:'roles',step:4,icon:'👤',title:'人物小传',expert:'character_forger',expertName:'角色铸造师',
+        summary:'建立角色目标、秘密、关系张力与成长弧',
+        content:`# 人物小传
+
+## 林砚｜27岁｜景泰蓝青年传人
+外冷内热，工序严谨到近乎固执。父亲因作坊负债离开后，他把“守住祖父的炉火”当成唯一目标。**人物缺口**是只相信牺牲，不懂得经营与协作；最终学会让传统进入现代生活。
+
+## 顾沉舟｜31岁｜文化消费投资人
+判断快、语言锋利，习惯用数字控制风险。他投资作坊的隐藏动机，是寻找母亲十年前未完成的景泰蓝遗作。**人物缺口**是把情感包装成交易；最终承认自己真正想保存的是人与记忆。
+
+## 周伯｜62岁｜老点蓝师
+嘴硬心软，掌握十年前火灾真相。表面反对直播和商业化，实际上害怕自己的错误再次伤害年轻人。他是两位主角之间的“旧时代证人”。
+
+## 关系主线
+林砚与顾沉舟从“守艺者 vs 投资人”转为“共同创作者”；周伯既是阻力，也是解开家族秘密的钥匙。`
+      },
+      {
+        key:'episodes',step:6,icon:'🗂️',title:'集纲',expert:'structure_architect',expertName:'结构建筑师',
+        summary:'拆解首三集目标、冲突、转折与集尾钩子',
+        content:`# 首三集集纲
+
+## 第1集《最后一炉》
+**目标**：在封店前保住尚未出炉的最后一件铜胎。  
+**冲突**：林砚拒绝顾沉舟的收购，债权人当场断电封炉。  
+**转折**：顾沉舟不收购作坊，改为提出30天经营对赌。  
+**集尾钩子**：铜胎内壁露出顾沉舟母亲名字的落款。
+
+## 第2集《蓝色落款》
+**目标**：确认落款来源，同时完成第一次公开烧蓝。  
+**冲突**：周伯否认见过遗作，直播观众质疑工坊造假营销。  
+**转折**：顾沉舟拿出母亲旧照片，背景正是十年前的云匠作坊。  
+**集尾钩子**：周伯在无人处烧掉一张旧工序记录。
+
+## 第3集《不能公开的配方》
+**目标**：用直播订单证明作坊具备经营能力。  
+**冲突**：客户要求公开釉料配方，林砚认为这是祖传底线。  
+**转折**：顾沉舟提出只公开可验证的工艺标准，不公开核心比例。  
+**集尾钩子**：后台突然出现一份完整配方，发送者署名“十年前的学徒”。`
+      },
+      {
+        key:'script',step:7,icon:'📝',title:'正文剧本',expert:'episode_writer',expertName:'分集编剧',
+        summary:'按可拍摄分场格式生成首集核心正文',
+        content:`# 第1集《最后一炉》
+
+## 1-1 云匠作坊·烧蓝间 日/内
+**人物：林砚、周伯、债权执行员**
+
+△ 炉温表停在八百二十度。铜胎在火中泛出暗红，细密的蓝色釉料像尚未凝固的海。
+
+△ 门外传来金属碰撞声。封条被展开，执行员伸手去拉总闸。
+
+**林砚**：再给我十二分钟。
+
+**执行员**：法院文件写得很清楚，现在停工。
+
+△ 林砚没有回头。他戴上防护镜，手里的长钳稳稳托住铜胎。
+
+**周伯**（压低声音）：温度一断，这胎就废了。
+
+**林砚**：炉火还热，云匠就没有关门。
+
+△ 总闸被拉下。排风声骤停，烧蓝间只剩炉膛的余光。
+
+## 1-2 云匠作坊·前厅 日/内
+**人物：林砚、顾沉舟、执行员**
+
+△ 顾沉舟穿过堆满纸箱的前厅，把一份文件放在落灰的工作台上。
+
+**顾沉舟**：我可以买下这里，也可以让他们现在恢复供电。
+
+**林砚**：然后把手工改成流水线？
+
+**顾沉舟**：错。三十天，你证明它能活；证明不了，作坊和债务都归我。
+
+△ 林砚翻到协议最后一页。纸角压着一张旧照片——年轻女人站在这间作坊里，怀中抱着一件未完成的铜胎。
+
+△ 他猛地回头。炉中铜胎的内壁，被余火照出一行极小的落款。
+
+**林砚**：顾清岚……是谁？
+
+△ 顾沉舟第一次失去从容。
+
+**顾沉舟**：我母亲。
+
+**字幕：距离对赌结束，还有30天。**`
+      }
+    ];
+
+    function renderDemoText(text){
+      if(typeof renderMarkdown==='function')return renderMarkdown(text);
+      return '<p>'+esc(text).replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>')+'</p>';
+    }
+    function installRunner(){
+      document.getElementById('yj-core-demo-runner')?.remove();
+      const runner=document.createElement('section');
+      runner.id='yj-core-demo-runner';
+      runner.style.cssText='margin:0 0 18px;padding:16px 18px;border:1px solid rgba(139,92,246,.18);border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(245,243,255,.84));box-shadow:0 10px 30px rgba(76,29,149,.08);backdrop-filter:blur(18px);';
+      runner.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px"><div><b style="color:#312e81">⚡ 核心引擎运行演示</b><div id="yj-core-demo-status" style="font-size:12px;color:#64748b;margin-top:3px">正在编排 4 个核心创作阶段</div></div><span style="font-size:11px;padding:5px 9px;border-radius:999px;background:#ede9fe;color:#7c3aed;font-weight:700">零 Token Demo</span></div><div style="height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden"><div id="yj-core-demo-progress" style="height:100%;width:0;background:linear-gradient(90deg,#8b5cf6,#3b82f6);transition:width .45s ease"></div></div><div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px">'+phases.map((p,i)=>'<div id="yj-demo-phase-'+p.key+'" style="padding:8px;border-radius:10px;background:rgba(255,255,255,.72);border:1px solid rgba(203,213,225,.7);font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span>'+p.icon+'</span> '+(i+1)+'. '+p.title+'</div>').join('')+'</div>';
+      const output=document.getElementById('outputContainer');
+      output.parentNode.insertBefore(runner,output);
+    }
+    function appendOutput(phase){
+      const card=document.createElement('article');
+      card.className='output-card';card.id='target-'+phase.key;
+      card.dataset.demoCore=phase.key;
+      card.innerHTML='<div class="output-header"><div class="output-icon">'+phase.icon+'</div><div><div class="output-title">核心演示 · '+phase.title+'</div><div class="output-meta">'+phase.expertName+' · '+phase.summary+'</div></div><button class="output-edit-btn" onclick="toggleEditOutput('+phase.step+')">编辑</button></div><div class="output-body" id="output-body-'+phase.step+'">'+renderDemoText(phase.content)+'</div>';
+      document.getElementById('outputContainer').appendChild(card);
+      card.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    try{
+      if(typeof window.YJOpenWorkspace==='function')window.YJOpenWorkspace();
+      const input=document.getElementById('ideaInput');input.value=idea;input.dataset.scene='heritage';
+      document.getElementById('welcomeScreen').style.display='none';
+      document.getElementById('outputContainer').innerHTML='';
+      generatedResults={};stepsCompleted=0;currentStep=0;isCreating=true;
+      document.body.classList.add('engine-running','core-demo-mode');
+      document.querySelectorAll('.sub-node-card').forEach(el=>el.classList.remove('working','done'));
+      document.querySelectorAll('[data-expert]').forEach(el=>el.classList.remove('working','active','done'));
+      installRunner();
+      run={id:'CORE-DEMO-'+Date.now().toString(36).toUpperCase(),startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};
+      addRunEvidence('done','决策层完成核心 Demo 编排','选择 4 个核心执行 Agent：故事、角色、结构、分集正文','实战指挥');
+      updateCancelCreationButton?.();
+
+      for(let i=0;i<phases.length;i++){
+        const phase=phases[i],pill=document.getElementById('yj-demo-phase-'+phase.key),node=document.getElementById('bcNode-'+phase.key);
+        document.querySelectorAll('[data-expert]').forEach(el=>el.classList.remove('working','active'));
+        const expertEl=document.querySelector('[data-expert="'+phase.expert+'"]');if(expertEl)expertEl.classList.add('working','active');
+        if(node)node.classList.add('working');
+        pill.style.cssText+=';border-color:#8b5cf6;background:#f5f3ff;color:#6d28d9;font-weight:700;';
+        document.getElementById('yj-core-demo-status').textContent='正在执行：'+phase.expertName+' · '+phase.summary;
+        document.getElementById('engineStatusValue').textContent='核心 Demo '+(i+1)+'/4';
+        document.getElementById('statusTaskInfo').textContent=phase.expertName+' 正在生成'+phase.title;
+        addRunEvidence('working',phase.expertName+'开始执行',phase.summary,phase.expertName);
+        await sleep(delay);
+        generatedResults[phase.step]=phase.content;stepsCompleted=phase.step;currentStep=phase.step;
+        appendOutput(phase);
+        pill.style.cssText+=';border-color:#86efac;background:#f0fdf4;color:#15803d;';
+        pill.innerHTML='✓ '+(i+1)+'. '+phase.title;
+        if(node){node.classList.remove('working');node.classList.add('done')}
+        if(expertEl){expertEl.classList.remove('working');expertEl.classList.add('done')}
+        document.getElementById('yj-core-demo-progress').style.width=((i+1)*25)+'%';
+        addRunEvidence('output',phase.title+'生成完成',phase.content.replace(/[#*\n]/g,' ').slice(0,220),phase.expertName);
+        saveSession();
+      }
+      document.getElementById('yj-core-demo-status').textContent='核心链路运行完成 · 4 项产出均可阅读和编辑';
+      document.getElementById('engineStatusValue').textContent='核心 Demo 完成';
+      document.getElementById('statusTaskInfo').textContent='故事大纲、人物小传、集纲、正文剧本已生成';
+      addRunEvidence('check','监督层完成核心产出检查','四项产出结构完整、人物动机一致、集尾钩子明确、正文格式可拍摄','质量总监');
+      saveSession();showToast('核心引擎 Demo 已完成：4 项产出已写入工作台');
+      return{ok:true,outputs:4,runId:run.id};
+    }finally{
+      isCreating=false;document.body.classList.remove('engine-running');window.__yjQuickDemoRunning=false;updateCancelCreationButton?.();window.refreshAgentCenter?.();
+    }
   };
   function saveSession(){try{localStorage.setItem(SESSION_KEY,JSON.stringify({version:3,idea:document.getElementById('ideaInput')?.value||'',scene:document.getElementById('ideaInput')?.dataset.scene||'',stylePack:activeStylePack,results:generatedResults||{},steps:stepsCompleted||0,current:currentStep||0,checkpoint:[4,6,7].includes(currentStep)?currentStep:0,backendWorkflowId:window.YJBackendBridge?.workflowId||'',lastBackendEventId:window.YJBackendBridge?.lastEventId||0,savedAt:new Date().toISOString()}))}catch(e){}}
   window.clearActiveSession=function(){localStorage.removeItem(SESSION_KEY);showToast('当前续存进度已清除')};
@@ -72,7 +249,7 @@
   document.addEventListener('DOMContentLoaded',function(){installLaunchpad();installCapabilityStrip();installEvidencePanel();renderEvidence();const input=document.getElementById('ideaInput');if(input)input.addEventListener('input',saveSession);setInterval(()=>{if(window.isCreating||Object.keys(window.generatedResults||{}).length)saveSession()},5000);
     let s=null;try{s=JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch(e){} if(s&&s.idea&&input&&!input.value){input.value=s.idea;input.dataset.scene=s.scene||'';activeStylePack=s.stylePack||activeStylePack;selectStylePack(activeStylePack,true);if(s.results&&Object.keys(s.results).length){generatedResults=s.results;stepsCompleted=Number(s.steps)||0;currentStep=Number(s.current)||stepsCompleted;document.getElementById('welcomeScreen').style.display='none';showAllContent();updateBroadcastNodes();updateExpertGroupProgress();addRunEvidence('done','Session 完整恢复',`恢复至步骤 ${stepsCompleted}/17${s.checkpoint?' · 检查点 '+s.checkpoint:''}`,'会话管理器');showToast('已恢复上次进度、生成结果与检查点状态')}else showToast('已恢复上次未完成的创作输入')} if(s?.backendWorkflowId)setTimeout(()=>window.recoverBackendSession?.(s),0);
   });
-  const originalStart=window.startCreation;window.startCreation=async function(){run={id:'YJ-'+Date.now().toString(36).toUpperCase(),startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};addRunEvidence('done','决策层完成任务编排','已选择「'+activeStylePack+'」版本化风格包；后端将按专家职责注入硬约束','决策层 Agent');saveSession();return originalStart.apply(this,arguments)};
+  const originalStart=window.startCreation;window.startCreation=async function(){document.body.classList.remove('core-demo-mode');run={id:'YJ-'+Date.now().toString(36).toUpperCase(),startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};addRunEvidence('done','决策层完成任务编排','已选择「'+activeStylePack+'」版本化风格包；后端将按专家职责注入硬约束','决策层 Agent');saveSession();return originalStart.apply(this,arguments)};
   const originalRun=window.runStepReal;window.runStepReal=async function(stepNum,idea,style,episodes){const p=window.stepPrompts&&window.stepPrompts[stepNum];const expert=p?.expert||p?.name||('专家'+stepNum);addRunEvidence('working','专家开始执行',p?.name||('步骤 '+stepNum),expert);try{const v=await originalRun.apply(this,arguments);const out=(window.generatedResults&&window.generatedResults[stepNum])||'';addRunEvidence('done','专家完成并产出中间结果',(p?.name||'步骤')+' · '+out.replace(/\s+/g,' ').slice(0,180),expert);if([4,6,7].includes(stepNum))addRunEvidence('checkpoint',({4:'角色设定',6:'剧情大纲',7:'分集剧本'}[stepNum])+'等待人工确认','可继续、提出修改意见或直接编辑',expert);saveSession();return v}catch(e){addRunEvidence('error','执行失败',e.message,expert);throw e}};
   const originalAudit=window.runStageSubAgent;window.runStageSubAgent=async function(stageNum){addRunEvidence('check','监督层开始阶段验收','阶段 '+stageNum+'：清单打分、责任定位与反馈回路','监督层 Agent');try{const v=await originalAudit.apply(this,arguments);addRunEvidence('check','监督层验收完成','不合格项已自动点名责任专家返工；通过项进入下一阶段','监督层 Agent');saveSession();return v}catch(e){addRunEvidence('error','监督层验收异常',e.message,'监督层 Agent');throw e}};
 })();

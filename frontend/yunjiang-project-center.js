@@ -737,12 +737,11 @@
           <h2 style="font-size:22px;margin-bottom:20px;color:#1e293b;">&#9889; 快速体验 Demo</h2>
           <div style="display:flex;flex-direction:column;gap:16px;">
             <div class="yj-settings-card" style="background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="font-weight:600;margin-bottom:6px;color:#475569;">&#128640; 60秒零 Token 评审 Demo</div>
-              <div style="color:#94a3b8;margin-bottom:12px;">载入完整预置案例，立即查看17位专家协作、三个人工检查点与 Agent Run 证据。</div>
-              <input type="text" id="yj-demo-idea" placeholder="输入你的短剧创意，例如：一个外卖员意外成为顶级黑客..." style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(203,213,225,0.5);background:rgba(255,255,255,0.8);font-size:14px;outline:none;box-sizing:border-box;" />
+              <div style="font-weight:600;margin-bottom:6px;color:#475569;">&#128640; 核心引擎运行 Demo</div>
+              <div style="color:#94a3b8;margin-bottom:12px;line-height:1.7;">使用预置案例《最后一炉》进入真实工作台，依次演示故事大纲、人物小传、集纲与正文剧本的生成过程。无需消耗 Token。</div>
+              <input type="hidden" id="yj-demo-idea" value="非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。" />
               <div style="margin-top:12px;display:flex;gap:10px;">
-                <button class="yj-home-btn yj-home-btn-primary" id="yj-demo-run" style="padding:10px 24px;">&#9889; 启动60秒演示</button>
-                <button class="yj-home-btn yj-home-btn-secondary" id="yj-demo-example" style="padding:10px 24px;">&#128161; 填充示例</button>
+                <button class="yj-home-btn yj-home-btn-primary" id="yj-demo-run" style="padding:10px 24px;">&#9654; 进入工作台运行 Demo</button>
               </div>
               <div id="yj-demo-result" style="margin-top:16px;display:none;">
                 <div style="padding:14px;border-radius:10px;background:rgba(241,245,249,0.8);border:1px solid rgba(203,213,225,0.3);color:#475569;font-size:14px;white-space:pre-wrap;line-height:1.6;" id="yj-demo-output"></div>
@@ -751,8 +750,10 @@
             <div class="yj-settings-card" style="background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.06);">
               <div style="font-weight:600;margin-bottom:6px;color:#475569;">&#128218; Demo功能说明</div>
               <div style="color:#94a3b8;font-size:13px;line-height:1.6;">
-                &#8226; 完整体验17个AI Agent的协作流程<br/>
-                &#8226; 包含立项评估 &#8594; 大纲生成 &#8594; 角色设定 &#8594; 分集剧情<br/>
+                &#8226; 在工作台中可视化展示当前执行专家与阶段进度<br/>
+                &#8226; 核心链路：故事大纲 &#8594; 人物小传 &#8594; 集纲 &#8594; 正文剧本<br/>
+                &#8226; 每个阶段即时出现可阅读、可编辑的中间产出<br/>
+                &#8226; Agent Run 面板同步保留完整运行证据<br/>
                 &#8226; 预置案例仅在前端演示，不消耗模型 Token<br/>
                 &#8226; 真实创作自动连接 Railway 后端，失联时仍可完成评审 Demo
               </div>
@@ -998,8 +999,11 @@
     var isProjectView = ['home','projects','achievements','settings','newproject','quickdemo'].indexOf(view) >= 0;
 
     // Toggle original app-container and onboarding-screen visibility
-    if (appContainer) { appContainer.style.setProperty('display', isProjectView ? 'none' : '', 'important'); }
-    if (onboardingScreen) { onboardingScreen.style.setProperty('display', isProjectView ? 'none' : '', 'important'); }
+    if (appContainer) {
+      appContainer.style.setProperty('display', isProjectView ? 'none' : 'grid', 'important');
+      appContainer.style.setProperty('visibility', isProjectView ? 'hidden' : 'visible', 'important');
+    }
+    if (onboardingScreen) { onboardingScreen.style.setProperty('display', 'none', 'important'); }
     if (projectRoot) { projectRoot.style.setProperty('display', isProjectView ? 'block' : 'none', 'important'); }
 
     switch (view) {
@@ -1017,7 +1021,11 @@
         var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
         break;
       case 'workspace':
-        var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', '', 'important');
+        var ac = document.querySelector('.app-container');
+        if (ac) {
+          ac.style.setProperty('display', 'grid', 'important');
+          ac.style.setProperty('visibility', 'visible', 'important');
+        }
         break;
       case 'newproject':
         openNewProjectModal();
@@ -1034,6 +1042,12 @@
     }
     window.scrollTo(0, 0);
   }
+
+  window.YJOpenWorkspace = function() {
+    switchView('workspace');
+    var welcome = document.getElementById('welcomeScreen');
+    if (welcome) welcome.style.display = 'none';
+  };
 
   function showOriginalWelcome() {
     var appContainer = document.querySelector('.app-container');
@@ -1389,32 +1403,35 @@
     if (homeProjects) homeProjects.addEventListener('click', function() { switchView('projects'); });
 
     var homeDemo = document.getElementById('yj-home-demo');
-    if (homeDemo) homeDemo.addEventListener('click', function() { switchView('quickdemo'); });
+    if (homeDemo) homeDemo.addEventListener('click', launchCoreDemo);
 
     // 快速体验按钮
-    var demoExample = document.getElementById('yj-demo-example');
-    if (demoExample) demoExample.addEventListener('click', function() {
-      document.getElementById('yj-demo-idea').value = '一个普通外卖员意外获得时间停止能力，在城市中经历一系列荒诞又感人的故事';
-    });
-
     var demoRun = document.getElementById('yj-demo-run');
-    if (demoRun) demoRun.addEventListener('click', function() {
+    if (demoRun) demoRun.addEventListener('click', launchCoreDemo);
+
+    async function launchCoreDemo() {
+      if (window.__yjQuickDemoRunning) {
+        showToast('核心演示正在运行，请在工作台查看');
+        if (typeof window.YJOpenWorkspace === 'function') window.YJOpenWorkspace();
+        return;
+      }
       var idea = document.getElementById('yj-demo-idea').value.trim();
       if (!idea) {
-        idea = '非遗蓝印花布传承人林晚晴，为保住祖传工坊与商业资本展开三代人的守艺之战。';
+        idea = '非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。';
         document.getElementById('yj-demo-idea').value = idea;
       }
       var resultDiv = document.getElementById('yj-demo-result');
       var outputEl = document.getElementById('yj-demo-output');
       resultDiv.style.display = 'block';
-      outputEl.textContent = '正在载入评审演示...';
+      outputEl.textContent = '正在进入创作工作台...';
       try {
-        if (typeof window.startQuickDemo === 'function') window.startQuickDemo();
-        outputEl.textContent = '演示已就绪（零 Token）\n\n✓ 17位 Agent 协作执行\n✓ 角色设定 → 剧情大纲 → 分集剧本 3个人工检查点\n✓ 决策、执行、监督与返工证据\n✓ Session、风格包与结构化导出\n\n请点击右下角「Agent Run 证据」逐项检视。';
+        if (typeof window.startQuickDemo !== 'function') throw new Error('演示模块尚未就绪');
+        window.__yjQuickDemoPromise = window.startQuickDemo({ idea: idea });
+        await window.__yjQuickDemoPromise;
       } catch(err) {
         outputEl.textContent = '演示载入失败：' + err.message;
       }
-    });
+    }
 
     // 弹窗按钮
     var modalCancel = document.getElementById('yj-modal-cancel');
