@@ -182,7 +182,8 @@
     const events = [...(Array.isArray(runState?.events) ? runState.events : []), ...(Array.isArray(runtimeEvents) ? runtimeEvents : [])]
       .filter((event, index, all) => all.findIndex(item => (item.event_id && item.event_id === event.event_id) || (!item.event_id && item.time === event.time && item.title === event.title)) === index);
     const experts = Array.isArray(runState?.experts) ? runState.experts : [];
-    return { completed, current, bridge, active, waiting, events, experts, runState };
+    const coreDemo = document.body.classList.contains('core-demo-mode');
+    return { completed, current, bridge, active, waiting, events, experts, runState, coreDemo };
   }
 
   function refreshAgentCenter() {
@@ -198,6 +199,17 @@
     setText('alsTitle', s.waiting ? '工作流已在检查点暂停' : s.active ? currentExpertName(s) + ' 正在执行' : s.completed >= 17 ? '本次 Agent Run 已完成' : 'Agent 协作引擎待命');
     setText('alsDetail', s.waiting ? '请进入「人在回路」确认或修改方向' : s.active ? currentExpertTask(s) : '决策层、执行层、监督层已就绪');
     document.getElementById('agentLiveStrip')?.classList.toggle('running', s.active); document.getElementById('agentLiveStrip')?.classList.toggle('waiting', s.waiting);
+    if (s.coreDemo) {
+      const demoProgress = [1,4,6,7].filter(step => !!window.generatedResults?.[step]).length;
+      const demoDone = demoProgress >= 4 && !s.active;
+      setText('agentCenterStatus', demoDone ? '核心 Demo 已完成' : '核心 Demo 执行中');
+      setText('actRunState', demoDone ? '已完成' : '执行中');
+      setText('actExpertProgress', `${demoProgress} / 4`);
+      setText('alsCount', `${demoProgress} / 4`);
+      const demoBar = document.getElementById('alsProgressBar'); if (demoBar) demoBar.style.width = `${demoProgress / 4 * 100}%`;
+      setText('alsTitle', demoDone ? '核心引擎 Demo 已完成' : currentExpertName(s) + ' 正在执行');
+      setText('alsDetail', demoDone ? '故事大纲、人物小传、集纲、正文剧本均已生成' : currentExpertTask(s));
+    }
     refreshCheckpoints(s); refreshExecution(s); refreshEvidence(s); refreshAssets(); refreshSession();
   }
 
@@ -266,3 +278,4 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 })();
+
