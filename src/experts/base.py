@@ -150,6 +150,11 @@ class OpenAIClient(LLMClient):
 
     def _get_client(self):
         if self._client is None:
+            # An empty key intentionally enables deterministic local/mock mode.
+            # Newer OpenAI SDK releases validate credentials during client
+            # construction, so avoid instantiating the SDK in that mode.
+            if not (self.api_key or "").strip():
+                return None
             try:
                 import openai
                 self._client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
@@ -439,3 +444,4 @@ __all__ = [
     "ExpertBase",
     "ExpertRegistry",
 ]
+
