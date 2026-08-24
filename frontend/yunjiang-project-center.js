@@ -62,6 +62,22 @@
         border-bottom-color: rgba(139,92,246,0.12);
         box-shadow: 0 1px 12px rgba(0,0,0,0.2);
       }
+      /* 原工作室消息不能被项目中心固定顶栏遮挡 */
+      .error-toast {
+        top: 76px !important;
+        z-index: 30000 !important;
+        max-width: calc(100vw - 32px);
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(15,23,42,0.18);
+        animation: yjSafeToastSlideDown 0.3s ease !important;
+      }
+      @keyframes yjSafeToastSlideDown {
+        from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+      }
+      .node-complete-popup {
+        z-index: 30000 !important;
+      }
       .yj-project-navbar-brand {
         font-size: 17px;
         font-weight: 700;
@@ -594,6 +610,7 @@
       /* ========== 响应式 ========== */
       @media (max-width: 640px) {
         .yj-project-navbar { padding: 0 14px; height: 50px; }
+        .error-toast { top: 68px !important; }
         .yj-project-navbar-brand { font-size: 14px; }
         .yj-project-navbar-nav a { padding: 6px 10px; font-size: 12px; }
         .yj-project-home h1 { font-size: 28px; }
