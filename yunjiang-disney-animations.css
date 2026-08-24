@@ -1,0 +1,566 @@
+/* ═══════════════════════════════════════════════════════════
+   云匠引擎 · 迪士尼动画十二原则增强层 v1.0
+   原则映射：
+   1.Squash&Stretch → 按钮按压/卡片弹性
+   2.Anticipation   → 入场前预备位移
+   3.Staging        → 活跃元素视觉主导
+   4.Pose-to-Pose   → 关键帧组合动画
+   5.Follow-Through → 内容错峰跟随
+   6.Slow In/Out    → 弹性缓动曲线
+   7.Arcs           → 图标弧线运动
+   8.Secondary      → 完成粒子/光泽
+   9.Timing         → 分档时长
+   10.Exaggeration  → 成功状态放大
+   11.Solid Drawing → 多层阴影纵深
+   12.Appeal        → 弹簧曲线+抛光
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 缓动曲线 Token ── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);   /* 轻度过冲，入场 */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);     /* 顺滑减速，出场/大元素 */
+  --ease-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 标准慢入慢出 */
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55); /* 强烈弹性 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);          /* 快速出场 */
+
+  /* ── 时长分档 ── */
+  --dur-micro: 120ms;   /* 图标、小细节 */
+  --dur-fast: 200ms;    /* 按钮、小元素 */
+  --dur-base: 320ms;    /* 卡片入场 */
+  --dur-slow: 480ms;    /* 面板、大区域 */
+  --dur-epic: 650ms;    /* 完成庆祝 */
+}
+
+/* ═══════════════════════════════════════════════
+   §1 入场动画 — Anticipation + Slow In/Out + Stagger
+   ═══════════════════════════════════════════════ */
+
+@keyframes yjCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes yjResultEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.94);
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.12);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+}
+
+@keyframes yjPanelSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(40px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes yjFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 错峰工具类 */
+.yj-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.yj-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.yj-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.yj-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.yj-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.yj-stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+/* ═══════════════════════════════════════════════
+   §2 按钮交互 — Squash & Stretch + Anticipation + Timing
+   ═══════════════════════════════════════════════ */
+
+/* 所有主要按钮按压弹性 */
+.yj-home-btn,
+.quick-demo-btn,
+.style-pack-btn,
+.agent-center-trigger,
+.evidence-trigger,
+.genre-tag,
+.idea-chip,
+button[class*="yj-"] {
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    box-shadow var(--dur-fast) var(--ease-gentle),
+    background var(--dur-fast) var(--ease-gentle),
+    border-color var(--dur-fast) var(--ease-gentle) !important;
+}
+
+.yj-home-btn:active,
+.quick-demo-btn:active,
+.style-pack-btn:active,
+.genre-tag:active,
+.idea-chip:active {
+  transform: scale(0.95) scaleY(0.97) !important;
+  transition-duration: var(--dur-micro) !important;
+}
+
+/* 悬停预备：微微后缩再弹起 */
+.yj-home-btn-primary:hover,
+.quick-demo-btn:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+}
+
+.yj-home-btn-primary:active,
+.quick-demo-btn:active {
+  transform: translateY(-1px) scale(0.97) !important;
+}
+
+/* 次要按钮 hover */
+.yj-home-btn-secondary:hover {
+  transform: translateY(-2px) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §3 卡片交互 — Solid Drawing + Follow-Through
+   ═══════════════════════════════════════════════ */
+
+.yj-project-card,
+.ci-card,
+.session-card,
+.pack-card-grid > button,
+.scene-card-grid article {
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-gentle),
+    border-color var(--dur-fast) var(--ease-gentle),
+    background var(--dur-fast) var(--ease-gentle) !important;
+}
+
+.yj-project-card:hover,
+.ci-card:hover {
+  transform: translateY(-4px) scale(1.01) !important;
+  box-shadow:
+    var(--glass-glow-inner),
+    0 16px 48px rgba(139, 92, 246, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
+.yj-project-card:active,
+.ci-card:active {
+  transform: translateY(-1px) scale(0.99) !important;
+  transition-duration: var(--dur-micro) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §4 Agent 卡片状态 — Staging + Exaggeration + Secondary
+   ═══════════════════════════════════════════════ */
+
+@keyframes yjAgentRunning {
+  0%, 100% {
+    box-shadow:
+      var(--glass-glow-inner),
+      0 0 0 0 rgba(59, 130, 246, 0.15),
+      0 4px 20px rgba(0, 0, 0, 0.04);
+  }
+  50% {
+    box-shadow:
+      var(--glass-glow-inner),
+      0 0 0 8px rgba(59, 130, 246, 0),
+      0 8px 32px rgba(59, 130, 246, 0.1);
+  }
+}
+
+@keyframes yjAgentComplete {
+  0% {
+    box-shadow:
+      var(--glass-glow-inner),
+      0 0 0 0 rgba(34, 197, 94, 0.2),
+      0 4px 20px rgba(0, 0, 0, 0.04);
+    transform: scale(1);
+  }
+  30% {
+    box-shadow:
+      var(--glass-glow-inner),
+      0 0 0 12px rgba(34, 197, 94, 0),
+      0 8px 32px rgba(34, 197, 94, 0.12);
+    transform: scale(1.03);
+  }
+  60% { transform: scale(0.99); }
+  100% {
+    box-shadow:
+      var(--glass-glow-inner),
+      0 0 0 0 rgba(34, 197, 94, 0),
+      0 4px 20px rgba(34, 197, 94, 0.08);
+    transform: scale(1);
+  }
+}
+
+@keyframes yjAgentError {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* Agent 运行中光带 */
+@keyframes yjRunningShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 状态徽章过渡 */
+.yj-qd-badge,
+.status-badge,
+[class*="status-badge"] {
+  transition:
+    background var(--dur-fast) var(--ease-gentle),
+    color var(--dur-fast) var(--ease-gentle),
+    transform var(--dur-fast) var(--ease-spring) !important;
+}
+
+/* 状态变化时微弹 */
+.yj-qd-badge.yj-badge-pulse {
+  animation: yjBadgeBounce 0.4s var(--ease-spring);
+}
+
+@keyframes yjBadgeBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* ═══════════════════════════════════════════════
+   §5 完成庆祝 — Exaggeration + Secondary Action + Arcs
+   ═══════════════════════════════════════════════ */
+
+@keyframes yjCompleteBurst {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(3deg);
+  }
+  70% { transform: scale(0.95) rotate(-1deg); }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* 完成对勾弧线绘制 */
+@keyframes yjCheckDraw {
+  from { stroke-dashoffset: 48; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* 粒子上升 */
+@keyframes yjSparkle {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0) rotate(0deg);
+  }
+  20% { opacity: 1; transform: scale(1); }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.3) rotate(180deg);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   §6 进度条 — Slow In/Out + Secondary
+   ═══════════════════════════════════════════════ */
+
+.yj-progress-bar span,
+.als-progress span {
+  transition: width 0.6s var(--ease-smooth) !important;
+  background-size: 200% 100% !important;
+}
+
+.yj-progress-bar.running span,
+.als-progress.running span {
+  animation: yjProgressShimmer 2s linear infinite;
+}
+
+@keyframes yjProgressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   §7 面板/弹窗 — Follow-Through + Overlapping
+   ═══════════════════════════════════════════════ */
+
+.yj-modal-overlay {
+  animation: yjOverlayFadeIn var(--dur-base) var(--ease-gentle) !important;
+}
+
+.yj-modal {
+  animation: yjModalSpring var(--dur-slow) var(--ease-spring) !important;
+}
+
+@keyframes yjModalSpring {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes yjOverlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 面板内容错峰入场 */
+.yj-modal .yj-form-group,
+.yj-modal .yj-modal-footer,
+.yj-modal h2,
+.yj-modal h3 {
+  animation: yjFadeUp var(--dur-base) var(--ease-out) both;
+}
+.yj-modal h2 { animation-delay: 80ms; }
+.yj-modal .yj-form-group:nth-child(2) { animation-delay: 120ms; }
+.yj-modal .yj-form-group:nth-child(3) { animation-delay: 160ms; }
+.yj-modal .yj-form-group:nth-child(4) { animation-delay: 200ms; }
+.yj-modal .yj-modal-footer { animation-delay: 240ms; }
+
+/* Agent center 面板 */
+.agent-center {
+  transition: transform var(--dur-slow) var(--ease-spring) !important;
+}
+
+.act-panel.active {
+  animation: yjPanelContentIn var(--dur-base) var(--ease-out) !important;
+}
+
+@keyframes yjPanelContentIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   §8 导航/切换 — Arcs + Slow In/Out
+   ═══════════════════════════════════════════════ */
+
+.yj-nav-item {
+  transition:
+    color var(--dur-fast) var(--ease-gentle),
+    background var(--dur-fast) var(--ease-gentle),
+    transform var(--dur-fast) var(--ease-spring) !important;
+}
+
+.yj-nav-item:hover {
+  transform: translateX(3px);
+}
+
+.yj-nav-item.active {
+  transform: translateX(0);
+}
+
+.yj-nav-item:active {
+  transform: translateX(1px) scale(0.98);
+}
+
+/* ═══════════════════════════════════════════════
+   §9 图标动效 — Arcs + Follow-Through
+   ═══════════════════════════════════════════════ */
+
+@keyframes yjIconSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes yjIconBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(-5deg); }
+  75% { transform: translateY(-2px) rotate(3deg); }
+}
+
+.yj-spin {
+  animation: yjIconSpin 0.8s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   §10 输入框焦点 — Anticipation + Solid Drawing
+   ═══════════════════════════════════════════════ */
+
+.modern-input-card,
+.chat-input-wrapper,
+.input-box,
+.yj-modal input,
+.yj-modal textarea,
+.yj-modal select {
+  transition:
+    border-color var(--dur-fast) var(--ease-gentle),
+    box-shadow var(--dur-base) var(--ease-spring),
+    transform var(--dur-fast) var(--ease-gentle) !important;
+}
+
+.modern-input-card:focus-within,
+.chat-input-wrapper:focus-within {
+  transform: translateY(-1px);
+}
+
+.yj-modal input:focus,
+.yj-modal textarea:focus,
+.yj-modal select:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §11 状态指示器 — Timing + Appeal
+   ═══════════════════════════════════════════════ */
+
+@keyframes yjPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+@keyframes yjBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.yj-status-dot.running {
+  animation: yjPulse 1.2s var(--ease-gentle) infinite;
+}
+
+.yj-status-dot.waiting {
+  animation: yjBlink 1.8s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════
+   §12 Toast/通知 — Pose-to-Pose + Follow-Through
+   ═══════════════════════════════════════════════ */
+
+@keyframes yjToastIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px) scale(0.9);
+  }
+  60% {
+    transform: translateX(-50%) translateY(3px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.yj-toast,
+.toast-notification {
+  animation: yjToastIn var(--dur-base) var(--ease-spring) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §13 极速体验专用增强
+   ═══════════════════════════════════════════════ */
+
+/* Agent 卡片入场 */
+.yj-qd-card-enter {
+  animation: yjCardEnter var(--dur-base) var(--ease-spring) both;
+}
+
+/* 结果卡片入场 */
+.yj-qd-result-enter {
+  animation: yjResultEnter var(--dur-slow) var(--ease-spring) both;
+}
+
+/* 结果内容错峰 */
+.yj-qd-result-enter > div:first-child {
+  animation: yjFadeUp var(--dur-base) var(--ease-out) both;
+  animation-delay: 100ms;
+}
+
+.yj-qd-result-enter > div:last-child {
+  animation: yjFadeUp var(--dur-slow) var(--ease-out) both;
+  animation-delay: 180ms;
+}
+
+/* Agent 运行状态 */
+.yj-qd-card-running {
+  animation: yjAgentRunning 2s var(--ease-gentle) infinite !important;
+}
+
+/* Agent 完成状态 */
+.yj-qd-card-complete {
+  animation: yjAgentComplete 0.6s var(--ease-spring) !important;
+}
+
+/* Agent 错误抖动 */
+.yj-qd-card-error {
+  animation: yjAgentError 0.5s var(--ease-gentle) !important;
+}
+
+/* 状态徽章文字 */
+.yj-qd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 完成庆祝容器 */
+.yj-qd-complete-banner {
+  animation: yjCompleteBurst var(--dur-epic) var(--ease-spring) both;
+}
+
+/* ═══════════════════════════════════════════════
+   §14 通用工具类
+   ═══════════════════════════════════════════════ */
+
+.yj-animate-fade-up {
+  animation: yjFadeUp var(--dur-base) var(--ease-out) both;
+}
+
+.yj-animate-card-enter {
+  animation: yjCardEnter var(--dur-base) var(--ease-spring) both;
+}
+
+.yj-animate-result-enter {
+  animation: yjResultEnter var(--dur-slow) var(--ease-spring) both;
+}
+
+/* ═══════════════════════════════════════════════
+   §15 无障碍：尊重 reduced-motion
+   ═══════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
