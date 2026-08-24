@@ -58,7 +58,9 @@
     const demo={...sceneExamples.heritage};
     generatedResults=demo;stepsCompleted=17;currentStep=17;document.getElementById('ideaInput').value=presets.heritage;document.getElementById('ideaInput').dataset.scene='heritage';document.getElementById('welcomeScreen').style.display='none';showAllContent();
     run={id:'DEMO-'+Date.now().toString(36).toUpperCase(),startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};
-    [['决策层选择专家','根据非遗题材启用灵魂捕手、角色铸造师、结构架构师','灵魂捕手'],['角色设定检查点','用户可确认、修改或手动编辑人物方向','角色铸造师'],['剧情大纲检查点','三幕结构与集尾钩子通过监督层检查','结构架构师'],['分集剧本检查点','首集正文已生成，等待人在回路确认','分集编剧'],['监督层终审','文化准确性、节奏与格式检查通过','质量总监']].forEach((x,i)=>addRunEvidence(i===4?'check':i>0?'checkpoint':'done',x[0],x[1],x[2]));
+    const demoExperts=['实战指挥','灵魂捕手','合规守门员','项目配置师','角色铸造师','结构建筑师','对白大师','分集编剧','集纲审核员','场景工匠','格式工匠','质量审计','改稿编辑','视觉导演','商业操盘','剧本审核','质量总监'];
+    demoExperts.forEach((expert,index)=>addRunEvidence('done','专家完成演示步骤 '+String(index+1).padStart(2,'0'),'已执行职责检查并写入可追溯中间产物',expert));
+    [['角色设定检查点','用户可确认、修改或手动编辑人物方向','角色铸造师'],['剧情大纲检查点','三幕结构与集尾钩子通过监督层检查','结构建筑师'],['分集剧本检查点','首集正文已生成，等待人在回路确认','分集编剧'],['监督层终审','文化准确性、节奏与格式检查通过','质量总监']].forEach((x,i)=>addRunEvidence(i===3?'check':'checkpoint',x[0],x[1],x[2]));
     document.getElementById('runEvidencePanel').classList.add('open');saveSession();showToast('60秒评审演示已就绪：三个检查点与执行证据均可检视');
   };
   function saveSession(){try{localStorage.setItem(SESSION_KEY,JSON.stringify({version:3,idea:document.getElementById('ideaInput')?.value||'',scene:document.getElementById('ideaInput')?.dataset.scene||'',stylePack:activeStylePack,results:generatedResults||{},steps:stepsCompleted||0,current:currentStep||0,checkpoint:[4,6,7].includes(currentStep)?currentStep:0,backendWorkflowId:window.YJBackendBridge?.workflowId||'',lastBackendEventId:window.YJBackendBridge?.lastEventId||0,savedAt:new Date().toISOString()}))}catch(e){}}
@@ -87,9 +89,11 @@
   window.YJBackendBridge=bridge;
 
   function apiBase(){
-    const hosted=/^https?:$/.test(window.location.protocol)?window.location.origin:"";
-    const configured=(loadSettings().apiBaseUrl||"").trim();
-    const raw=(window.YJ_API_BASE||hosted||configured||"https://reasonable-magic-production-7faf.up.railway.app").replace(/\/$/,"");
+    if(typeof window.YJResolveEngineApiBase==="function")return window.YJResolveEngineApiBase();
+    const hostname=String(window.location.hostname||"").toLowerCase();
+    const isGitHubPages=hostname==="github.io"||hostname.endsWith(".github.io");
+    const hosted=/^https?:$/.test(window.location.protocol)&&!isGitHubPages?window.location.origin:"";
+    const raw=(window.YJ_ENGINE_API_BASE||window.YJ_API_BASE||hosted||"https://reasonable-magic-production-7faf.up.railway.app").replace(/\/$/,"");
     return raw.replace(/\/api\/v1$/i,"").replace(/\/v1$/i,"");
   }
   async function jsonFetch(path,options){
@@ -254,3 +258,4 @@
   };
   document.addEventListener("DOMContentLoaded",async function(){await bridge.connect();let saved=null;try{saved=JSON.parse(localStorage.getItem("yunjiang_active_session_v4")||"null");}catch(error){}if(saved&&saved.backendWorkflowId){bridge.workflowId=saved.backendWorkflowId;bridge.lastEventId=Number(saved.lastBackendEventId)||0;bridge.active=true;updateBackendBadge();bridge.consume();}});
 })();
+

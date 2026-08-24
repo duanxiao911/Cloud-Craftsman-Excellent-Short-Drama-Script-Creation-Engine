@@ -1,0 +1,358 @@
+/* ═══════════════════════════════════════════════════════════
+   云匠引擎 · 柔光玻璃 UI 升级层 v1.0
+   主容器：柔光玻璃（Soft Light Glass）
+   关键元素：液态玻璃点缀（Liquid Glass Accent）
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 柔光玻璃 Design Tokens ── */
+  --glass-blur: 20px;
+  --glass-blur-heavy: 32px;
+  --glass-bg: rgba(255, 255, 255, 0.52);
+  --glass-bg-deep: rgba(255, 255, 255, 0.38);
+  --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-border-accent: rgba(139, 92, 246, 0.15);
+  --glass-glow-inner: inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  --glass-glow-outer: 0 8px 32px rgba(139, 92, 246, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --glass-glow-hover: 0 12px 40px rgba(139, 92, 246, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --glass-radius: 18px;
+  --glass-radius-sm: 12px;
+  --glass-radius-lg: 24px;
+
+  /* ── 液态玻璃 Design Tokens ── */
+  --liquid-blur: 24px;
+  --liquid-bg: rgba(255, 255, 255, 0.18);
+  --liquid-border: rgba(255, 255, 255, 0.32);
+  --liquid-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  --liquid-refraction: inset 2px 0 8px rgba(139, 92, 246, 0.06), inset -2px 0 8px rgba(99, 102, 241, 0.06);
+  --liquid-shadow: 0 8px 24px rgba(139, 92, 246, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  --liquid-shadow-hover: 0 12px 36px rgba(139, 92, 246, 0.18), 0 4px 10px rgba(0, 0, 0, 0.08);
+
+  /* ── 暖色调增强 ── */
+  --warm-accent: rgba(255, 183, 77, 0.08);
+  --warm-glow: 0 0 40px rgba(255, 183, 77, 0.04);
+}
+
+/* ═══════════════════════════════════════════════
+   §1 主容器 · 柔光玻璃效果
+   ═══════════════════════════════════════════════ */
+
+/* 评审快速入口面板 */
+.review-launchpad.review-launchpad-left,
+.review-launchpad-left {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-glow-inner), var(--glass-glow-outer) !important;
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
+}
+.review-launchpad-left:hover {
+  box-shadow: var(--glass-glow-inner), var(--glass-glow-hover) !important;
+}
+
+/* 深色模式下的柔光覆写 */
+html[data-theme="dark"] .review-launchpad-left,
+body:not([data-theme="light"]) .review-launchpad-left {
+  background: rgba(30, 28, 52, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 主输入卡片 */
+.modern-input-card,
+.chat-input-wrapper,
+.input-box {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-glow-inner), var(--glass-glow-outer) !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+.modern-input-card:focus-within,
+.chat-input-wrapper:focus-within {
+  border-color: var(--glass-border-accent) !important;
+  box-shadow: var(--glass-glow-inner), 0 0 0 3px rgba(139, 92, 246, 0.08), var(--glass-glow-hover) !important;
+}
+
+html[data-theme="dark"] .modern-input-card,
+html[data-theme="dark"] .chat-input-wrapper,
+body:not([data-theme="light"]) .modern-input-card,
+body:not([data-theme="light"]) .chat-input-wrapper {
+  background: rgba(30, 28, 52, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 创作步骤卡片 */
+.step-card,
+.step-item,
+.creation-step {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.2) !important;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius-sm) !important;
+  box-shadow: var(--glass-glow-inner), 0 4px 16px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 结果展示区域 */
+.result-card,
+.output-section,
+.broadcast-node {
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  background: rgba(255, 255, 255, 0.48) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-glow-inner), 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §2 关键元素 · 液态玻璃点缀
+   ═══════════════════════════════════════════════ */
+
+/* 60秒体验按钮 — 液态玻璃高光 */
+.quick-demo-btn {
+  position: relative !important;
+  backdrop-filter: blur(var(--liquid-blur)) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(var(--liquid-blur)) saturate(1.6) !important;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.7), rgba(99, 102, 241, 0.7)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: var(--glass-radius-sm) !important;
+  box-shadow: var(--liquid-highlight), var(--liquid-refraction), var(--liquid-shadow) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: hidden !important;
+}
+.quick-demo-btn::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 60% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent) !important;
+  transform: skewX(-20deg) !important;
+  transition: left 0.6s ease !important;
+}
+.quick-demo-btn:hover::before {
+  left: 120% !important;
+}
+.quick-demo-btn:hover {
+  box-shadow: var(--liquid-highlight), var(--liquid-refraction), var(--liquid-shadow-hover) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* 风格包按钮 — 液态玻璃质感 */
+.style-pack-btn {
+  backdrop-filter: blur(12px) saturate(1.3) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.3) !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.25s ease !important;
+}
+.style-pack-btn:hover {
+  background: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 14px rgba(139, 92, 246, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+.style-pack-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.75), rgba(99, 102, 241, 0.75)) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: var(--liquid-highlight), var(--liquid-refraction), var(--liquid-shadow) !important;
+}
+
+/* 场景预设按钮 */
+.scene-preset {
+  backdrop-filter: blur(12px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.2) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s ease !important;
+}
+.scene-preset:hover {
+  background: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Agent能力中心触发按钮 — 液态玻璃 */
+.agent-center-trigger {
+  backdrop-filter: blur(var(--liquid-blur)) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(var(--liquid-blur)) saturate(1.5) !important;
+  background: rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: var(--liquid-highlight), 0 4px 16px rgba(139, 92, 246, 0.08) !important;
+  transition: all 0.3s ease !important;
+}
+.agent-center-trigger:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: var(--liquid-highlight), var(--liquid-shadow-hover) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §3 证据面板 · 增强柔光
+   ═══════════════════════════════════════════════ */
+
+.evidence-trigger {
+  backdrop-filter: blur(var(--liquid-blur)) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(var(--liquid-blur)) saturate(1.5) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: var(--liquid-highlight), var(--liquid-refraction), 0 8px 24px rgba(139, 92, 246, 0.12) !important;
+  transition: all 0.3s ease !important;
+}
+.evidence-trigger:hover {
+  box-shadow: var(--liquid-highlight), var(--liquid-refraction), var(--liquid-shadow-hover) !important;
+  transform: translateY(-2px) !important;
+}
+
+.run-evidence-panel {
+  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(1.5) !important;
+  background: rgba(252, 251, 255, 0.65) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius-lg) !important;
+  box-shadow: var(--glass-glow-inner), 0 28px 80px rgba(38, 32, 78, 0.12) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §4 Agent Center 面板 · 柔光升级
+   ═══════════════════════════════════════════════ */
+
+.agent-center {
+  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(1.4) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-left: 1px solid var(--glass-border) !important;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.06) !important;
+}
+html[data-theme="dark"] .agent-center,
+body:not([data-theme="light"]) .agent-center {
+  background: rgba(22, 20, 42, 0.75) !important;
+  border-left-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Agent 层流可视化 */
+.agent-layer-flow {
+  background: rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius-sm) !important;
+}
+
+/* 检查点时间线 */
+.checkpoint-timeline article {
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius-sm) !important;
+  transition: all 0.25s ease !important;
+}
+.checkpoint-timeline article:hover {
+  background: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §5 能力中心内部卡片 · 柔光
+   ═══════════════════════════════════════════════ */
+
+.ci-card,
+.pack-card-grid > button,
+.scene-card-grid article {
+  backdrop-filter: blur(12px) saturate(1.2) !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-glow-inner), 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s ease !important;
+}
+.ci-card:hover,
+.pack-card-grid > button:hover,
+.scene-card-grid article:hover {
+  background: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: var(--glass-glow-inner), 0 6px 20px rgba(139, 92, 246, 0.06) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 会话卡片 */
+.session-card {
+  backdrop-filter: blur(14px) saturate(1.2) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-glow-inner), 0 2px 12px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §6 暖光背景 · 整体氛围
+   ═══════════════════════════════════════════════ */
+
+body {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(139, 92, 246, 0.04), transparent),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(255, 183, 77, 0.03), transparent),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(99, 102, 241, 0.02), transparent) !important;
+}
+
+html[data-theme="dark"] body,
+body:not([data-theme="light"]) {
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(139, 92, 246, 0.08), transparent),
+    radial-gradient(ellipse 50% 60% at 80% 80%, rgba(255, 183, 77, 0.04), transparent),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(99, 102, 241, 0.05), transparent) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §7 微动画 · 呼吸光效
+   ═══════════════════════════════════════════════ */
+
+@keyframes glassBreath {
+  0%, 100% { box-shadow: var(--glass-glow-inner), var(--glass-glow-outer); }
+  50% { box-shadow: var(--glass-glow-inner), 0 8px 36px rgba(139, 92, 246, 0.09), 0 2px 10px rgba(0, 0, 0, 0.05); }
+}
+
+@keyframes liquidShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 活跃状态的检查点按钮呼吸光效 */
+.checkpoint-confirm-btn {
+  animation: glassBreath 3s ease-in-out infinite !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §8 深色模式兼容
+   ═══════════════════════════════════════════════ */
+
+html[data-theme="dark"] .glass-dark-override,
+body:not([data-theme="light"]) .glass-dark-override {
+  --glass-bg: rgba(30, 28, 52, 0.55) !important;
+  --glass-border: rgba(255, 255, 255, 0.08) !important;
+  --glass-glow-outer: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   §9 响应式兼容
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 800px) {
+  .review-launchpad-left,
+  .modern-input-card {
+    backdrop-filter: blur(16px) saturate(1.2) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkpoint-confirm-btn {
+    animation: none !important;
+  }
+  .quick-demo-btn::before {
+    display: none !important;
+  }
+}
+

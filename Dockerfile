@@ -9,18 +9,21 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENV LLM_API_KEY=""
-ENV LLM_BASE_URL="https://api.deepseek.com"
-ENV LLM_MODEL="deepseek-chat"
-ENV OPENAI_API_KEY=""
-ENV OPENAI_BASE_URL="https://api.deepseek.com"
-ENV GATEWAY_TOKEN=""
+# Create data directory for SQLite persistence
+RUN mkdir -p /app/data
+
+# Default environment variables (override in Railway dashboard)
 ENV HOST="0.0.0.0"
 ENV PORT="8000"
+ENV DATABASE_PATH="/app/data/yunjiang.db"
+ENV DRAMA_LLM_API_KEY=""
+ENV DRAMA_LLM_BASE_URL="https://api.deepseek.com/v1"
+ENV DRAMA_LLM_MODEL="deepseek-chat"
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD-SHELL curl -fsS "http://127.0.0.1:${PORT:-8000}/health" || exit 1
 
-CMD ["python", "server.py"]
+CMD ["sh", "-c", "python -m uvicorn src.api.server:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
