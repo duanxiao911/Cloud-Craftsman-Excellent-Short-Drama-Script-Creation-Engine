@@ -1,0 +1,85 @@
+/* 云匠工作台 · 整页滚动适配
+   工作台内容允许自然撑高页面，短窗口不再压缩或裁切底部区域。 */
+html,
+body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 92, 246, 0.48) rgba(148, 163, 184, 0.1);
+}
+
+.app-container {
+  --yj-workspace-min-height: 920px;
+  height: auto !important;
+  min-height: 100vh !important;
+  grid-template-rows: 64px minmax(var(--yj-workspace-min-height), auto) auto !important;
+  align-items: stretch;
+  overflow: visible !important;
+}
+
+.main-workspace {
+  height: auto !important;
+  min-height: var(--yj-workspace-min-height);
+  overflow: visible !important;
+}
+
+.left-panel.sidebar-left,
+.right-sidebar {
+  height: auto !important;
+  min-height: var(--yj-workspace-min-height);
+  max-height: none !important;
+}
+
+/* 左右栏仍保留自己的内容滚动，整页滚动负责浏览完整工作台。 */
+.left-panel.sidebar-left {
+  overflow-y: auto !important;
+}
+
+.right-sidebar {
+  overflow: hidden !important;
+}
+
+.footer-bar {
+  position: relative;
+  z-index: 2;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 10px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  min-height: 56px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(124, 92, 246, 0.48);
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 92, 246, 0.72);
+  background-clip: padding-box;
+}
+
+@media (max-height: 820px) {
+  .app-container {
+    --yj-workspace-min-height: 860px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    --yj-workspace-min-height: 780px;
+  }
+}
+
