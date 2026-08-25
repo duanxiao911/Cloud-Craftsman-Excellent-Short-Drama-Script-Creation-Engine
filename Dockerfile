@@ -22,8 +22,5 @@ ENV DRAMA_LLM_MODEL="deepseek-chat"
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD-SHELL curl -fsS "http://127.0.0.1:${PORT:-8000}/health" || exit 1
-
 CMD ["sh", "-c", "python -m uvicorn src.api.server:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
