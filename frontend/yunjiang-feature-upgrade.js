@@ -1,5 +1,13 @@
 /* 云匠 v10 功能增强层 */
 (function(){
+  const runtimeScript=document.currentScript;
+  if(runtimeScript&&!document.getElementById('yj-page-scroll-style')){
+    const pageScrollStyle=document.createElement('link');
+    pageScrollStyle.id='yj-page-scroll-style';
+    pageScrollStyle.rel='stylesheet';
+    pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.0.0',runtimeScript.src).href;
+    document.head.appendChild(pageScrollStyle);
+  }
   const SESSION_KEY='yunjiang_active_session_v4', LOG_KEY='yunjiang_agent_run_v4';
   const presets={
     heritage:'非遗短剧：濒临失传的景泰蓝技艺传人林砚，为保住祖父留下的老作坊，与只看商业回报的投资人顾沉舟达成30天对赌。每集围绕一道真实工序推进，兼具技艺细节、家族秘密与情感拉扯，结尾必须有强钩子。',
