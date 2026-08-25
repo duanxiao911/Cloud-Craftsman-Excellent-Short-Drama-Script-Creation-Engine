@@ -128,6 +128,35 @@
         align-items: center;
         gap: 10px;
       }
+      .yj-workspace-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 14px;
+        border: 1px solid rgba(139,92,246,0.2);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.62);
+        color: #51479a;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 7px 22px rgba(76,63,145,0.1);
+        backdrop-filter: blur(18px) saturate(1.4);
+        -webkit-backdrop-filter: blur(18px) saturate(1.4);
+        font: 650 12px/1 'Noto Sans SC', -apple-system, sans-serif;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+      }
+      .yj-workspace-back-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(124,92,246,0.42);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 10px 28px rgba(76,63,145,0.15);
+      }
+      [data-theme="dark"] .yj-workspace-back-btn {
+        border-color: rgba(167,139,250,0.28);
+        background: rgba(30,27,55,0.68);
+        color: #ddd6fe;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.2);
+      }
       .yj-project-new-btn {
         padding: 7px 18px;
         border-radius: 10px;
@@ -1049,6 +1078,25 @@
     if (welcome) welcome.style.display = 'none';
   };
 
+  window.YJBackToPortal = function() {
+    switchView('home');
+    showToast('已返回访问首页，当前创作进度已保留');
+  };
+
+  function ensureWorkspaceBackButton() {
+    if (document.getElementById('yj-workspace-back-btn')) return;
+    var actions = document.querySelector('.app-container .top-actions');
+    if (!actions) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'yj-workspace-back-btn';
+    button.className = 'yj-workspace-back-btn';
+    button.title = '返回访问首页，保留当前创作进度';
+    button.innerHTML = '<span aria-hidden="true">←</span><span>返回访问页</span>';
+    button.addEventListener('click', window.YJBackToPortal);
+    actions.insertBefore(button, actions.firstChild);
+  }
+
   function showOriginalWelcome() {
     var appContainer = document.querySelector('.app-container');
     if (appContainer) appContainer.style.display = '';
@@ -1603,6 +1651,7 @@
   function init() {
     injectStyles();
     injectDOM();
+    ensureWorkspaceBackButton();
     bindEvents();
     hookStartCreation();
     hookLoginFlow();

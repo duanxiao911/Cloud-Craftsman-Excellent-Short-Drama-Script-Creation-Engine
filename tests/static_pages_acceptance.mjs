@@ -66,6 +66,13 @@ checks.zeroTokenDemo = await page.locator('#yj-core-demo-runner').innerText().th
 checks.broadcastComplete = await page.locator('#bcNode-outline.done, #bcNode-roles.done, #bcNode-episodes.done, #bcNode-script.done').count().then(count => count === 4);
 checks.runEvidence = await page.locator('#runEvidencePanel').innerText().then(text => ['故事大纲','人物小传','集纲','正文剧本'].every(name => text.includes(name))).catch(() => false);
 checks.coreExperts = await page.locator('#evidenceExperts').innerText().then(text => Number(text.trim()) >= 4).catch(() => false);
+checks.workspaceBackButton = await page.locator('#yj-workspace-back-btn').isVisible().catch(() => false);
+await page.locator('#yj-workspace-back-btn').click();
+await page.waitForTimeout(100);
+checks.workspaceBackReturnsHome = await page.locator('#yj-page-home.yj-page-active').isVisible().catch(() => false);
+await page.evaluate(() => window.YJOpenWorkspace());
+await page.waitForTimeout(100);
+checks.workspaceBackPreservesOutputs = await page.locator('[data-demo-core]').count().then(count => count === 4);
 await page.setViewportSize({ width: 1440, height: 720 });
 checks.workspaceHasPageScroll = await page.evaluate(() => {
   const app = document.querySelector('.app-container');
@@ -80,6 +87,8 @@ checks.workspaceFooterReachable = await page.locator('.footer-bar').evaluate(nod
   const box = node.getBoundingClientRect();
   return box.top < window.innerHeight && box.bottom > 0;
 }).catch(() => false);
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(100);
 await page.screenshot({ path: 'tests/static-pages-fixed.png', fullPage: false });
 
 const result = {
