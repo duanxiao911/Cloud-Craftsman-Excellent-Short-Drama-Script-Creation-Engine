@@ -1,0 +1,27 @@
+{
+  "base": "http://127.0.0.1:8892",
+  "checks": {
+    "dualMode": true,
+    "mangaModeSelected": true,
+    "mangaFormats": true,
+    "rightsGate": true,
+    "eightStages": true,
+    "pagePanelStats": true,
+    "threePages": true,
+    "eightPanels": true,
+    "threeSpeechBubbles": true,
+    "humanCorrection": true,
+    "skeletonCheckpointStops": true,
+    "visualStagesCompleteFirst": true,
+    "proposalCheckpointStops": true,
+    "threeShotMappings": true,
+    "pipelineComplete": true,
+    "threeSceneDeliveries": true,
+    "evidenceLog": true,
+    "sessionPersisted": true,
+    "zeroTokenDemo": true
+  },
+  "errors": [],
+  "localHttpErrors": [],
+  "passed": true
+}

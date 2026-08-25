@@ -24,6 +24,29 @@ SKILLS: Dict[str, Dict[str, Any]] = {
 }
 
 
+# 作为现有17专家的复用型 Skill Pack，不额外制造一套重复 Agent。
+ADAPTATION_SKILL_PACK: Dict[str, Dict[str, Any]] = {
+    "source-chunking": {"name": "原文分块与出处索引", "version": "1.0.0", "agents": ["§10", "§8"], "checks": ["章节边界", "跨块衔接", "source_chunk_ids"]},
+    "source-fact-extraction": {"name": "原著事实提取", "version": "1.0.0", "agents": ["§1", "§3"], "checks": ["禁止脑补", "行级置信度", "事实回溯"]},
+    "story-invariant-lock": {"name": "故事骨架锁定", "version": "1.0.0", "agents": ["§0", "§10"], "checks": ["主题守恒", "因果守恒", "角色命运"]},
+    "filmability-diagnosis": {"name": "影视化问题诊断", "version": "1.0.0", "agents": ["§11", "§13", "§2"], "checks": ["动作表达", "制作成本", "现代价值"]},
+    "adaptation-proposal": {"name": "最小改动改编", "version": "1.0.0", "agents": ["§3", "§4", "§9"], "checks": ["情节功能保留", "影响范围", "替代方案"]},
+    "adaptation-validation": {"name": "原著一致性复核", "version": "1.0.0", "agents": ["§7", "§16"], "checks": ["骨架守恒", "角色一致", "事件无断裂"]},
+    "adaptation-delivery": {"name": "改编成果协调交付", "version": "1.0.0", "agents": ["§6", "§15"], "checks": ["变更台账", "分场可拍", "人工审批"]},
+}
+
+
+# 漫画输入在进入通用改编决策层前，需要完成画格级视觉事实提取。
+MANGA_ADAPTATION_SKILL_PACK: Dict[str, Dict[str, Any]] = {
+    "manga-page-normalization": {"name": "漫画页预处理", "version": "1.0.0", "agents": ["§8", "§10"], "checks": ["页序", "阅读方向", "图像完整性"]},
+    "manga-panel-segmentation": {"name": "画格切分与阅读序", "version": "1.0.0", "agents": ["§13", "§11"], "checks": ["画格边界", "跨页连续", "reading_order"]},
+    "manga-speech-attribution": {"name": "对白框识别与说话人归属", "version": "1.0.0", "agents": ["§4", "§1"], "checks": ["OCR文本", "说话人", "情绪与指向"]},
+    "manga-visual-character-tracking": {"name": "视觉角色跨格追踪", "version": "1.0.0", "agents": ["§1", "§13"], "checks": ["服装特征", "身份一致", "跨格置信度"]},
+    "manga-event-reconstruction": {"name": "跨格事件重建", "version": "1.0.0", "agents": ["§3", "§12"], "checks": ["动作连续", "因果链", "禁止脑补"]},
+    "manga-shot-mapping": {"name": "画格到镜头映射", "version": "1.0.0", "agents": ["§11", "§13", "§6"], "checks": ["景别", "调度", "可拍性"]},
+    "manga-adaptation-validation": {"name": "漫画改编一致性复核", "version": "1.0.0", "agents": ["§7", "§16", "§15"], "checks": ["页格溯源", "骨架守恒", "角色连续"]},
+}
+
+
 def skill_for(expert_id: str) -> Dict[str, Any]:
     return dict(SKILLS.get(expert_id, {"id": "unknown", "name": "未登记技能", "version": "0.0.0", "checks": []}))
-

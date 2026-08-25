@@ -1,0 +1,24 @@
+{
+  "base": "http://127.0.0.1:8892",
+  "checks": {
+    "threeWorkbenches": true,
+    "globalPortalCard": true,
+    "globalNav": true,
+    "fourProjectTypes": true,
+    "workbenchVisible": true,
+    "sevenStages": true,
+    "marketConfiguration": true,
+    "assetCheckpoint": true,
+    "threeCulturalAssets": true,
+    "localizationCheckpoint": true,
+    "threeComparisons": true,
+    "pipelineComplete": true,
+    "sixDeliverables": true,
+    "agentEvidence": true,
+    "sessionPersisted": true,
+    "exportEnabled": true
+  },
+  "errors": [],
+  "localHttpErrors": [],
+  "passed": true
+}

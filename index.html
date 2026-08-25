@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <!-- saved from url=(0234)https://static.coze.site/7626715597744800054-data_volume/files/%E6%89%80%E6%9C%89%E5%AF%B9%E8%AF%9D/%E4%B8%BB%E5%AF%B9%E8%AF%9D/demo-v7.html?sign=1788177183-b0ca8963f2-0-ee6d577514d0974fbaf32310337044d39351e333d3cb33cdad342979a4d0148a -->
 <html lang="zh-CN" data-theme="light"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>云匠 · 智能短剧剧本创作引擎</title>
@@ -5860,7 +5859,6 @@ function renderMarkdown(md) {
   }
 }
 </script>
-<link rel="stylesheet" href="./yunjiang-disney-animations.css">
 <link rel="stylesheet" href="./frontend/yunjiang-feature-ui.css?v=1.1.0">
 <link rel="stylesheet" href="./frontend/yunjiang-glass-ui.css?v=1.1.0">
 </head>
@@ -6072,7 +6070,7 @@ function renderMarkdown(md) {
   <div class="bg-gradient"></div>
   <div class="bg-grid"></div>
 
-  <div class="app-container" style="display:none !important">
+  <div class="app-container">
     <!-- 顶栏 -->
     <div class="top-bar">
       <div class="logo-section">
@@ -8620,6 +8618,21 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
 
   var generatedResults = {}; // 存储真实生成的结果
 
+  // ===== 演示录制器（仅 ?record=1 时启用，记录真实运行过程供 Review Mode 回放） =====
+  var TRACE = {
+    enabled: /[?&]record=1/.test(location.search),
+    t0: Date.now(),
+    events: [],
+    log: function (type, data) {
+      if (!this.enabled) return;
+      this.events.push(Object.assign({ t: Date.now() - this.t0, type: type }, data || {}));
+    },
+    dump: function () {
+      return JSON.stringify({ version: 1, recordedAt: new Date(this.t0).toISOString(), events: this.events });
+    }
+  };
+  window.TRACE = TRACE;
+
   async function startCreation() {
     if (isCreating) return;
     
@@ -8669,6 +8682,7 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
     document.getElementById('outputContainer').innerHTML = '';
     
     const styleText = styleTextMap[selectedStyle] || '情感流';
+    TRACE.log('start',{idea:idea,style:styleText,episodes:settings.episodeCount,model:settings.model,auditRounds:settings.auditRounds,auditItemsPerRound:settings.auditItemsPerRound,stageAgentMode:settings.stageAgentMode});
     
     // 逐步执行每一步
     for (let step = 1; step <= 17; step++) {
@@ -8684,12 +8698,16 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
         if (step === 1) {
           const guidedIdea = await showGuidedBrainstorm(idea);
           if (guidedIdea) idea = guidedIdea; // 用引导后丰富的idea替换
+          TRACE.log('idea_final',{idea:idea});
         }
         
         // 集数选择只影响集纲生成（step 6），其他步骤固定30集
         const stepEpisodes = (step === 6) ? settings.episodeCount : 30;
         setBroadcastNodeWorking(step);
+        TRACE.log('step_start',{step:step,expert:(stepPrompts[step]||{}).expert,name:(stepPrompts[step]||{}).name});
+        var _ocMark=document.getElementById('outputContainer').children.length;
         await runStepReal(step, idea, styleText, stepEpisodes);
+        if(TRACE.enabled){var _oc=document.getElementById('outputContainer');var _html='';for(var _ci=_ocMark;_ci<_oc.children.length;_ci++)_html+=_oc.children[_ci].outerHTML;TRACE.log('step_done',{step:step,html:_html});}
         // Mark expert as completed
         const completedExpert = document.querySelector(`[data-expert="${stepPrompts[step].expert}"]`);
         if (completedExpert) {
@@ -8747,6 +8765,7 @@ ${prevResults[12] || prevResults[7] || '（暂无）'}
     
     // 保存历史记录
     saveCurrentSessionToHistory();
+    TRACE.log('done',{});
 
     // 收工：右栏六个阶段组全部展开复原
     expandAllExpertGroups();
@@ -9401,12 +9420,14 @@ ADVICE|项目名|具体建议`;
     const listEl = panel.querySelector('.subagent-checklist');
     const verdictEl = panel.querySelector('.subagent-verdict');
     setAssistantState('GENERATING', cfg.title + '上线，拿着验收清单逐项打分啦～');
+    TRACE.log('audit_start',{stage:stageNum,title:cfg.title});
 
     let reworkNotes = '';
     for (let round = 1; round <= maxRounds; round++) {
       statusEl.textContent = round === 1 ? '逐项打分中...' : `第${round}轮复核中...`;
       const result = await callStageAuditLLM(cfg, idea, reworkNotes);
       renderSubAgentChecklist(listEl, result);
+      TRACE.log('audit_round',{stage:stageNum,round:round,items:result.items,verdict:result.verdict,panelHtml:panel.outerHTML});
       if (contentArea) scrollToPageBottom();
 
       const failed = result.items.filter(it => it.score < 7 || /不通过/.test(it.status));
@@ -9416,6 +9437,7 @@ ADVICE|项目名|具体建议`;
         verdictEl.className = 'subagent-verdict pass';
         verdictEl.textContent = '✅ ' + (result.verdict || '全部验收项通过，准予进入下一阶段');
         setAssistantState('HAPPY', cfg.title + '验收全部通过，可以放心往下走啦～');
+        TRACE.log('audit_pass',{stage:stageNum,round:round,verdict:result.verdict,panelHtml:panel.outerHTML});
         return;
       }
       if (round === maxRounds) {
@@ -9434,6 +9456,7 @@ ADVICE|项目名|具体建议`;
           console.error('打磨建议生成失败:', adviceErr);
         }
         setAssistantState('AUDIT_NEED', '子智能体打磨收官，遗留问题的修改作业我帮你列好啦～');
+        TRACE.log('audit_warn',{stage:stageNum,round:round,failed:failed.map(function(f){return f.name}),verdict:result.verdict,panelHtml:panel.outerHTML});
         return;
       }
       // 点名返工（每轮处理项数可在设置中调整）
@@ -9442,6 +9465,7 @@ ADVICE|项目名|具体建议`;
         statusEl.textContent = `点名 ${target.name} 返工「${item.name}」...`;
         const text = await reworkExpert(target.step, item.name, item.comment);
         reworkNotes += `\n第${round}轮「${item.name}」→ ${target.name}修订：${(text || '').slice(0, 400)}`;
+        TRACE.log('rework',{stage:stageNum,round:round,item:item.name,target:target.name,comment:item.comment});
       }
     }
   }
@@ -10633,7 +10657,7 @@ ADVICE|项目名|具体建议`;
   
   // 初始化主题
   (function() {
-    const saved = localStorage.getItem('theme') || 'light';
+    const saved = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     const btn = document.getElementById('themeToggleTop');
     if (btn) btn.textContent = saved === 'light' ? '☀️' : '🌙';
@@ -11537,84 +11561,9 @@ function playBubblePopSound() {
 
 <script src="./frontend/yunjiang-capability-center.js?v=1.2.0"></script>
 <script src="./frontend/yunjiang-feature-upgrade.js?v=1.2.0"></script>
-<script src="./frontend/yunjiang-project-center.js?v=1.2.0"></script>
-<script src="./frontend/yunjiang-p1-upgrade.js?v=1.1.0"></script>
+<script src="./frontend/yunjiang-project-center.js?v=1.5.0"></script>
+<script src="./frontend/yunjiang-adaptation-workbench.js?v=1.1.0"></script>
+<script src="./frontend/yunjiang-global-workbench.js?v=1.0.0"></script>
+<script src="./frontend/yunjiang-p1-upgrade.js?v=1.2.0"></script>
 <script src="./frontend/yunjiang-experience-curve.js?v=1.1.0"></script>
 </body></html>
-<!-- 体验曲线可视化模块 -->
-<script>
-(function() {
-  // 为60秒体验注入演示数据
-  const DEMO_EPISODES = [
-    { episode: 1, scores: { suspense: 72, emotion: 45, novelty: 85, thrill: 30, immersion: 68, attachment: 55 }},
-    { episode: 2, scores: { suspense: 65, emotion: 70, novelty: 60, thrill: 55, immersion: 75, attachment: 68 }},
-    { episode: 3, scores: { suspense: 80, emotion: 78, novelty: 48, thrill: 82, immersion: 82, attachment: 75 }},
-    { episode: 4, scores: { suspense: 88, emotion: 85, novelty: 42, thrill: 90, immersion: 88, attachment: 80 }},
-    { episode: 5, scores: { suspense: 92, emotion: 90, novelty: 38, thrill: 95, immersion: 90, attachment: 85 }},
-    { episode: 6, scores: { suspense: 78, emotion: 95, novelty: 55, thrill: 88, immersion: 92, attachment: 92 }},
-  ];
-
-  // 在结果区域注入体验曲线容器
-  function injectCurvePanel() {
-    // 找到合适的插入点：在结果卡片区域之后
-    const resultArea = document.querySelector('.review-launchpad') || 
-                       document.querySelector('.modern-input-card')?.parentElement ||
-                       document.querySelector('.step-card')?.parentElement;
-    if (!resultArea) return;
-
-    let container = document.getElementById('experience-curve-container');
-    if (container) return; // 已存在
-
-    container = document.createElement('div');
-    container.id = 'experience-curve-container';
-    container.style.cssText = 'margin:24px auto;max-width:1200px;padding:0 16px;';
-    
-    // 标题
-    const header = document.createElement('div');
-    header.style.cssText = 'text-align:center;margin-bottom:16px;';
-    header.innerHTML = '<h3 style="font-size:16px;font-weight:700;color:#1e293b;margin:0;">📊 六维体验曲线分析</h3><p style="font-size:12px;color:#64748b;margin-top:4px;">基于剧本内容的智能分析，覆盖悬念张力、情感共鸣、新奇冲击、爽感释放、沉浸深度、角色认同六个维度</p>';
-    container.appendChild(header);
-
-    // 曲线渲染区域
-    const chartArea = document.createElement('div');
-    chartArea.id = 'experience-curve-charts';
-    container.appendChild(chartArea);
-
-    resultArea.parentElement.insertBefore(container, resultArea.nextSibling);
-
-    // 渲染演示数据
-    if (window.YunjiangExperienceCurve) {
-      window.YunjiangExperienceCurve.render('experience-curve-charts', DEMO_EPISODES);
-    }
-  }
-
-  // 延迟注入，确保DOM就绪
-  if (document.readyState === 'complete') {
-    injectCurvePanel();
-  } else {
-    window.addEventListener('load', function() { setTimeout(injectCurvePanel, 500); });
-  }
-
-  // 暴露API：真实创作完成后可调用
-  window.YunjiangExperienceCurveAPI = {
-    renderWithDemo: function() {
-      if (window.YunjiangExperienceCurve) {
-        window.YunjiangExperienceCurve.render('experience-curve-charts', DEMO_EPISODES);
-      }
-    },
-    renderWithData: function(episodes) {
-      if (window.YunjiangExperienceCurve) {
-        window.YunjiangExperienceCurve.render('experience-curve-charts', episodes);
-      }
-    },
-    analyzeAndRender: function(episodeTexts) {
-      var episodes = episodeTexts.map(function(text, i) {
-        return window.YunjiangExperienceCurve.analyzeEpisode(text, i + 1);
-      });
-      if (window.YunjiangExperienceCurve) {
-        window.YunjiangExperienceCurve.render('experience-curve-charts', episodes);
-      }
-    }
-  };
-})();
-</script>

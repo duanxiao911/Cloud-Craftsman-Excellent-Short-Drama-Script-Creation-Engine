@@ -44,6 +44,27 @@
     _default:   '云匠正在全力创作中……'
   };
 
+  // 专业模式展示真实的 Agent → Skill 调度信息，而不是抽象步骤编号。
+  var STEP_SKILL_META = {
+    1:  { agent: '创意捕手', skill: '创意灵感提炼', version: '1.0.0', checks: ['需求意图', '题材潜力'] },
+    2:  { agent: '项目配置师', skill: '项目参数规划', version: '1.0.0', checks: ['集数配置', '平台适配'] },
+    3:  { agent: '故事总监', skill: '故事方向审定', version: '1.0.0', checks: ['核心冲突', '叙事红线'] },
+    4:  { agent: '角色锻造师', skill: '角色弧光设计', version: '1.1.0', checks: ['人物动机', '关系张力'] },
+    5:  { agent: '商业分析师', skill: '商业定位分析', version: '1.0.0', checks: ['受众画像', '传播钩子'] },
+    6:  { agent: '结构建筑师', skill: '故事结构设计', version: '1.1.0', checks: ['节奏曲线', '转折密度'] },
+    7:  { agent: '集纲编剧', skill: '分集大纲创作', version: '1.2.0', checks: ['集尾钩子', '信息增量'] },
+    8:  { agent: '质量总监', skill: '多维质量审计', version: '1.1.0', checks: ['连贯性', '可拍性'] },
+    9:  { agent: '大纲审核员', skill: '分集大纲复核', version: '1.0.0', checks: ['角色一致', '伏笔闭环'] },
+    10: { agent: '创意捕手', skill: '创意补强策略', version: '1.0.0', checks: ['新鲜度', '情绪价值'] },
+    11: { agent: '台词打磨师', skill: '角色声线设计', version: '1.0.0', checks: ['口语感', '角色辨识'] },
+    12: { agent: '场景美术师', skill: '场景营造', version: '1.0.0', checks: ['视觉记忆点', '制作成本'] },
+    13: { agent: '分镜导演', skill: '视觉叙事设计', version: '1.0.0', checks: ['镜头节奏', '画面信息'] },
+    14: { agent: '排版工匠', skill: '剧本格式规范', version: '1.0.0', checks: ['场次格式', '交付规范'] },
+    15: { agent: '修订编辑师', skill: '定向修订', version: '1.0.0', checks: ['问题定位', '改写影响'] },
+    16: { agent: '合规审核官', skill: '内容合规检查', version: '1.0.0', checks: ['风险表达', '平台规范'] },
+    17: { agent: '终审评审官', skill: '最终质量签署', version: '1.0.0', checks: ['质量门禁', '交付完整'] }
+  };
+
   var currentMode = MODE_NORM;
   try { currentMode = localStorage.getItem(MODE_KEY) || MODE_NORM; } catch(e){}
 
@@ -96,6 +117,34 @@
         color: #8b5cf6;
         background: rgba(139,92,246,0.06);
       }
+      .yj-mode-btn:focus-visible { outline: 2px solid #7c6ee6; outline-offset: -2px; }
+
+      /* 同一引擎的两种驾驶方式：普通模式收起工程信息，专业模式完整展开。 */
+      body[data-yj-mode="normal"] .app-container {
+        grid-template-columns: 250px minmax(0, 1fr) !important;
+      }
+      body[data-yj-mode="normal"] .right-sidebar,
+      body[data-yj-mode="normal"] .agent-center-trigger,
+      body[data-yj-mode="normal"] .evidence-trigger,
+      body[data-yj-mode="normal"] .run-evidence-panel,
+      body[data-yj-mode="normal"] .agent-center-panel,
+      body[data-yj-mode="normal"] [data-view="settings"] {
+        display: none !important;
+      }
+      body[data-yj-mode="normal"] .main-workspace { grid-column: 2 / 3 !important; }
+      body[data-yj-mode="normal"] .footer-bar { grid-column: 1 / -1 !important; }
+      body[data-yj-mode="normal"] .agent-live-strip button { display: none !important; }
+      body[data-yj-mode="pro"] .right-sidebar { display: flex; }
+
+      .yj-mode-toast {
+        position: fixed; top: 78px; left: 50%; z-index: 21000;
+        transform: translate(-50%, -10px); opacity: 0; pointer-events: none;
+        padding: 10px 16px; border: 1px solid rgba(255,255,255,.78); border-radius: 999px;
+        background: rgba(255,255,255,.76); color: #475569; font-size: 12px; font-weight: 650;
+        box-shadow: 0 12px 35px rgba(51,65,85,.12); backdrop-filter: blur(20px) saturate(1.25);
+        transition: opacity .2s ease, transform .2s ease;
+      }
+      .yj-mode-toast.visible { opacity: 1; transform: translate(-50%, 0); }
 
       /* ========== §10 专业模式 Agent 执行信息条 ========== */
       .yj-pro-agent-bar {
@@ -780,16 +829,24 @@
    * ============================================================ */
   function installModeToggle() {
     var navbarRight = document.querySelector('.yj-project-navbar-right');
-    if (!navbarRight || document.getElementById('yj-mode-toggle')) return;
+    var workspaceActions = document.querySelector('.app-container .top-actions');
+    if (navbarRight) installModeToggleAt(navbarRight, 'yj-mode-toggle');
+    if (workspaceActions) installModeToggleAt(workspaceActions, 'yj-workspace-mode-toggle');
+  }
+
+  function installModeToggleAt(host, id) {
+    if (!host || document.getElementById(id)) return;
 
     var toggle = document.createElement('div');
     toggle.className = 'yj-mode-toggle';
-    toggle.id = 'yj-mode-toggle';
+    toggle.id = id;
+    toggle.setAttribute('role', 'group');
+    toggle.setAttribute('aria-label', '工作模式');
     toggle.innerHTML =
-      '<button class="yj-mode-btn' + (currentMode === MODE_NORM ? ' active' : '') + '" data-mode="' + MODE_NORM + '">普通模式</button>' +
-      '<button class="yj-mode-btn' + (currentMode === MODE_PRO ? ' active' : '') + '" data-mode="' + MODE_PRO + '">专业模式</button>';
+      '<button class="yj-mode-btn' + (currentMode === MODE_NORM ? ' active' : '') + '" data-mode="' + MODE_NORM + '" title="自动驾驶：只看创作阶段与结果">自动驾驶</button>' +
+      '<button class="yj-mode-btn' + (currentMode === MODE_PRO ? ' active' : '') + '" data-mode="' + MODE_PRO + '" title="专业驾驶舱：配置参数并查看完整 Agent 证据">专业驾驶舱</button>';
 
-    navbarRight.insertBefore(toggle, navbarRight.firstChild);
+    host.insertBefore(toggle, host.firstChild);
 
     toggle.addEventListener('click', function(e) {
       var btn = e.target.closest('.yj-mode-btn');
@@ -800,13 +857,36 @@
       try { localStorage.setItem(MODE_KEY, mode); } catch(e){}
       toggle.querySelectorAll('.yj-mode-btn').forEach(function(b) {
         b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+        b.setAttribute('aria-pressed', b.getAttribute('data-mode') === mode ? 'true' : 'false');
       });
       updateDisplayMode();
+      showModeToast(mode);
     });
+  }
+
+  function showModeToast(mode) {
+    var toast = document.getElementById('yj-mode-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'yj-mode-toast';
+      toast.className = 'yj-mode-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = mode === MODE_PRO
+      ? '已进入专业驾驶舱：高级参数、17 专家调度、检查点与 Run 证据已展开'
+      : '已进入自动驾驶：只需给出想法，云匠将自动配置并完成核心创作';
+    toast.classList.add('visible');
+    clearTimeout(toast._yjTimer);
+    toast._yjTimer = setTimeout(function() { toast.classList.remove('visible'); }, 2600);
   }
 
   function updateDisplayMode() {
     document.body.setAttribute('data-yj-mode', currentMode);
+    document.querySelectorAll('.yj-mode-btn').forEach(function(b) {
+      var selected = b.getAttribute('data-mode') === currentMode;
+      b.classList.toggle('active', selected);
+      b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
     // 隐藏不需要的显示元素
     var proBars = document.querySelectorAll('.yj-pro-agent-bar');
     var friendlyMsgs = document.querySelectorAll('.yj-friendly-msg');
@@ -816,7 +896,11 @@
     } else {
       proBars.forEach(function(el) { el.classList.remove('visible'); });
       friendlyMsgs.forEach(function(el) { if (el.dataset.active === 'true') el.classList.add('visible'); });
+      document.querySelectorAll('.agent-center-panel.open, .run-evidence-panel.open').forEach(function(el) {
+        el.classList.remove('open');
+      });
     }
+    window.dispatchEvent(new CustomEvent('yj-mode-change', { detail: { mode: currentMode } }));
   }
 
   // 显示 Agent 执行信息（专业模式）
@@ -1669,15 +1753,17 @@
         var stepKey = stepMap[stepNum] || '_default';
 
         // 显示执行信息
-        var agentName = 'Agent-' + stepNum;
+        var meta = STEP_SKILL_META[stepNum] || { agent: 'Agent-' + stepNum, skill: '工作流执行', version: '1.0.0', checks: [] };
+        var agentName = meta.agent;
         // 尝试从 stepPrompts 获取专家名
         if (window.stepPrompts && window.stepPrompts[stepNum]) {
           agentName = window.stepPrompts[stepNum].expert || window.stepPrompts[stepNum].name || agentName;
         }
         showAgentExecution({
           agent: agentName,
-          skill: 'Step ' + stepNum,
-          version: '1.0',
+          skill: meta.skill,
+          version: meta.version,
+          checks: meta.checks,
           stepKey: stepKey
         });
 
@@ -1749,4 +1835,3 @@
   }
 
 })();
-

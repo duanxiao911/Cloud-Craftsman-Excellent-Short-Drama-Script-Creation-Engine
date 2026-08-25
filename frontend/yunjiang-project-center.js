@@ -23,6 +23,26 @@
     '实战指挥', '商业操盘'
   ];
 
+  const EXPERT_KNOWLEDGE_BINDINGS = [
+    { id: 'mission_commander', icon: '🧭', name: '实战指挥', role: '总调度与策略优先级', skill: '工作流策略编排', library: '项目决策与生产统筹库' },
+    { id: 'project_configurator', icon: '🗂️', name: '项目配置师', role: '集数、受众与平台配置', skill: '短剧项目配置', library: '平台规格与受众画像库' },
+    { id: 'soul_catcher', icon: '💠', name: '灵魂捕手', role: '主题与核心情感冲突', skill: '故事灵魂提炼', library: '情感母题与文化原型库' },
+    { id: 'character_forger', icon: '🎭', name: '角色铸造师', role: '人物设定与成长弧线', skill: '角色弧线设计', library: '人物心理与关系模型库' },
+    { id: 'structure_architect', icon: '🏗️', name: '结构建筑师', role: '叙事结构与关键转折', skill: '剧情结构设计', library: '短剧结构与经典案例库' },
+    { id: 'dialogue_master', icon: '💬', name: '对白大师', role: '角色声线与潜台词', skill: '对白声线设计', library: '方言口语与台词语料库' },
+    { id: 'scene_craftsman', icon: '🎬', name: '场景工匠', role: '场景动作与可拍化', skill: '场景可拍化', library: '场景调度与制作条件库' },
+    { id: 'compliance_guard', icon: '🛡️', name: '合规守门员', role: '内容红线与平台风险', skill: '内容合规审查', library: '平台规则与文化合规库' },
+    { id: 'episode_writer', icon: '✍️', name: '分集编剧', role: '分集正文与结尾钩子', skill: '分集剧本生成', library: '精品短剧剧本样本库' },
+    { id: 'format_craftsman', icon: '📐', name: '格式工匠', role: '标准剧本格式交付', skill: '剧本格式标准化', library: '影视剧本格式规范库' },
+    { id: 'visual_director', icon: '🎥', name: '视觉导演', role: '镜头语言与视觉母题', skill: '视觉叙事设计', library: '分镜与视听语言资料库' },
+    { id: 'episode_outline_reviewer', icon: '🧩', name: '集纲审核', role: '连续性与推进效率', skill: '集纲结构审核', library: '集纲结构与钩子案例库' },
+    { id: 'quality_auditor', icon: '📊', name: '质量审计', role: '多维评分与问题定位', skill: '多维质量审计', library: '卡卡星评分与标杆样本库' },
+    { id: 'revision_editor', icon: '🛠️', name: '改稿编辑', role: '定向返工与回归验证', skill: '定向改稿', library: '缺陷归因与改稿经验库' },
+    { id: 'script_reviewer', icon: '🔎', name: '剧本审核', role: '人物、因果与可拍性终审', skill: '剧本生产审核', library: '终审清单与生产标准库' },
+    { id: 'business_strategist', icon: '📈', name: '商业操盘', role: '市场定位与发行策略', skill: '商业定位评估', library: '市场趋势与平台商业库' },
+    { id: 'quality_director', icon: '✅', name: '品控总监', role: '质量门禁与最终签发', skill: '终审签发', library: 'A+交付标准与风险库' }
+  ];
+
   // ========== 状态变量 ==========
   let currentView = 'home';
   let projectList = [];
@@ -339,6 +359,18 @@
       }
       [data-theme="dark"] .yj-feature-label { color: #e2e8f0; }
 
+      /* ========== 双工作台门户 ========== */
+      .yj-project-home.yj-studio-portal{max-width:1180px;padding-top:42px;text-align:left}
+      .yj-studio-portal-head{text-align:center;max-width:760px;margin:0 auto 30px}.yj-studio-portal-head h1{font-size:40px}.yj-studio-portal-head .yj-subtitle{margin-bottom:12px}.yj-studio-portal-head p:last-child{margin:0;color:#94a3b8;font-size:13px}
+      .yj-workbench-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:24px 0 22px}.yj-workbench-card{position:relative;min-height:300px;padding:26px;border:1px solid rgba(255,255,255,.85);border-radius:24px;overflow:hidden;background:rgba(255,255,255,.68);box-shadow:0 18px 52px rgba(58,68,104,.08),inset 0 1px rgba(255,255,255,.96);backdrop-filter:blur(24px) saturate(1.2);transition:.25s ease}.yj-workbench-card:hover{transform:translateY(-3px);box-shadow:0 24px 60px rgba(58,68,104,.13)}.yj-workbench-card:before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-80px;filter:blur(2px);opacity:.7}.yj-workbench-card.original:before{background:radial-gradient(circle,rgba(112,112,246,.19),transparent 68%)}.yj-workbench-card.adaptation:before{background:radial-gradient(circle,rgba(61,183,149,.2),transparent 68%)}.yj-workbench-card.global:before{background:radial-gradient(circle,rgba(53,142,224,.2),transparent 68%)}
+      .yj-workbench-eyebrow{display:flex;align-items:center;justify-content:space-between;color:#7b72c8;font-size:10px;font-weight:800;letter-spacing:1.2px}.yj-workbench-card.adaptation .yj-workbench-eyebrow{color:#29967b}.yj-workbench-card.global .yj-workbench-eyebrow{color:#347cba}.yj-workbench-number{font-size:10px;padding:5px 8px;border-radius:8px;background:rgba(119,105,226,.08)}.yj-workbench-card h2{position:relative;margin:18px 0 8px;color:#1f2937;font-size:24px}.yj-workbench-card>p{position:relative;max-width:460px;min-height:44px;margin:0;color:#718096;font-size:12px;line-height:1.7}.yj-workbench-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:18px 0}.yj-workbench-flow span{padding:6px 8px;border-radius:8px;background:rgba(246,246,252,.85);color:#687386;font-size:9px;font-weight:700}.yj-workbench-flow i{color:#b2b8c5;font:normal 9px/1 sans-serif}.yj-workbench-actions{display:flex;gap:8px;flex-wrap:wrap}.yj-workbench-actions .yj-home-btn{padding:10px 16px;font-size:12px}.yj-home-btn-adapt{color:#147f68;border:1px solid rgba(38,175,139,.22);background:rgba(230,249,243,.78)}.yj-home-btn-adapt:hover{background:rgba(216,246,237,.95)}.yj-home-btn-global{color:#246da9;border:1px solid rgba(55,135,204,.22);background:rgba(232,244,255,.82)}.yj-home-btn-global:hover{background:rgba(218,238,255,.96)}
+      .yj-adaptation-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.yj-adapt-mode{display:flex;gap:10px;align-items:center;padding:11px;border:1px solid rgba(54,171,141,.14);border-radius:12px;background:rgba(245,252,250,.74)}.yj-adapt-mode i{font-style:normal;font-size:18px}.yj-adapt-mode b,.yj-adapt-mode small{display:block}.yj-adapt-mode b{font-size:11px;color:#344256}.yj-adapt-mode small{margin-top:2px;color:#8b97a7;font-size:9px}
+      .yj-portal-utility{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.yj-portal-utility button{display:flex;align-items:center;gap:10px;padding:13px 15px;border:1px solid rgba(148,163,184,.13);border-radius:14px;background:rgba(255,255,255,.55);color:#657184;cursor:pointer;text-align:left}.yj-portal-utility button:hover{border-color:rgba(118,101,224,.25);background:rgba(255,255,255,.82)}.yj-portal-utility i{font-style:normal;font-size:18px}.yj-portal-utility b,.yj-portal-utility small{display:block}.yj-portal-utility b{font-size:11px;color:#344156}.yj-portal-utility small{margin-top:2px;color:#99a2b1;font-size:9px}
+      .yj-project-type-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.yj-project-type-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:9px;background:#f2f1ff;color:#6a5bd0;font-size:10px;font-weight:800}.yj-project-type-pill.literary{background:#eaf8f3;color:#207d68}.yj-project-type-pill.manga{background:#edf2ff;color:#4e68b8}
+      .yj-project-type-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:13px 0 16px}.yj-project-type-option{position:relative;display:block;cursor:pointer}.yj-project-type-option input{position:absolute;opacity:0}.yj-project-type-option span{display:block;min-height:74px;padding:11px;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:rgba(249,250,252,.78);color:#657184}.yj-project-type-option b,.yj-project-type-option small{display:block}.yj-project-type-option b{font-size:11px;color:#344156}.yj-project-type-option small{margin-top:5px;font-size:9px;line-height:1.45}.yj-project-type-option input:checked+span{border-color:rgba(110,93,225,.38);background:linear-gradient(145deg,#f4f2ff,#eff7ff);box-shadow:0 7px 18px rgba(92,82,191,.1)}
+      .yj-demo-hub{max-width:1080px;margin:0 auto;padding:32px 24px 80px}.yj-demo-hero{text-align:center;margin-bottom:25px}.yj-demo-hero h2{margin:0 0 7px;font-size:25px}.yj-demo-hero p{margin:0;color:#8994a6;font-size:12px}.yj-demo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.yj-demo-card{padding:20px;border:1px solid rgba(255,255,255,.82);border-radius:19px;background:rgba(255,255,255,.68);box-shadow:0 12px 36px rgba(62,72,104,.07);backdrop-filter:blur(20px)}.yj-demo-card .icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#eeebff,#eaf5ff);font-size:20px}.yj-demo-card h3{margin:13px 0 6px;font-size:15px}.yj-demo-card p{min-height:52px;margin:0;color:#8490a3;font-size:10px;line-height:1.65}.yj-demo-card ul{min-height:70px;margin:13px 0;padding:0;list-style:none;color:#667286;font-size:9px;line-height:1.8}.yj-demo-card button{width:100%;justify-content:center;padding:10px 12px;font-size:11px}
+      [data-theme="dark"] .yj-workbench-card,[data-theme="dark"] .yj-demo-card{background:rgba(25,35,53,.72);border-color:rgba(152,163,190,.12)}[data-theme="dark"] .yj-workbench-card h2,[data-theme="dark"] .yj-adapt-mode b,[data-theme="dark"] .yj-portal-utility b,[data-theme="dark"] .yj-project-type-option b,[data-theme="dark"] .yj-demo-card h3{color:#edf2f8}[data-theme="dark"] .yj-workbench-flow span,[data-theme="dark"] .yj-adapt-mode,[data-theme="dark"] .yj-portal-utility button,[data-theme="dark"] .yj-project-type-option span{background:rgba(29,40,60,.78);color:#aab6c8}[data-theme="dark"] .yj-project-type-option input:checked+span{background:linear-gradient(145deg,#272447,#1c344a)}
+
       /* ========== 我的项目 ========== */
       .yj-project-list-wrap {
         max-width: 960px;
@@ -409,6 +441,7 @@
         font-weight: 600;
         letter-spacing: 0.3px;
       }
+      .yj-project-card-titleline{display:flex;align-items:center;gap:9px;min-width:0}.yj-project-card-titleline .yj-project-card-name{max-width:none}
       .yj-project-card-meta {
         display: flex;
         gap: 20px;
@@ -482,6 +515,7 @@
         color: #0f172a;
         margin: 0;
       }
+      .yj-ach-type-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}.yj-ach-type-summary span{padding:12px;border:1px solid rgba(148,163,184,.12);border-radius:12px;background:rgba(255,255,255,.58)}.yj-ach-type-summary b,.yj-ach-type-summary small{display:block}.yj-ach-type-summary b{font-size:11px;color:#3b4759}.yj-ach-type-summary small{margin-top:4px;color:#929cad;font-size:9px}[data-theme="dark"] .yj-ach-type-summary span{background:rgba(30,41,59,.55)}[data-theme="dark"] .yj-ach-type-summary b{color:#e5eaf2}
       [data-theme="dark"] .yj-achievements-header h2 { color: #f1f5f9; }
       .yj-ach-tabs {
         display: flex;
@@ -585,8 +619,10 @@
       }
       .yj-project-modal-overlay.yj-modal-show { display: flex; }
       .yj-project-modal {
-        width: 480px;
+        width: 560px;
         max-width: 92vw;
+        max-height: 86vh;
+        overflow-y: auto;
         padding: 32px;
         border-radius: 20px;
         background: rgba(255,255,255,0.92);
@@ -601,11 +637,17 @@
       .yj-project-modal h3 {
         font-size: 20px;
         font-weight: 700;
-        margin: 0 0 20px;
+        margin: 0 0 4px;
         color: #0f172a;
       }
+      .yj-project-modal-subtitle { margin: 0 0 20px; color: #8b95a7; font-size: 12px; line-height: 1.6; }
+      .yj-project-mode-badge {
+        display: inline-flex; align-items: center; gap: 6px; margin-bottom: 9px; padding: 5px 9px;
+        border: 1px solid rgba(124,110,230,.16); border-radius: 999px;
+        background: rgba(124,110,230,.07); color: #6759c7; font-size: 10px; font-weight: 750;
+      }
       [data-theme="dark"] .yj-project-modal h3 { color: #f1f5f9; }
-      .yj-project-modal input, .yj-project-modal textarea {
+      .yj-project-modal input, .yj-project-modal textarea, .yj-project-modal select {
         width: 100%;
         padding: 12px 16px;
         border-radius: 12px;
@@ -620,21 +662,195 @@
         transition: border-color 0.2s;
       }
       [data-theme="dark"] .yj-project-modal input,
-      [data-theme="dark"] .yj-project-modal textarea {
+      [data-theme="dark"] .yj-project-modal textarea,
+      [data-theme="dark"] .yj-project-modal select {
         background: rgba(15,23,42,0.5);
         color: #f1f5f9;
         border-color: rgba(139,92,246,0.15);
       }
-      .yj-project-modal input:focus, .yj-project-modal textarea:focus {
+      .yj-project-modal input:focus, .yj-project-modal textarea:focus, .yj-project-modal select:focus {
         border-color: rgba(139,92,246,0.5);
       }
       .yj-project-modal textarea { min-height: 100px; resize: vertical; }
+      .yj-project-form-label { display:block; margin: 1px 0 7px; color:#596579; font-size:11px; font-weight:700; }
+      .yj-auto-config-card {
+        display: none; margin: 2px 0 14px; padding: 13px 14px; border: 1px solid rgba(94,200,171,.2);
+        border-radius: 14px; background: linear-gradient(135deg,rgba(236,253,247,.72),rgba(245,243,255,.7));
+        color: #667085; font-size: 11px; line-height: 1.75;
+      }
+      .yj-auto-config-card b { display:block; color:#315f55; font-size:12px; }
+      .yj-pro-project-fields { display:none; margin: 4px 0 12px; padding: 14px; border:1px solid rgba(124,110,230,.13); border-radius:16px; background:rgba(248,247,255,.68); }
+      .yj-pro-project-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+      .yj-pro-project-grid > label { min-width:0; }
+      .yj-pro-project-fields textarea { min-height:68px; margin-bottom:0; }
+      body[data-yj-mode="normal"] .yj-auto-config-card { display:block; }
+      body[data-yj-mode="pro"] .yj-pro-project-fields { display:block; }
+      body[data-yj-mode="pro"] .yj-project-modal { width: 680px; }
       .yj-project-modal-actions {
         display: flex;
         justify-content: flex-end;
         gap: 10px;
         margin-top: 8px;
       }
+      @media (max-width: 640px) { .yj-pro-project-grid { grid-template-columns:1fr; } }
+
+      /* ========== 专家智库（只读展示） ========== */
+      .yj-knowledge-wrap {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 30px 0 64px;
+      }
+      .yj-knowledge-hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 24px 26px;
+        margin-bottom: 18px;
+        border: 1px solid rgba(255,255,255,0.82);
+        border-radius: 22px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.78), rgba(245,243,255,0.62));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.94), 0 16px 45px rgba(75,65,130,0.08);
+        backdrop-filter: blur(22px) saturate(1.35);
+        -webkit-backdrop-filter: blur(22px) saturate(1.35);
+      }
+      .yj-knowledge-eyebrow {
+        color: #7c6ee6;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 1.6px;
+      }
+      .yj-knowledge-hero h2 { margin: 7px 0 6px; color: #25324a; font-size: 25px; }
+      .yj-knowledge-hero p { margin: 0; max-width: 690px; color: #718096; font-size: 13px; line-height: 1.7; }
+      .yj-knowledge-stats { display: flex; gap: 9px; flex-shrink: 0; }
+      .yj-knowledge-stats span {
+        min-width: 82px;
+        padding: 11px 13px;
+        border: 1px solid rgba(139,92,246,0.11);
+        border-radius: 14px;
+        background: rgba(255,255,255,0.6);
+        color: #7a869b;
+        text-align: center;
+        font-size: 11px;
+      }
+      .yj-knowledge-stats b { display: block; margin-bottom: 2px; color: #4f46a5; font-size: 19px; }
+      .yj-knowledge-legend {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 0 4px 16px;
+        color: #8995a9;
+        font-size: 11px;
+      }
+      .yj-knowledge-legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .yj-knowledge-legend i { width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1; }
+      .yj-knowledge-legend .running i { background: #8b5cf6; box-shadow: 0 0 0 5px rgba(139,92,246,0.1); }
+      .yj-knowledge-legend .done i { background: #10b981; }
+      .yj-knowledge-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 13px;
+      }
+      .yj-knowledge-card {
+        position: relative;
+        min-height: 188px;
+        padding: 17px;
+        overflow: hidden;
+        border: 1px solid rgba(203,213,225,0.5);
+        border-radius: 18px;
+        background: rgba(255,255,255,0.68);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.94), 0 8px 25px rgba(65,75,105,0.055);
+        backdrop-filter: blur(19px) saturate(1.25);
+        -webkit-backdrop-filter: blur(19px) saturate(1.25);
+        cursor: default;
+        user-select: none;
+        transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+      }
+      .yj-knowledge-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(115deg, rgba(255,255,255,0.35), transparent 38%);
+      }
+      .yj-knowledge-card-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 11px; }
+      .yj-knowledge-avatar {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border: 1px solid rgba(139,92,246,0.12);
+        border-radius: 13px;
+        background: linear-gradient(145deg, rgba(239,235,255,0.92), rgba(231,241,255,0.8));
+        font-size: 20px;
+      }
+      .yj-knowledge-card-head b { display: block; color: #27334a; font-size: 15px; }
+      .yj-knowledge-card-head small { display: block; margin-top: 3px; color: #8a97aa; font-size: 11px; }
+      .yj-knowledge-state {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #9aa5b5;
+        font-size: 10px;
+        font-style: normal;
+      }
+      .yj-knowledge-state i { width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1; }
+      .yj-knowledge-bind {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: stretch;
+        gap: 7px;
+        margin-top: 15px;
+      }
+      .yj-knowledge-bind > div {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid rgba(203,213,225,0.44);
+        border-radius: 12px;
+        background: rgba(248,250,252,0.66);
+      }
+      .yj-knowledge-bind small { display: block; color: #a0aabc; font-size: 9px; letter-spacing: .5px; }
+      .yj-knowledge-bind b { display: block; overflow: hidden; margin-top: 4px; color: #59667c; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+      .yj-knowledge-bind > span { align-self: center; color: #b2a9ed; font-size: 12px; }
+      .yj-knowledge-readonly {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 11px;
+        color: #a0aabc;
+        font-size: 10px;
+      }
+      .yj-knowledge-readonly span:last-child { color: #8b7ee0; }
+      .yj-knowledge-card.working {
+        border-color: rgba(139,92,246,0.58);
+        transform: translateY(-2px);
+        animation: yjKnowledgeCardBreath 1.8s ease-in-out infinite;
+      }
+      .yj-knowledge-card.working .yj-knowledge-state { color: #745ee8; font-weight: 700; }
+      .yj-knowledge-card.working .yj-knowledge-state i { background: #8b5cf6; animation: yjKnowledgeDotBreath 1.1s ease-in-out infinite; }
+      .yj-knowledge-card.done { border-color: rgba(16,185,129,0.24); }
+      .yj-knowledge-card.done .yj-knowledge-state { color: #0f9f72; }
+      .yj-knowledge-card.done .yj-knowledge-state i { background: #10b981; }
+      @keyframes yjKnowledgeCardBreath {
+        0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.94), 0 9px 28px rgba(111,84,214,.1), 0 0 0 0 rgba(139,92,246,.12); }
+        50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.98), 0 14px 36px rgba(111,84,214,.2), 0 0 0 7px rgba(139,92,246,.06); }
+      }
+      @keyframes yjKnowledgeDotBreath {
+        0%,100% { box-shadow: 0 0 0 0 rgba(139,92,246,.38); }
+        50% { box-shadow: 0 0 0 7px rgba(139,92,246,0); }
+      }
+      [data-theme="dark"] .yj-knowledge-hero,
+      [data-theme="dark"] .yj-knowledge-card { background: rgba(25,28,48,0.76); border-color: rgba(167,139,250,0.15); }
+      [data-theme="dark"] .yj-knowledge-hero h2,
+      [data-theme="dark"] .yj-knowledge-card-head b { color: #eef2ff; }
+      [data-theme="dark"] .yj-knowledge-bind > div { background: rgba(15,23,42,.46); border-color: rgba(148,163,184,.14); }
+      [data-theme="dark"] .yj-knowledge-bind b { color: #cbd5e1; }
 
       /* ========== 响应式 ========== */
       @media (max-width: 640px) {
@@ -648,7 +864,14 @@
         .yj-project-home-features { grid-template-columns: repeat(3, 1fr); }
         .yj-project-card-top { flex-direction: column; gap: 8px; }
         .yj-project-card-name { max-width: 100%; }
+        .yj-knowledge-wrap { width: min(100% - 24px, 1180px); padding-top: 18px; }
+        .yj-knowledge-hero { align-items: flex-start; flex-direction: column; }
+        .yj-knowledge-grid { grid-template-columns: 1fr; }
       }
+      @media (min-width: 641px) and (max-width: 980px) { .yj-knowledge-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media(max-width:1450px){.yj-project-navbar{padding-left:16px;padding-right:16px}.yj-project-navbar-nav a{padding-left:9px;padding-right:9px;font-size:11.5px}.yj-project-navbar-right{gap:6px}.yj-project-new-btn,.yj-project-account-btn{padding-left:11px;padding-right:11px;font-size:11px}}
+      @media(max-width:1100px){.yj-project-navbar-nav a[data-view="settings"],.yj-project-navbar-nav a[data-view="achievements"]{display:none}.yj-workbench-grid{grid-template-columns:1fr}.yj-demo-grid{grid-template-columns:1fr 1fr}.yj-project-type-picker{grid-template-columns:1fr}.yj-portal-utility{grid-template-columns:1fr}}
+      @media(max-width:640px){.yj-demo-grid,.yj-adaptation-modes{grid-template-columns:1fr}.yj-studio-portal-head h1{font-size:30px}.yj-project-home.yj-studio-portal{padding:28px 14px 70px}}
     `;
     const style = document.createElement('style');
     style.textContent = css;
@@ -664,10 +887,14 @@
         <div class="yj-project-navbar-brand">云匠引擎</div>
         <ul class="yj-project-navbar-nav">
           <li><a data-view="home" class="yj-nav-active">🏠 首页</a></li>
+          <li><a data-view="workspace">✨ 原创工作台</a></li>
+          <li><a data-view="adaptation">🎞 IP改编工作台</a></li>
+          <li><a data-view="global">🌏 文化出海工作台</a></li>
           <li><a data-view="projects">📂 我的项目</a></li>
-          <li><a data-view="newproject">✨ 新建创作</a></li>
-          <li><a data-view="achievements">🏆 成果中心</a></li><li><a data-view="settings">&#9881; 设置</a></li>
-          <li><a data-view="quickdemo">⚡ 快速体验</a></li>
+          <li><a data-view="knowledge">🧠 专家智库 · 资料库</a></li>
+          <li><a data-view="achievements">🏆 成果中心</a></li>
+          <li><a data-view="quickdemo">⚡ 四类 Demo</a></li>
+          <li><a data-view="settings">&#9881; 设置</a></li>
         </ul>
         <div class="yj-project-navbar-right">
           <button class="yj-project-account-btn" id="yj-nav-account-btn" title="返回登录页并切换创作者">👤 切换创作者</button>
@@ -676,42 +903,41 @@
       </nav>
 
       <div class="yj-project-page yj-page-active" id="yj-page-home">
-        <div class="yj-project-home">
-          <div class="yj-project-home-badge">AI Multi-Agent Creative Studio</div>
-          <h1>云匠智能精品短剧引擎</h1>
-          <p class="yj-subtitle">AI 多智能体精品内容创作工作台</p>
-          <div class="yj-project-home-actions">
-            <button class="yj-home-btn yj-home-btn-primary" id="yj-home-start">✨ 开始创作</button>
-            <button class="yj-home-btn yj-home-btn-secondary" id="yj-home-projects">📂 我的项目</button>
-            <button class="yj-home-btn yj-home-btn-ghost" id="yj-home-demo">⚡ 快速体验 Demo</button>
-          </div>
-          <div class="yj-project-home-divider">核心能力</div>
-          <div class="yj-project-home-features">
-            <div class="yj-feature-card">
-              <div class="yj-feature-icon">🤖</div>
-              <div class="yj-feature-label">6个智能体</div>
-            </div>
-            <div class="yj-feature-card">
-              <div class="yj-feature-icon">🎯</div>
-              <div class="yj-feature-label">17位专家</div>
-            </div>
-            <div class="yj-feature-card">
-              <div class="yj-feature-icon">🧑‍💻</div>
-              <div class="yj-feature-label">Human-in-the-loop</div>
-            </div>
-            <div class="yj-feature-card">
-              <div class="yj-feature-icon">✅</div>
-              <div class="yj-feature-label">质量监督</div>
-            </div>
-            <div class="yj-feature-card">
-              <div class="yj-feature-icon">💾</div>
-              <div class="yj-feature-label">项目持久化</div>
-            </div>
-            <div class="yj-feature-card">
-              <div class="yj-feature-icon">📦</div>
-              <div class="yj-feature-label">成果导出</div>
-            </div>
-          </div>
+        <div class="yj-project-home yj-studio-portal">
+          <header class="yj-studio-portal-head">
+            <div class="yj-project-home-badge">YUNJIANG MULTI-AGENT PRODUCTION SYSTEM</div>
+            <h1>从一个想法，或一部作品开始</h1>
+            <p class="yj-subtitle">原创短剧生产与 IP 影视化改编，一套专家系统完成</p>
+            <p>17位专家 · 版本化 Skills · 专属资料库 · 人在回路 · 全程证据</p>
+          </header>
+          <section class="yj-workbench-grid" aria-label="三大核心工作台">
+            <article class="yj-workbench-card original" data-workbench="original">
+              <div class="yj-workbench-eyebrow"><span>ORIGINAL DRAMA STUDIO</span><span class="yj-workbench-number">01</span></div>
+              <h2>✨ 原创短剧工作台</h2>
+              <p>输入一个故事想法，由17位专家协作完成故事方向、人物小传、剧情大纲、集纲、正文剧本与质量终审。</p>
+              <div class="yj-workbench-flow"><span>创意</span><i>→</i><span>故事大纲</span><i>→</i><span>人物</span><i>→</i><span>集纲</span><i>→</i><span>正文</span></div>
+              <div class="yj-workbench-actions"><button class="yj-home-btn yj-home-btn-primary" id="yj-home-start">新建原创项目</button><button class="yj-home-btn yj-home-btn-ghost" data-portal-demo="original">60秒 Demo</button></div>
+            </article>
+            <article class="yj-workbench-card adaptation" data-workbench="adaptation">
+              <div class="yj-workbench-eyebrow"><span>IP ADAPTATION LAB</span><span class="yj-workbench-number">02</span></div>
+              <h2>🎞 IP影视化改编工作台</h2>
+              <p>拆解已有作品，锁定故事骨架，诊断不可影视化内容，并生成可回溯、可审核的真人短剧方案。</p>
+              <div class="yj-adaptation-modes"><div class="yj-adapt-mode"><i>📖</i><div><b>文学作品拆解</b><small>TXT · EPUB · 文本 PDF</small></div></div><div class="yj-adapt-mode"><i>▦</i><div><b>漫画作品拆解</b><small>画格 · 对白 · 镜头映射</small></div></div></div>
+              <div class="yj-workbench-actions"><button class="yj-home-btn yj-home-btn-adapt" data-portal-adaptation="literary">文学拆解</button><button class="yj-home-btn yj-home-btn-adapt" data-portal-adaptation="manga">漫画拆解</button></div>
+            </article>
+            <article class="yj-workbench-card global" data-workbench="global">
+              <div class="yj-workbench-eyebrow"><span>CULTURAL IP GLOBALIZATION</span><span class="yj-workbench-number">03</span></div>
+              <h2>🌏 文化出海工作台</h2>
+              <p>锁定中国文化内核，完成海外受众分析、跨文化风险诊断、本地化改编、双语剧本与发行交付。</p>
+              <div class="yj-workbench-flow"><span>文化资产</span><i>→</i><span>风险雷达</span><i>→</i><span>本地化</span><i>→</i><span>双语</span><i>→</i><span>发行包</span></div>
+              <div class="yj-workbench-actions"><button class="yj-home-btn yj-home-btn-global" data-portal-global>进入出海工作台</button><button class="yj-home-btn yj-home-btn-ghost" data-portal-demo="global">比赛 Demo</button></div>
+            </article>
+          </section>
+          <section class="yj-portal-utility">
+            <button id="yj-home-projects"><i>📂</i><span><b>我的项目</b><small>继续上次任务与人工检查点</small></span></button>
+            <button id="yj-home-demo"><i>⚡</i><span><b>四类快速 Demo</b><small>原创、文学、漫画与文化出海</small></span></button>
+            <button data-portal-view="knowledge"><i>🧠</i><span><b>专家与资料库</b><small>查看 Agent、Skill 与知识绑定</small></span></button>
+          </section>
         </div>
       </div>
 
@@ -725,12 +951,38 @@
         </div>
       </div>
 
+      <div class="yj-project-page" id="yj-page-adaptation" aria-label="文学与漫画IP改编工作台"></div>
+      <div class="yj-project-page" id="yj-page-global" aria-label="文化IP出海制片工作台"></div>
+
+      <div class="yj-project-page" id="yj-page-knowledge">
+        <div class="yj-knowledge-wrap">
+          <section class="yj-knowledge-hero">
+            <div>
+              <span class="yj-knowledge-eyebrow">AGENT × SKILL × KNOWLEDGE</span>
+              <h2>17 位专家 · 专属文化资料库</h2>
+              <p>每位专家都绑定版本化 Skill 与独立知识资料。这里仅用于展示系统能力与调度状态，资料内容不可打开或修改。</p>
+            </div>
+            <div class="yj-knowledge-stats">
+              <span><b>17</b>专家 Agents</span>
+              <span><b>17</b>版本化 Skills</span>
+              <span><b>17</b>专属资料库</span>
+            </div>
+          </section>
+          <div class="yj-knowledge-legend">
+            <span><i></i>等待调度</span><span class="running"><i></i>正在检索与执行</span><span class="done"><i></i>本次运行已调用</span>
+            <span style="margin-left:auto;">🔒 只读能力展示</span>
+          </div>
+          <div class="yj-knowledge-grid" id="yj-knowledge-grid"></div>
+        </div>
+      </div>
+
       <div class="yj-project-page" id="yj-page-achievements">
         <div class="yj-achievements-wrap">
           <div class="yj-achievements-header">
             <h2 id="yj-ach-title">🏆 成果中心</h2>
             <button class="yj-home-btn yj-home-btn-ghost" id="yj-ach-back">← 返回项目</button>
           </div>
+          <div class="yj-ach-type-summary"><span><b>✨ 原创剧本</b><small>故事大纲 · 人物小传 · 集纲 · 正文</small></span><span><b>📖 文学改编</b><small>骨架锁定 · 改编对照 · 分场说明书</small></span><span><b>▦ 漫画改编</b><small>画格事实 · 对白校正 · 镜头映射</small></span><span><b>🌏 文化出海</b><small>文化资产 · 双语剧本 · 发行交付包</small></span></div>
           <div class="yj-ach-tabs" id="yj-ach-tabs"></div>
           <div class="yj-ach-content" id="yj-ach-content">暂无成果数据</div>
           <div class="yj-ach-actions">
@@ -762,40 +1014,51 @@
       </div>
 
       <div class="yj-project-page" id="yj-page-quickdemo">
-        <div class="yj-settings-wrap" style="max-width:700px;margin:0 auto;padding:32px 20px;">
-          <h2 style="font-size:22px;margin-bottom:20px;color:#1e293b;">&#9889; 快速体验 Demo</h2>
-          <div style="display:flex;flex-direction:column;gap:16px;">
-            <div class="yj-settings-card" style="background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="font-weight:600;margin-bottom:6px;color:#475569;">&#128640; 核心引擎运行 Demo</div>
-              <div style="color:#94a3b8;margin-bottom:12px;line-height:1.7;">使用预置案例《最后一炉》进入真实工作台，依次演示故事大纲、人物小传、集纲与正文剧本的生成过程。无需消耗 Token。</div>
-              <input type="hidden" id="yj-demo-idea" value="非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。" />
-              <div style="margin-top:12px;display:flex;gap:10px;">
-                <button class="yj-home-btn yj-home-btn-primary" id="yj-demo-run" style="padding:10px 24px;">&#9654; 进入工作台运行 Demo</button>
-              </div>
-              <div id="yj-demo-result" style="margin-top:16px;display:none;">
-                <div style="padding:14px;border-radius:10px;background:rgba(241,245,249,0.8);border:1px solid rgba(203,213,225,0.3);color:#475569;font-size:14px;white-space:pre-wrap;line-height:1.6;" id="yj-demo-output"></div>
-              </div>
-            </div>
-            <div class="yj-settings-card" style="background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,0.5);box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="font-weight:600;margin-bottom:6px;color:#475569;">&#128218; Demo功能说明</div>
-              <div style="color:#94a3b8;font-size:13px;line-height:1.6;">
-                &#8226; 在工作台中可视化展示当前执行专家与阶段进度<br/>
-                &#8226; 核心链路：故事大纲 &#8594; 人物小传 &#8594; 集纲 &#8594; 正文剧本<br/>
-                &#8226; 每个阶段即时出现可阅读、可编辑的中间产出<br/>
-                &#8226; Agent Run 面板同步保留完整运行证据<br/>
-                &#8226; 预置案例仅在前端演示，不消耗模型 Token<br/>
-                &#8226; 真实创作自动连接 Railway 后端，失联时仍可完成评审 Demo
-              </div>
-            </div>
+        <div class="yj-demo-hub">
+          <header class="yj-demo-hero"><h2>⚡ 四条核心生产链，零 Token 快速体验</h2><p>每个 Demo 都进入对应工作台，展示专家调度、人工检查点、中间产出与最终价值。</p></header>
+          <input type="hidden" id="yj-demo-idea" value="非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。" />
+          <div class="yj-demo-grid">
+            <article class="yj-demo-card"><span class="icon">✨</span><h3>原创短剧 Demo</h3><p>《最后一炉》从一句创意运行到故事大纲、人物小传、集纲与正文。</p><ul><li>✓ 4项核心产出</li><li>✓ 专家执行过程</li><li>✓ Agent Run 证据</li></ul><button class="yj-home-btn yj-home-btn-primary" id="yj-demo-run" data-demo-type="original">运行原创 Demo</button></article>
+            <article class="yj-demo-card"><span class="icon">📖</span><h3>文学改编 Demo</h3><p>《灯影里的旧账》锁定原著骨架，诊断不可影视化内容并形成分场。</p><ul><li>✓ 原文分块与引用</li><li>✓ 2个人工检查点</li><li>✓ 改编前后对照</li></ul><button class="yj-home-btn yj-home-btn-adapt" data-demo-type="literary">运行文学改编 Demo</button></article>
+            <article class="yj-demo-card"><span class="icon">▦</span><h3>漫画拆解 Demo</h3><p>《末班渡口》识别画格、对白和说话人，并映射为真人短剧镜头。</p><ul><li>✓ 3页8个画格</li><li>✓ 对白人工校正</li><li>✓ 画格到镜头映射</li></ul><button class="yj-home-btn yj-home-btn-adapt" data-demo-type="manga">运行漫画拆解 Demo</button></article>
+            <article class="yj-demo-card"><span class="icon">🌏</span><h3>文化出海 Demo</h3><p>《最后一炉》锁定非遗内核，生成海外本地化方案、双语剧本和发行交付包。</p><ul><li>✓ 文化资产锁定</li><li>✓ 跨文化风险雷达</li><li>✓ 双语发行交付</li></ul><button class="yj-home-btn yj-home-btn-global" data-demo-type="global">运行文化出海 Demo</button></article>
           </div>
+          <div id="yj-demo-result" style="margin-top:16px;display:none;"><div style="padding:14px;border-radius:10px;background:rgba(241,245,249,0.8);border:1px solid rgba(203,213,225,0.3);color:#475569;font-size:14px;white-space:pre-wrap;line-height:1.6;" id="yj-demo-output"></div></div>
         </div>
       </div>
 
       <div class="yj-project-modal-overlay" id="yj-new-project-modal">
         <div class="yj-project-modal">
-          <h3>✨ 新建创作项目</h3>
+          <div class="yj-project-mode-badge" id="yj-new-project-mode">自动驾驶</div>
+          <h3 id="yj-new-project-title">✨ 快速新建项目</h3>
+          <p class="yj-project-modal-subtitle" id="yj-new-project-subtitle">只需输入故事想法，其余由云匠自动配置。</p>
+          <label class="yj-project-form-label">选择生产模式</label>
+          <div class="yj-project-type-picker" id="yj-project-type-picker">
+            <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="original" checked><span><b>✨ 原创短剧</b><small>从一个想法开始完整创作</small></span></label>
+            <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="literary_adaptation"><span><b>📖 文学改编</b><small>小说、文章与文本 PDF</small></span></label>
+            <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="manga_adaptation"><span><b>▦ 漫画改编</b><small>漫画页、画格与对白拆解</small></span></label>
+            <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="globalization"><span><b>🌏 文化出海</b><small>跨文化改编、双语与发行包</small></span></label>
+          </div>
+          <label class="yj-project-form-label" for="yj-new-project-name">项目名称（可选）</label>
           <input type="text" id="yj-new-project-name" placeholder="项目名称（如：都市逆袭之巅峰人生）" />
+          <label class="yj-project-form-label" for="yj-new-project-idea" id="yj-project-input-label">故事想法</label>
           <textarea id="yj-new-project-idea" placeholder="描述你的短剧创意...&#10;例如：一个普通大学生意外获得超能力，在校园中经历爱情、友情与成长的故事，共5集，每集3分钟"></textarea>
+          <div class="yj-auto-config-card" id="yj-auto-config-card">
+            <b>✨ 云匠自动配置</b>
+            自动选择题材与风格包 · 调度 17 位专家及其专属资料库 · 自动完成故事大纲、人物小传、集纲、正文与质量门禁
+          </div>
+          <div class="yj-pro-project-fields" id="yj-pro-project-fields">
+            <div class="yj-pro-project-grid">
+              <label><span class="yj-project-form-label">主打场景</span><select id="yj-project-genre"><option value="非遗短剧">非遗短剧</option><option value="男频爽文">男频爽文</option><option value="校园甜宠">校园甜宠</option><option value="都市情感">都市情感</option><option value="悬疑反转">悬疑反转</option></select></label>
+              <label><span class="yj-project-form-label">目标集数</span><select id="yj-project-episodes"><option value="5">5 集 · 快速样片</option><option value="12" selected>12 集 · 标准短季</option><option value="24">24 集 · 完整季</option><option value="40">40 集 · 长线连载</option></select></label>
+              <label><span class="yj-project-form-label">发布平台</span><select id="yj-project-platform"><option value="自动匹配">自动匹配</option><option value="抖音">抖音</option><option value="红果">红果</option><option value="快手">快手</option><option value="微信短剧">微信短剧</option></select></label>
+              <label><span class="yj-project-form-label">目标受众</span><input id="yj-project-audience" type="text" placeholder="如：18-30岁女性" /></label>
+              <label><span class="yj-project-form-label">风格经验包</span><select id="yj-project-style"><option value="cinematic">电影质感</option><option value="hook_dense">强钩子爽感</option><option value="emotional">细腻共情</option><option value="heritage">文化叙事</option></select></label>
+              <label><span class="yj-project-form-label">人在回路</span><select id="yj-project-checkpoint"><option value="human" selected>开启 · 3 个评审检查点</option><option value="auto">关闭 · 自动通过</option></select></label>
+            </div>
+            <label class="yj-project-form-label" for="yj-project-constraints">制作约束（可选）</label>
+            <textarea id="yj-project-constraints" placeholder="场景数量、演员规模、预算、禁用表达等"></textarea>
+          </div>
           <div class="yj-project-modal-actions">
             <button class="yj-home-btn yj-home-btn-ghost" id="yj-modal-cancel">取消</button>
             <button class="yj-home-btn yj-home-btn-primary" id="yj-modal-create">开始创作</button>
@@ -806,6 +1069,42 @@
       <div class="yj-project-toast" id="yj-toast"></div>
     `;
     document.body.appendChild(container);
+    renderKnowledgeHub();
+  }
+
+  function renderKnowledgeHub() {
+    var grid = document.getElementById('yj-knowledge-grid');
+    if (!grid) return;
+    grid.innerHTML = EXPERT_KNOWLEDGE_BINDINGS.map(function(item, index) {
+      return '<article class="yj-knowledge-card" data-knowledge-expert="' + item.id + '" aria-disabled="true" title="只读能力展示，资料内容不可打开">' +
+        '<div class="yj-knowledge-card-head">' +
+          '<span class="yj-knowledge-avatar">' + item.icon + '</span>' +
+          '<div><b>' + escapeHtml(item.name) + '</b><small>' + escapeHtml(item.role) + '</small></div>' +
+          '<em class="yj-knowledge-state"><i></i><span>等待</span></em>' +
+        '</div>' +
+        '<div class="yj-knowledge-bind">' +
+          '<div><small>VERSIONED SKILL</small><b>' + escapeHtml(item.skill) + ' · v1.' + (index % 3) + '</b></div>' +
+          '<span>⇄</span>' +
+          '<div><small>PRIVATE KNOWLEDGE</small><b>' + escapeHtml(item.library) + '</b></div>' +
+        '</div>' +
+        '<div class="yj-knowledge-readonly"><span>🔒 资料库只读 · 不提供打开入口</span><span>已绑定</span></div>' +
+      '</article>';
+    }).join('');
+  }
+
+  function refreshKnowledgeHub() {
+    var activeSource = document.querySelector('[data-expert].working, [data-expert].active');
+    var activeId = activeSource ? activeSource.getAttribute('data-expert') : '';
+    document.querySelectorAll('[data-knowledge-expert]').forEach(function(card) {
+      var id = card.getAttribute('data-knowledge-expert');
+      var source = document.querySelector('[data-expert="' + id + '"]');
+      var working = id === activeId;
+      var done = !!(source && (source.classList.contains('done') || source.classList.contains('completed')));
+      card.classList.toggle('working', working);
+      card.classList.toggle('done', !working && done);
+      var state = card.querySelector('.yj-knowledge-state span');
+      if (state) state.textContent = working ? '检索中' : done ? '已调用' : '等待';
+    });
   }
 
   // ========== 工具函数 ==========
@@ -1025,7 +1324,7 @@
     var appContainer = document.querySelector('.app-container');
     var onboardingScreen = document.querySelector('.onboarding-screen');
     var projectRoot = document.getElementById('yj-project-root');
-    var isProjectView = ['home','projects','achievements','settings','newproject','quickdemo'].indexOf(view) >= 0;
+    var isProjectView = ['home','projects','adaptation','global','knowledge','achievements','settings','newproject','quickdemo'].indexOf(view) >= 0;
 
     // Toggle original app-container and onboarding-screen visibility
     if (appContainer) {
@@ -1044,6 +1343,21 @@
         document.getElementById('yj-page-projects').classList.add('yj-page-active');
         var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
         loadProjectList();
+        break;
+      case 'adaptation':
+        document.getElementById('yj-page-adaptation').classList.add('yj-page-active');
+        var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        if (window.YJAdaptationWorkbench) window.YJAdaptationWorkbench.open();
+        break;
+      case 'global':
+        document.getElementById('yj-page-global').classList.add('yj-page-active');
+        var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        if (window.YJGlobalWorkbench) window.YJGlobalWorkbench.open();
+        break;
+      case 'knowledge':
+        document.getElementById('yj-page-knowledge').classList.add('yj-page-active');
+        var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        refreshKnowledgeHub();
         break;
       case 'achievements':
         document.getElementById('yj-page-achievements').classList.add('yj-page-active');
@@ -1121,7 +1435,7 @@
         '<button class="yj-home-btn yj-home-btn-primary" id="yj-empty-create-btn">✨ 创建第一个项目</button>' +
         '</div>';
       var emptyBtn = document.getElementById('yj-empty-create-btn');
-      if (emptyBtn) emptyBtn.addEventListener('click', openNewProjectModal);
+      if (emptyBtn) emptyBtn.addEventListener('click', function(){openNewProjectModal('original');});
       return;
     }
 
@@ -1134,9 +1448,11 @@
     if (!listEl) return;
 
     listEl.innerHTML = projects.map(function(p) {
+      var projectType = p.project_type || 'original';
+      var typeMeta = projectType === 'globalization' ? {label:'🌏 文化出海',cls:'global',total:7,action:'继续出海'} : projectType === 'manga_adaptation' ? {label:'▦ 漫画改编',cls:'manga',total:8,action:'继续拆解'} : projectType === 'literary_adaptation' ? {label:'📖 文学改编',cls:'literary',total:7,action:'继续改编'} : {label:'✨ 原创短剧',cls:'original',total:17,action:'继续创作'};
       var si = getStatusInfo(p.status);
       var stageCount = getStageCount(p.status, p.current_stage);
-      var progressPct = Math.round((stageCount / 17) * 100);
+      var progressPct = Math.round((Math.min(stageCount,typeMeta.total) / typeMeta.total) * 100);
       var stageStep = stageToStep(p.current_stage);
       var stageName = (stageStep > 0 && stageStep <= 17)
         ? STAGE_NAMES[stageStep - 1]
@@ -1145,19 +1461,19 @@
 
       return '<div class="yj-project-card" data-project-id="' + p.project_id + '">' +
         '<div class="yj-project-card-top">' +
-          '<h3 class="yj-project-card-name">' + escapeHtml(p.title || '未命名项目') + '</h3>' +
+          '<div class="yj-project-card-titleline"><span class="yj-project-type-pill '+typeMeta.cls+'">'+typeMeta.label+'</span><h3 class="yj-project-card-name">' + escapeHtml(p.title || '未命名项目') + '</h3></div>' +
           '<span class="yj-project-status-tag" style="color:' + si.color + ';background:' + si.bg + '">' + si.label + '</span>' +
         '</div>' +
         '<div class="yj-project-card-meta">' +
           '<span>📍 当前阶段：' + escapeHtml(stageName) + '</span>' +
-          '<span>📊 完成度：' + stageCount + '/17</span>' +
+          '<span>📊 完成度：' + Math.min(stageCount,typeMeta.total) + '/' + typeMeta.total + '</span>' +
           '<span>🕐 ' + updatedAt + '</span>' +
         '</div>' +
         '<div class="yj-project-progress-bar">' +
           '<div class="yj-project-progress-fill" style="width:' + progressPct + '%"></div>' +
         '</div>' +
         '<div class="yj-project-card-actions">' +
-          '<button class="yj-project-action-btn yj-btn-primary" data-action="continue" data-id="' + p.project_id + '">▶ 继续创作</button>' +
+          '<button class="yj-project-action-btn yj-btn-primary" data-action="continue" data-id="' + p.project_id + '" data-project-type="'+projectType+'">▶ '+typeMeta.action+'</button>' +
           '<button class="yj-project-action-btn" data-action="view" data-id="' + p.project_id + '">🏆 查看成果</button>' +
           '<button class="yj-project-action-btn yj-btn-danger" data-action="delete" data-id="' + p.project_id + '">🗑 删除</button>' +
         '</div>' +
@@ -1170,19 +1486,48 @@
       if (!btn) return;
       var action = btn.dataset.action;
       var id = btn.dataset.id;
-      if (action === 'continue') yjContinueProject(id);
+      if (action === 'continue') yjContinueProject(id, btn.dataset.projectType);
       else if (action === 'view') yjViewAchievements(id);
       else if (action === 'delete') yjDeleteProject(id);
     };
   }
 
   // ========== 新建项目 ==========
-  function openNewProjectModal() {
+  function getCurrentDisplayMode() {
+    return (document.body && document.body.getAttribute('data-yj-mode')) ||
+      (function(){ try { return localStorage.getItem('yj_display_mode'); } catch(e) { return ''; } })() || 'normal';
+  }
+
+  function syncProjectModalMode() {
+    var professional = getCurrentDisplayMode() === 'pro';
+    var badge = document.getElementById('yj-new-project-mode');
+    var title = document.getElementById('yj-new-project-title');
+    var subtitle = document.getElementById('yj-new-project-subtitle');
+    var create = document.getElementById('yj-modal-create');
+    if (badge) badge.textContent = professional ? '专业驾驶舱' : '自动驾驶';
+    var projectType = getSelectedProjectType();
+    var typeLabel = projectType === 'globalization' ? '文化出海' : projectType === 'manga_adaptation' ? '漫画改编' : projectType === 'literary_adaptation' ? '文学改编' : '原创短剧';
+    if (title) title.textContent = (professional ? '🧭 专业项目配置 · ' : '✨ 快速新建 · ') + typeLabel;
+    if (subtitle) subtitle.textContent = projectType === 'globalization' ? '选择已有文化内容或输入案例说明，进入海外受众、风险、本地化与发行交付流程。' : projectType !== 'original' ? '创建改编项目后进入 IP 工作台，建立可回溯的作品事实层。' : professional
+      ? '配置平台、受众、风格经验包和人在回路策略，随后进入完整 Agent 调度。'
+      : '只需输入故事想法，其余由云匠自动配置。';
+    if (create) create.textContent = projectType === 'original' ? (professional ? '按配置启动' : '开始自动创作') : projectType === 'globalization' ? '创建并进入出海工作台' : '创建并进入改编工作台';
+    var label=document.getElementById('yj-project-input-label'), idea=document.getElementById('yj-new-project-idea'), pro=document.getElementById('yj-pro-project-fields'), auto=document.getElementById('yj-auto-config-card');
+    if(label)label.textContent=projectType==='original'?'故事想法':projectType==='globalization'?'待出海作品 / 文化IP说明':'作品说明 / 授权备注';
+    if(idea)idea.placeholder=projectType==='original'?'描述你的短剧创意...\n例如：一个普通大学生意外获得超能力，在校园中经历爱情、友情与成长的故事。':projectType==='globalization'?'填写待出海作品、文化资产和目标市场；也可直接运行《最后一炉》比赛 Demo。':'填写作品名称、内容简介和当前授权状态；进入工作台后再导入原始文件。';
+    if(projectType!=='original'){if(pro)pro.style.display='none';if(auto)auto.style.display='none';}else{if(pro)pro.style.display='';if(auto)auto.style.display='';}
+  }
+
+  function getSelectedProjectType(){var selected=document.querySelector('input[name="yj-project-type"]:checked');return selected?selected.value:'original';}
+
+  function openNewProjectModal(preselectedType) {
     var modal = document.getElementById('yj-new-project-modal');
     if (modal) {
       modal.classList.add('yj-modal-show');
       document.getElementById('yj-new-project-name').value = '';
       document.getElementById('yj-new-project-idea').value = '';
+      if(preselectedType){var selected=document.querySelector('input[name="yj-project-type"][value="'+preselectedType+'"]');if(selected)selected.checked=true;}
+      syncProjectModalMode();
       setTimeout(function() { document.getElementById('yj-new-project-name').focus(); }, 100);
     }
   }
@@ -1196,11 +1541,26 @@
     var name = document.getElementById('yj-new-project-name').value.trim();
     var idea = document.getElementById('yj-new-project-idea').value.trim();
 
+    var projectType=getSelectedProjectType();
     if (!idea) {
-      showToast('请输入你的短剧创意');
+      showToast(projectType==='original'?'请输入你的短剧创意':'请填写作品说明或授权备注');
       return;
     }
 
+    var mode = getCurrentDisplayMode();
+    var professional = mode === 'pro';
+    var config = professional ? {
+      genre: document.getElementById('yj-project-genre').value,
+      total_episodes: Number(document.getElementById('yj-project-episodes').value) || 12,
+      platform: document.getElementById('yj-project-platform').value,
+      audience: document.getElementById('yj-project-audience').value.trim(),
+      style_pack_id: document.getElementById('yj-project-style').value,
+      checkpoint_policy: document.getElementById('yj-project-checkpoint').value,
+      constraints: document.getElementById('yj-project-constraints').value.trim()
+    } : {
+      genre: '', total_episodes: 5, platform: '自动匹配', audience: '',
+      style_pack_id: 'cinematic', checkpoint_policy: 'auto', constraints: ''
+    };
     var projectName = name || idea.slice(0, 30) + (idea.length > 30 ? '...' : '');
     var btn = document.getElementById('yj-modal-create');
     btn.textContent = '创建中...';
@@ -1212,7 +1572,8 @@
         title: projectName,
         user_id: userId,
         original_idea: idea,
-        status: 'draft'
+        genre: config.genre,
+        project_type: projectType
       });
 
       if (!projectData || !projectData.project_id) {
@@ -1224,18 +1585,34 @@
       showToast('项目创建成功！');
       closeNewProjectModal();
 
+      currentProject = { project_id: projectId, title: projectName, workflow_id: null, original_idea: idea, project_type: projectType, creation_mode: mode, config: config };
+      try { localStorage.setItem('yj_current_project', JSON.stringify(currentProject)); } catch(e) {}
+      if(projectType==='globalization'){
+        switchView('global');
+        if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.reset();
+        showToast('文化出海项目已创建');
+        return;
+      }
+      if(projectType!=='original'){
+        switchView('adaptation');
+        if(window.YJAdaptationWorkbench){window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(projectType==='manga_adaptation'?'manga':'literary');}
+        showToast(projectType==='manga_adaptation'?'漫画改编项目已创建':'文学改编项目已创建');
+        return;
+      }
+
       // Step 2: 切换到工作台（不在此创建workflow，由startCreation统一创建）
       var ideaInput = document.getElementById('ideaInput');
       if (ideaInput) ideaInput.value = idea;
       switchView('workspace');
 
       // 存储当前项目关联（workflow_id稍后由startCreation填入）
-      currentProject = { project_id: projectId, title: projectName, workflow_id: null, original_idea: idea };
+      currentProject = { project_id: projectId, title: projectName, workflow_id: null, original_idea: idea, project_type: projectType, creation_mode: mode, config: config };
       try { localStorage.setItem('yj_current_project', JSON.stringify(currentProject)); } catch(e) {}
+      try { localStorage.setItem('yunjiang_style_pack_v1', config.style_pack_id); } catch(e) {}
 
       // 触发创作流程，传入项目上下文
       if (typeof window.startCreation === 'function') {
-        window.startCreation({ project_id: projectId, idea: idea });
+        window.startCreation({ project_id: projectId, idea: idea, mode: mode, config: config });
       } else {
         var generateBtn = document.getElementById('generateBtn');
         if (generateBtn) generateBtn.click();
@@ -1245,13 +1622,13 @@
       console.error('[YJ] 创建项目失败', e);
       showToast('创建失败：' + (e.message || '未知错误'));
     } finally {
-      btn.textContent = '开始创作';
       btn.disabled = false;
+      syncProjectModalMode();
     }
   }
 
   // ========== 继续创作 ==========
-  window.yjContinueProject = async function(projectId) {
+  window.yjContinueProject = async function(projectId, hintedType) {
     showToast('正在恢复项目...');
 
     var data = await apiGet('/api/v1/projects/' + projectId);
@@ -1262,6 +1639,19 @@
 
     var project = data.project || data;
     currentProject = project;
+    var projectType=project.project_type||hintedType||'original';
+    if(projectType==='globalization'){
+      switchView('global');
+      if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.open();
+      showToast('已恢复文化出海项目：'+(project.title||''));
+      return;
+    }
+    if(projectType!=='original'){
+      switchView('adaptation');
+      if(window.YJAdaptationWorkbench)window.YJAdaptationWorkbench.setMode(projectType==='manga_adaptation'?'manga':'literary');
+      showToast('已恢复'+(projectType==='manga_adaptation'?'漫画拆解':'文学改编')+'项目：'+(project.title||''));
+      return;
+    }
 
     // 恢复idea到输入框
     var ideaInput = document.getElementById('ideaInput');
@@ -1422,6 +1812,7 @@
 
   // ========== 事件绑定 ==========
   function bindEvents() {
+    window.addEventListener('yj-mode-change', syncProjectModalMode);
     // 导航栏点击
     document.querySelectorAll('.yj-project-navbar-nav a').forEach(function(a) {
       a.addEventListener('click', function(e) {
@@ -1433,7 +1824,7 @@
 
     // 导航栏新建按钮
     var navNewBtn = document.getElementById('yj-nav-new-btn');
-    if (navNewBtn) navNewBtn.addEventListener('click', openNewProjectModal);
+    if (navNewBtn) navNewBtn.addEventListener('click', function(){openNewProjectModal('original');});
 
     // 返回原登录页；仅退出界面状态，不删除项目和创作进度
     var accountBtn = document.getElementById('yj-nav-account-btn');
@@ -1441,23 +1832,52 @@
 
     // 项目列表新建按钮
     var listNewBtn = document.getElementById('yj-list-new-btn');
-    if (listNewBtn) listNewBtn.addEventListener('click', openNewProjectModal);
+    if (listNewBtn) listNewBtn.addEventListener('click', function(){openNewProjectModal('original');});
 
     // 首页按钮
     var homeStart = document.getElementById('yj-home-start');
-    if (homeStart) homeStart.addEventListener('click', openNewProjectModal);
+    if (homeStart) homeStart.addEventListener('click', function(){openNewProjectModal('original');});
 
     var homeProjects = document.getElementById('yj-home-projects');
     if (homeProjects) homeProjects.addEventListener('click', function() { switchView('projects'); });
 
     var homeDemo = document.getElementById('yj-home-demo');
-    if (homeDemo) homeDemo.addEventListener('click', launchCoreDemo);
+    if (homeDemo) homeDemo.addEventListener('click', function(){switchView('quickdemo');});
+
+    document.querySelectorAll('[data-portal-adaptation]').forEach(function(button){button.addEventListener('click',function(){openAdaptationMode(this.dataset.portalAdaptation);});});
+    document.querySelectorAll('[data-portal-global]').forEach(function(button){button.addEventListener('click',function(){switchView('global');if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.open();});});
+    document.querySelectorAll('[data-portal-view]').forEach(function(button){button.addEventListener('click',function(){switchView(this.dataset.portalView);});});
+    document.querySelectorAll('[data-portal-demo]').forEach(function(button){button.addEventListener('click',function(){launchCoreDemo(this.dataset.portalDemo);});});
+    document.querySelectorAll('input[name="yj-project-type"]').forEach(function(input){input.addEventListener('change',syncProjectModalMode);});
+
+    function openAdaptationMode(mode){
+      switchView('adaptation');
+      if(window.YJAdaptationWorkbench){window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(mode==='manga'?'manga':'literary');}
+    }
 
     // 快速体验按钮
     var demoRun = document.getElementById('yj-demo-run');
-    if (demoRun) demoRun.addEventListener('click', launchCoreDemo);
+    if (demoRun) demoRun.addEventListener('click', function(){launchCoreDemo('original');});
+    document.querySelectorAll('[data-demo-type="literary"],[data-demo-type="manga"],[data-demo-type="global"]').forEach(function(button){button.addEventListener('click',function(){launchCoreDemo(this.dataset.demoType);});});
 
-    async function launchCoreDemo() {
+    async function launchCoreDemo(type) {
+      type=type||'original';
+      if(type==='global'){
+        switchView('global');
+        if(!window.YJGlobalWorkbench){showToast('文化出海演示模块尚未就绪');return;}
+        window.YJGlobalWorkbench.reset();
+        showToast('正在运行文化出海比赛 Demo');
+        await window.YJGlobalWorkbench.runDemoInstant();
+        return;
+      }
+      if(type==='literary'||type==='manga'){
+        switchView('adaptation');
+        if(!window.YJAdaptationWorkbench){showToast('改编演示模块尚未就绪');return;}
+        window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(type);
+        showToast(type==='manga'?'正在运行漫画拆解 Demo':'正在运行文学改编 Demo');
+        await window.YJAdaptationWorkbench.runDemoInstant(type);
+        return;
+      }
       if (window.__yjQuickDemoRunning) {
         showToast('核心演示正在运行，请在工作台查看');
         if (typeof window.YJOpenWorkspace === 'function') window.YJOpenWorkspace();
@@ -1594,10 +2014,24 @@
           if (opts && opts.project_id) {
             try {
               showToast('创作引擎启动中...');
-              var workflowData = await apiPost('/api/v1/create', {
+              var config = opts.config || {};
+              var materials = [
+                config.platform ? '发布平台：' + config.platform : '',
+                config.audience ? '目标受众：' + config.audience : '',
+                config.constraints ? '制作约束：' + config.constraints : ''
+              ].filter(Boolean).join('\n');
+              var workflowPayload = {
                 project_id: opts.project_id,
-                story_direction: opts.idea || ''
-              });
+                story_direction: opts.idea || '',
+                drama_type: config.genre || '',
+                total_episodes: config.total_episodes || 5,
+                user_materials: materials,
+                style_pack_id: config.style_pack_id || 'cinematic'
+              };
+              if (opts.mode === 'pro' && config.checkpoint_policy === 'human') {
+                workflowPayload.stop_at = 'character_forger';
+              }
+              var workflowData = await apiPost('/api/v1/create', workflowPayload);
               if (workflowData && workflowData.workflow_id) {
                 var wfId = workflowData.workflow_id;
                 // 三方统一 workflow_id
@@ -1655,6 +2089,8 @@
     bindEvents();
     hookStartCreation();
     hookLoginFlow();
+    refreshKnowledgeHub();
+    setInterval(refreshKnowledgeHub, 700);
 
     // 首次访问恢复原登录页；已登录用户进入项目中心。
     if (hasEnteredStudio()) showProjectCenter();
@@ -1671,4 +2107,3 @@
   }
 
 })();
-

@@ -1,0 +1,24 @@
+{
+  "base": "http://127.0.0.1:8892",
+  "checks": {
+    "portalVisible": true,
+    "threeWorkbenchCards": true,
+    "originalValue": true,
+    "adaptationValue": true,
+    "navArchitecture": true,
+    "threeUtilityEntries": true,
+    "literaryRoute": true,
+    "adaptationPageVisible": true,
+    "mangaRoute": true,
+    "fourProjectTypes": true,
+    "literaryModalContext": true,
+    "adaptationInputLabel": true,
+    "adaptationCreateCTA": true,
+    "demoHubVisible": true,
+    "fourDemoCards": true,
+    "fourDemoTypes": true
+  },
+  "errors": [],
+  "localHttpErrors": [],
+  "passed": true
+}

@@ -1,12 +1,12 @@
+.env
 __pycache__/
 *.pyc
-.env
+data/
+sessions/
 *.egg-info/
 dist/
 build/
 .pytest_cache/
-output/
-DEOF
-
-echo "=== Files prepared ==="
-ls -la /app/data/所有对话/主对话/repo-deploy-additions/
+.pytest*/
+.test-deps/
+tests/*.png

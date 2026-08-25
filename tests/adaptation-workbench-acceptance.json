@@ -1,0 +1,25 @@
+{
+  "base": "http://127.0.0.1:8892",
+  "checks": {
+    "navEntry": true,
+    "workbenchVisible": true,
+    "rightsGate": true,
+    "demoEntry": true,
+    "sevenStages": true,
+    "sourceStats": true,
+    "traceableBeats": true,
+    "skeletonCheckpointStops": true,
+    "pipelineStoppedBeforeDiagnosis": true,
+    "skeletonHumanApproval": true,
+    "proposalCheckpointStops": true,
+    "threeProposalComparisons": true,
+    "pipelineComplete": true,
+    "threeSceneDeliveries": true,
+    "evidenceLog": true,
+    "sessionPersisted": true,
+    "noTokenDemo": true
+  },
+  "errors": [],
+  "localHttpErrors": [],
+  "passed": true
+}

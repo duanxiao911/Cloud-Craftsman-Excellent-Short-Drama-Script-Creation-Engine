@@ -21,10 +21,10 @@ from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 
 # 导入项目模块
@@ -35,19 +35,35 @@ from src.style_packs import STYLE_PACKS
 from src.production_export import ProductionExportService
 from src.story_state import StoryState
 from src.skill_registry import SKILLS, skill_for
+from src.database import Database, ProjectDAO, UserDAO, get_db
+from src.adaptation_schema import demo_project as adaptation_demo_project, manga_demo_project as adaptation_manga_demo_project, schema_manifest as adaptation_schema_manifest
 
 
 # ============ Pydantic模型 ============
 
 class CreateRequest(BaseModel):
     """完整创作请求"""
-    story_direction: str = Field(..., description="故事方向描述")
+    story_direction: Optional[str] = Field(None, description="故事方向描述")
+    idea: Optional[str] = Field(None, description="故事创意（story_direction的别名）")
     drama_type: Optional[str] = Field(None, description="故事类型")
     total_episodes: Optional[int] = Field(None, description="总集数")
     user_materials: Optional[str] = Field(None, description="用户素材（硬约束）")
+    user_id: Optional[str] = Field(None, description="用户ID")
     stop_at: Optional[str] = Field(None, description="可选，在指定专家处停止")
     style_pack_id: str = Field("cinematic", description="版本化风格经验包ID")
     style_pack_version: Optional[str] = Field(None, description="指定风格包版本；空值使用最新版")
+    project_id: Optional[str] = Field(None, description="关联的项目ID")
+
+    @property
+    def effective_story_direction(self) -> str:
+        """优先使用story_direction，回退到idea"""
+        return self.story_direction or self.idea or ""
+
+    @model_validator(mode="after")
+    def validate_direction(self):
+        if not self.story_direction and not self.idea:
+            raise ValueError("story_direction 或 idea 至少需要提供一个")
+        return self
 
 
 class StepRequest(BaseModel):
@@ -81,6 +97,7 @@ class CreateResponse(BaseModel):
     workflow_id: str
     status: str
     message: str
+    project_id: Optional[str] = None
 
 
 class ResumeRequest(BaseModel):
@@ -93,6 +110,57 @@ class CheckpointDecisionRequest(BaseModel):
     expert_id: str
     edited_content: Optional[str] = None
     stop_at: Optional[str] = None
+
+class ProjectCreate(BaseModel):
+    """新建项目请求"""
+    title: str
+    genre: str = ""
+    original_idea: str = ""
+    user_id: str = "demo_001"
+    project_type: str = "original"
+
+
+class ProjectUpdate(BaseModel):
+    """更新项目请求"""
+    title: Optional[str] = None
+    status: Optional[str] = None
+    current_stage: Optional[str] = None
+    original_idea: Optional[str] = None
+    project_type: Optional[str] = None
+
+
+class ProjectResponse(BaseModel):
+    """项目响应"""
+    project_id: str
+    user_id: str
+    title: str
+    project_type: str = "original"
+    genre: str
+    original_idea: str
+    workflow_id: Optional[str] = None
+    status: str
+    current_stage: str
+    created_at: str
+    updated_at: str
+    artifacts: dict
+
+
+class BindWorkflowRequest(BaseModel):
+    """绑定workflow请求"""
+    workflow_id: str
+
+
+class SaveArtifactRequest(BaseModel):
+    """保存阶段产物请求"""
+    stage: str
+    artifact_data: dict
+
+
+class AdaptationValidateRequest(BaseModel):
+    """验证改编工作台快照是否满足溯源与人工检查点要求。"""
+    snapshot: Dict[str, Any]
+
+
 
 
 class ExpertInfo(BaseModel):
@@ -125,29 +193,108 @@ def _emit(workflow_id: str, event_type: str, **payload):
     })
 
 
-def _bind_evidence_callbacks(workflow_id: str, orchestrator: Orchestrator):
+def _bind_evidence_callbacks(workflow_id: str, orchestrator: Orchestrator, project_id: str = None):
+    def _on_step_complete_with_save(expert_id, step_index, output):
+        _emit(
+            workflow_id, "expert_complete", expert_id=expert_id, step_index=step_index,
+            validation_passed=output.validation_passed,
+            validation_errors=output.validation_errors,
+            output=output.content,
+            output_preview=output.content[:800],
+            structured_data=output.structured_data,
+        )
+        # Auto-save artifact to project if bound
+        if project_id:
+            try:
+                project_dao = ProjectDAO()
+                project = project_dao.get_project(project_id)
+                if project:
+                    artifacts = project.get("artifacts", {}) or {}
+                    artifacts[expert_id] = {
+                        "content": output.content if output.content else "",
+                        "validation_passed": output.validation_passed,
+                        "structured_data": output.structured_data,
+                        "saved_at": datetime.now().isoformat(),
+                    }
+                    # Map expert to stage
+                    stage_map = {
+                        "\u00a70": "idea",
+                        "\u00a71": "character",
+                        "\u00a72": "compliance",
+                        "\u00a73": "outline",
+                        "\u00a74": "dialogue",
+                        "\u00a75": "episode",
+                        "\u00a76": "supervision",
+                        "\u00a77": "visual",
+                        "\u00a78": "project_config",
+                        "\u00a79": "market",
+                        "\u00a710": "direction",
+                        "\u00a711": "style",
+                        "\u00a712": "rhythm",
+                        "\u00a713": "emotion",
+                        "\u00a714": "conflict",
+                        "\u00a715": "climax",
+                        "\u00a716": "ending",
+                    }
+                    stage = stage_map.get(expert_id, "idea")
+                    project_dao.update_project(
+                        project_id,
+                        current_stage=stage,
+                        artifacts=artifacts,
+                        status="running",
+                    )
+            except Exception:
+                pass  # Don't break workflow on save failure
+
+    def _on_checkpoint_with_save(expert_id, step_index, state):
+        _emit(
+            workflow_id, "checkpoint", expert_id=expert_id, step_index=step_index,
+            completed_experts=[state.expert_sequence[i] for i in state.completed_steps],
+        )
+        # Update project stage and status on checkpoint
+        if project_id:
+            try:
+                project_dao = ProjectDAO()
+                stage_map = {
+                    "\u00a70": "idea",
+                    "\u00a71": "character",
+                    "\u00a72": "compliance",
+                    "\u00a73": "outline",
+                    "\u00a74": "dialogue",
+                    "\u00a75": "episode",
+                    "\u00a76": "supervision",
+                    "\u00a77": "visual",
+                    "\u00a78": "project_config",
+                    "\u00a79": "market",
+                    "\u00a710": "direction",
+                    "\u00a711": "style",
+                    "\u00a712": "rhythm",
+                    "\u00a713": "emotion",
+                    "\u00a714": "conflict",
+                    "\u00a715": "climax",
+                    "\u00a716": "ending",
+                }
+                stage = stage_map.get(expert_id, "idea")
+                project_dao.update_project(
+                    project_id,
+                    current_stage=stage,
+                    status="waiting_user",
+                )
+            except Exception:
+                pass
+
     orchestrator.on("on_step_start", lambda expert_id, step_index, context: _emit(
         workflow_id, "expert_start", expert_id=expert_id, step_index=step_index,
         task=orchestrator.SEQUENCE_DESCRIPTIONS.get(expert_id, expert_id),
     ))
-    orchestrator.on("on_step_complete", lambda expert_id, step_index, output: _emit(
-        workflow_id, "expert_complete", expert_id=expert_id, step_index=step_index,
-        validation_passed=output.validation_passed,
-        validation_errors=output.validation_errors,
-        output=output.content,
-        output_preview=output.content[:800],
-        structured_data=output.structured_data,
-    ))
+    orchestrator.on("on_step_complete", _on_step_complete_with_save)
     orchestrator.on("on_step_error", lambda expert_id, step_index, error: _emit(
         workflow_id, "expert_error", expert_id=expert_id, step_index=step_index, error=str(error),
     ))
     orchestrator.on("on_quality_gate", lambda expert_id, result: _emit(
         workflow_id, "quality_gate", expert_id=expert_id, result=result,
     ))
-    orchestrator.on("on_checkpoint", lambda expert_id, step_index, state: _emit(
-        workflow_id, "checkpoint", expert_id=expert_id, step_index=step_index,
-        completed_experts=[state.expert_sequence[i] for i in state.completed_steps],
-    ))
+    orchestrator.on("on_checkpoint", _on_checkpoint_with_save)
     orchestrator.on("on_revision_loop", lambda revision: _emit(
         workflow_id, "revision_loop", revision=revision,
     ))
@@ -178,6 +325,15 @@ async def lifespan(app: FastAPI):
     config_file = os.getenv("DRAMA_CONFIG", "config.yaml")
     if os.path.exists(config_file):
         load_config(config_file)
+
+    # 初始化数据库
+    db = get_db()
+    db.init_db()
+    # 创建默认demo用户
+    user_dao = UserDAO(db)
+    if not user_dao.get_user("demo_001"):
+        user_dao.create_user(user_id="demo_001", nickname="Demo User")
+
     yield
     # 关闭时清理
 
@@ -213,26 +369,9 @@ def create_app() -> FastAPI:
 
     # ============ API路由 ============
 
-    def render_demo() -> HTMLResponse:
-        """Serve the repository's established UI and inject final-release assets."""
-        index_path = Path(__file__).resolve().parents[2] / "index.html"
-        if not index_path.is_file():
-            return HTMLResponse("<h1>云匠 Demo 文件 index.html 未找到</h1>", status_code=404)
-        html = index_path.read_text(encoding="utf-8")
-        if "yunjiang-feature-ui.css" not in html:
-            html = html.replace("</head>", '<link rel="stylesheet" href="/assets/yunjiang-feature-ui.css"></head>')
-        if "yunjiang-feature-upgrade.js" not in html:
-            scripts = '<script src="/assets/yunjiang-capability-center.js"></script><script src="/assets/yunjiang-feature-upgrade.js"></script>'
-            html = html.replace("</body>", scripts + "</body>")
-        return HTMLResponse(html)
-
-    @app.get("/", response_class=HTMLResponse)
+    @app.get("/")
     async def root():
-        return render_demo()
-
-    @app.get("/demo/", response_class=HTMLResponse)
-    async def demo():
-        return render_demo()
+        return RedirectResponse(url="/demo/")
 
     @app.get("/health")
     async def health():
@@ -259,7 +398,47 @@ def create_app() -> FastAPI:
                 "actions": ["确认继续", "修改方向", "直接编辑", "取消创作", "断点恢复"],
             },
             "observability": ["SSE实时事件", "Agent Run证据", "专家输入输出", "质量门禁", "Token用量"],
-            "product": ["3个场景模板", "60秒零Token体验", "Session持久化", "版本化风格包", "下游结构化导出"],
+            "product": ["3个场景模板", "60秒零Token体验", "Session持久化", "版本化风格包", "下游结构化导出", "文学/漫画IP改编工作台"],
+        }
+
+    @app.get("/api/v1/adaptation/schema")
+    async def get_adaptation_schema():
+        """返回原著事实层与改编决策层的机器可读数据契约。"""
+        return adaptation_schema_manifest()
+
+    @app.get("/api/v1/adaptation/demo")
+    async def get_adaptation_demo():
+        """零 Token 文学改编示例项目，可直接驱动评审 Demo。"""
+        return adaptation_demo_project()
+
+    @app.get("/api/v1/adaptation/manga/demo")
+    async def get_adaptation_manga_demo():
+        """零 Token 漫画拆解示例，包含页、画格、对白归属和镜头映射。"""
+        return adaptation_manga_demo_project()
+
+    @app.post("/api/v1/adaptation/validate")
+    async def validate_adaptation_snapshot(request: AdaptationValidateRequest):
+        snapshot = request.snapshot
+        errors: List[str] = []
+        for collection in ("characters", "events", "invariants", "beats", "issues"):
+            for index, item in enumerate(snapshot.get(collection, [])):
+                if not item.get("source_chunk_ids"):
+                    errors.append(f"{collection}[{index}] 缺少 source_chunk_ids")
+        invariants = snapshot.get("invariants", [])
+        if invariants and not all(item.get("approved") for item in invariants):
+            errors.append("故事骨架尚未全部完成人工确认")
+        selected = [item for item in snapshot.get("proposals", []) if item.get("selected")]
+        if not selected:
+            errors.append("尚未选择任何改编方案")
+        return {
+            "ok": not errors,
+            "schema_version": adaptation_schema_manifest()["schema_version"],
+            "errors": errors,
+            "checks": {
+                "traceability": not any("source_chunk_ids" in error for error in errors),
+                "skeleton_approved": not any("骨架" in error for error in errors),
+                "proposal_selected": bool(selected),
+            },
         }
 
     @app.get("/api/v1/style-packs")
@@ -306,7 +485,7 @@ def create_app() -> FastAPI:
         # 初始化上下文
         from src.experts.base import ExpertContext
         context = ExpertContext(
-            story_direction=request.story_direction,
+            story_direction=request.effective_story_direction,
             project_config={
                 "drama_type": request.drama_type or config.default_drama_type,
                 "total_episodes": request.total_episodes or config.default_total_episodes,
@@ -319,7 +498,7 @@ def create_app() -> FastAPI:
         workflow_id = f"wf_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
         workflows[workflow_id] = orchestrator
         workflow_events[workflow_id] = []
-        _bind_evidence_callbacks(workflow_id, orchestrator)
+        _bind_evidence_callbacks(workflow_id, orchestrator, project_id=getattr(request, "project_id", None))
         _emit(workflow_id, "workflow_created", stop_at=request.stop_at)
         _emit(workflow_id, "style_pack_loaded", style_pack={
             "id": style_pack["id"], "version": style_pack["version"],
@@ -329,12 +508,12 @@ def create_app() -> FastAPI:
         def run_workflow():
             try:
                 orchestrator.auto_develop_project(
-                    idea=request.story_direction,
+                    idea=request.effective_story_direction,
                     project=context.project_config,
                     max_attempts=3,
                 )
                 state = orchestrator.run_full(
-                    request.story_direction,
+                    request.effective_story_direction,
                     stop_at=request.stop_at,
                     workflow_id=workflow_id,
                     project_config=context.project_config,
@@ -348,12 +527,21 @@ def create_app() -> FastAPI:
                     orchestrator.state.error_message = str(e)
                 _emit(workflow_id, "workflow_error", error=str(e))
 
+        # Bind workflow to project if project_id provided
+        if request.project_id:
+            try:
+                project_dao = ProjectDAO()
+                project_dao.update_project(request.project_id, workflow_id=workflow_id, status="running")
+            except Exception:
+                pass  # Don't break workflow on binding failure
+
         background_tasks.add_task(run_workflow)
 
         return CreateResponse(
             workflow_id=workflow_id,
             status="started",
             message=f"工作流已启动，workflow_id: {workflow_id}",
+            project_id=request.project_id,
         )
 
     @app.post("/api/v1/step/{expert_id}", response_model=StepResponse)
@@ -646,7 +834,7 @@ def create_app() -> FastAPI:
                 "type": "step_complete",
                 "expert_id": expert_id,
                 "step_index": step_idx,
-                "content": output.content[:500],
+                "content": output.content[:800] if output.content else "",
                 "validation_passed": output.validation_passed,
             })
 
@@ -696,9 +884,91 @@ def create_app() -> FastAPI:
         finally:
             await websocket.close()
 
+
+    # ============ Project API ============
+
+    @app.post("/api/v1/projects", response_model=ProjectResponse)
+    async def create_project(request: ProjectCreate):
+        """新建项目"""
+        user_dao = UserDAO()
+        project_dao = ProjectDAO()
+
+        # Auto-create user if not exists
+        if not user_dao.get_user(request.user_id):
+            user_dao.create_user(user_id=request.user_id, nickname=request.user_id)
+
+        project = project_dao.create_project(
+            user_id=request.user_id,
+            title=request.title,
+            genre=request.genre,
+            original_idea=request.original_idea,
+            project_type=request.project_type,
+        )
+        return ProjectResponse(**project)
+
+    @app.get("/api/v1/projects", response_model=List[ProjectResponse])
+    async def list_projects(user_id: str = "demo_001"):
+        """获取项目列表"""
+        project_dao = ProjectDAO()
+        projects = project_dao.list_projects(user_id)
+        return [ProjectResponse(**p) for p in projects]
+
+    @app.get("/api/v1/projects/{project_id}", response_model=ProjectResponse)
+    async def get_project(project_id: str):
+        """获取项目详情"""
+        project_dao = ProjectDAO()
+        project = project_dao.get_project(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail=f"项目 {project_id} 未找到")
+        return ProjectResponse(**project)
+
+    @app.put("/api/v1/projects/{project_id}", response_model=ProjectResponse)
+    async def update_project(project_id: str, request: ProjectUpdate):
+        """更新项目"""
+        project_dao = ProjectDAO()
+        update_data = request.model_dump(exclude_none=True)
+        project = project_dao.update_project(project_id, **update_data)
+        if not project:
+            raise HTTPException(status_code=404, detail=f"项目 {project_id} 未找到")
+        return ProjectResponse(**project)
+
+    @app.delete("/api/v1/projects/{project_id}")
+    async def delete_project(project_id: str):
+        """删除项目"""
+        project_dao = ProjectDAO()
+        success = project_dao.delete_project(project_id)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"项目 {project_id} 未找到")
+        return {"ok": True, "project_id": project_id, "message": "项目已删除"}
+
+    @app.post("/api/v1/projects/{project_id}/bind-workflow", response_model=ProjectResponse)
+    async def bind_workflow(project_id: str, request: BindWorkflowRequest):
+        """绑定workflow到项目"""
+        project_dao = ProjectDAO()
+        project = project_dao.update_project(project_id, workflow_id=request.workflow_id, status="running")
+        if not project:
+            raise HTTPException(status_code=404, detail=f"项目 {project_id} 未找到")
+        return ProjectResponse(**project)
+
+    @app.post("/api/v1/projects/{project_id}/save-artifact", response_model=ProjectResponse)
+    async def save_artifact(project_id: str, request: SaveArtifactRequest):
+        """保存阶段产物到项目"""
+        project_dao = ProjectDAO()
+        project = project_dao.get_project(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail=f"项目 {project_id} 未找到")
+
+        artifacts = project.get("artifacts", {}) or {}
+        artifacts[request.stage] = {
+            "data": request.artifact_data,
+            "saved_at": datetime.now().isoformat(),
+        }
+        project = project_dao.update_project(project_id, artifacts=artifacts)
+        return ProjectResponse(**project)
+
     frontend_dir = Path(__file__).resolve().parents[2] / "frontend"
     if frontend_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(frontend_dir)), name="assets")
+        app.mount("/demo", StaticFiles(directory=str(frontend_dir), html=True), name="demo")
 
     return app
 

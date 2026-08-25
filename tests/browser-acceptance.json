@@ -1,0 +1,72 @@
+{
+  "base": "http://127.0.0.1:8891",
+  "passed": [
+    {
+      "name": "Demo 页面可访问",
+      "detail": "云匠 · 智能短剧剧本创作引擎"
+    },
+    {
+      "name": "项目中心已加载",
+      "detail": ""
+    },
+    {
+      "name": "项目中心首页可见",
+      "detail": ""
+    },
+    {
+      "name": "原登录页在项目中心模式下隐藏",
+      "detail": ""
+    },
+    {
+      "name": "快速体验页面可打开",
+      "detail": ""
+    },
+    {
+      "name": "评审快速入口已安装",
+      "detail": ""
+    },
+    {
+      "name": "取消创作入口已安装",
+      "detail": ""
+    },
+    {
+      "name": "风格包选择器已安装",
+      "detail": ""
+    },
+    {
+      "name": "60秒零Token体验可运行",
+      "detail": ""
+    },
+    {
+      "name": "Agent Run 证据已生成",
+      "detail": ""
+    },
+    {
+      "name": "三个检查点有演示证据",
+      "detail": ""
+    },
+    {
+      "name": "快速演示覆盖17位专家",
+      "detail": ""
+    },
+    {
+      "name": "Session 已持久化",
+      "detail": ""
+    },
+    {
+      "name": "能力清单为17 Agents/Skills",
+      "detail": "{\"schema_version\":\"1.0.0\",\"release\":\"final-1.0.0\",\"demo\":\"/demo/\",\"docs\":\"/docs\",\"agents\":17,\"skills\":17,\"human_in_the_loop\":{\"checkpoints\":[\"角色设定\",\"剧情大纲\",\"分集剧本\"],\"actions\":[\"确认继续\",\"修改方向\",\"直接编辑\",\"取消创作\",\"断点恢复\"]},\"observability\":[\"SSE实时事件\",\"Agent Run证据\",\"专家输入输出\",\"质量门禁\",\"Token用量\"],\"product\":[\"3个场景模板\",\"60秒零Token体验\",\"Session持久化\",\"版本化风格包\",\"下游结构化导出\"]}"
+    },
+    {
+      "name": "Skills API 返回17项",
+      "detail": ""
+    },
+    {
+      "name": "页面无未捕获JS错误",
+      "detail": ""
+    }
+  ],
+  "failed": [],
+  "consoleErrors": [],
+  "timestamp": "2026-08-24T08:11:14.001Z"
+}
