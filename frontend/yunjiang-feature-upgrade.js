@@ -291,12 +291,14 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.2',runtimeScript.sr
   window.YJBackendBridge=bridge;
 
   function apiBase(){
-    if(typeof window.YJResolveEngineApiBase==="function")return window.YJResolveEngineApiBase();
+    const normalize=value=>{let base=String(value||"").trim().replace(/\/+$/,"");if(!/^https?:\/\//i.test(base))return "";base=base.replace(/\/api\/v1\/(?:skills|style-packs|create|health)$/i,"").replace(/\/api\/v1$/i,"").replace(/\/v1$/i,"").replace(/\/health$/i,"");return base;};
     const hostname=String(window.location.hostname||"").toLowerCase();
     const isGitHubPages=hostname==="github.io"||hostname.endsWith(".github.io");
     const hosted=/^https?:$/.test(window.location.protocol)&&!isGitHubPages?window.location.origin:"";
-    const raw=(window.YJ_ENGINE_API_BASE||window.YJ_API_BASE||hosted||"https://reasonable-magic-production-7faf.up.railway.app").replace(/\/$/,"");
-    return raw.replace(/\/api\/v1$/i,"").replace(/\/v1$/i,"");
+    let resolved="";try{resolved=typeof window.YJResolveEngineApiBase==="function"?window.YJResolveEngineApiBase():"";}catch(error){}
+    let configured="";try{configured=typeof loadSettings==="function"?loadSettings().apiBaseUrl:"";}catch(error){}
+    const candidates=[window.YJ_ENGINE_API_BASE,window.YJ_API_BASE,resolved,configured,hosted,"https://reasonable-magic-production-7faf.up.railway.app"];
+    return candidates.map(normalize).find(base=>{if(!base)return false;try{return !/github\.io$/i.test(new URL(base).hostname)}catch(error){return false}})||"https://reasonable-magic-production-7faf.up.railway.app";
   }
   async function jsonFetch(path,options){
     const response=await fetch(bridge.base+path,{headers:{"Content-Type":"application/json",...(options&&options.headers||{})},...options});
@@ -306,7 +308,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.2',runtimeScript.sr
   async function probeEndpoint(path,attempts=1){let lastError=null;for(let attempt=0;attempt<attempts;attempt++){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);try{const response=await fetch(bridge.base+path,{cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal});clearTimeout(timer);if(response.ok)return response;lastError=new Error(path+" HTTP "+response.status);}catch(error){clearTimeout(timer);lastError=error;}if(attempt<attempts-1)await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));}throw lastError||new Error(path+" 请求失败");}
   bridge.connect=async function(){
     bridge.base=apiBase();
-    if(!bridge.base)return false;
+    if(!bridge.base){bridge.available=false;bridge.lastConnectError="API 地址解析失败：没有找到有效的 HTTP 服务地址";updateBackendBadge();return false;}
     try{
       await probeEndpoint("/health",2);
       bridge.available=true;bridge.capabilitiesVerified=false;bridge.connectWarning="";
@@ -315,7 +317,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.2',runtimeScript.sr
       try{const skills=await probeEndpoint("/api/v1/skills",2);const data=await skills.json();const count=Array.isArray(data)?data.length:Number(data?.count||Object.keys(data?.skills||{}).length);bridge.capabilitiesVerified=count>0;if(!bridge.capabilitiesVerified)bridge.connectWarning="Skills 清单为空，已按健康服务继续连接";}catch(error){bridge.connectWarning="Skills 清单暂时不可用（"+(error.message||"网络异常")+"），已按健康服务继续连接";}
       try{const packsResponse=await probeEndpoint("/api/v1/style-packs",1);const data=await packsResponse.json();bridge.stylePacks=data.packs||[];document.querySelectorAll(".style-pack-btn").forEach(button=>{const pack=bridge.stylePacks.find(item=>item.id===button.dataset.pack);if(pack){button.title=pack.description+"｜v"+pack.version;button.dataset.version=pack.version;}});const activePackId=feature.getStylePack();if(bridge.stylePacks.length&&!bridge.stylePacks.some(item=>item.id===activePackId))window.selectStylePack?.("cinematic",true);}catch(error){bridge.connectWarning=bridge.connectWarning||"风格包清单暂时不可用，使用前端内置风格包";}
       bridge.lastConnectError="";
-    }catch(error){bridge.available=false;bridge.lastConnectError=error.message||"无法完成云端能力校验";}
+    }catch(error){bridge.available=false;bridge.lastConnectError="连接 "+bridge.base+" 失败："+(error.name==="AbortError"?"请求超时":error.message||"网络异常");}
     updateBackendBadge();
     return bridge.available;
   };
@@ -446,7 +448,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.2',runtimeScript.sr
     }
     const configuredBase=String(loadSettings().apiBaseUrl||"");
     if(/\.up\.railway\.app/i.test(configuredBase)){
-      const detail=bridge.lastConnectError||"无法完成 Skills 能力校验";
+      const detail=bridge.lastConnectError||("无法连接云端服务 "+(bridge.base||apiBase()));
       addRunEvidence("error","云端引擎连接失败",detail+"；未进入旧版直连模式，避免请求不存在的 /chat/completions 接口","连接桥");
       showToast("云端引擎连接失败："+detail,true);
       return;
