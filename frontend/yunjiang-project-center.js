@@ -2092,9 +2092,9 @@
     refreshKnowledgeHub();
     setInterval(refreshKnowledgeHub, 700);
 
-    // 首次访问恢复原登录页；已登录用户进入项目中心。
-    if (hasEnteredStudio()) showProjectCenter();
-    else showLoginScreen();
+    // 每次重新打开页面都稳定展示访问页，避免旧的 localStorage 登录标记
+    // 让登录页短暂闪现后自动跳转。项目、创作进度和创作者资料仍保留。
+    showLoginScreen();
 
     console.log('[云匠引擎] 项目中心模块已加载 ✨');
   }
