@@ -6705,7 +6705,18 @@ function renderMarkdown(md) {
   function loadSettings() {
     try {
       const saved = localStorage.getItem('yunjiang_settings');
-      if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+      if (saved) {
+        const merged = { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+        if (/drama-engine-production/i.test(String(merged.apiBaseUrl || ''))) {
+          merged.apiBaseUrl = DEFAULT_SETTINGS.apiBaseUrl;
+          localStorage.setItem('yunjiang_settings', JSON.stringify(merged));
+        }
+        const engineOverride = localStorage.getItem('yunjiang_engine_api_base') || '';
+        if (/drama-engine-production/i.test(engineOverride)) {
+          localStorage.removeItem('yunjiang_engine_api_base');
+        }
+        return merged;
+      }
     } catch (e) {}
     return { ...DEFAULT_SETTINGS };
   }
@@ -11534,7 +11545,7 @@ function playBubblePopSound() {
 </script>
 
 <script src="./yunjiang-capability-center.js?v=1.2.0"></script>
-<script src="./yunjiang-feature-upgrade.js?v=1.2.0"></script>
+<script src="./yunjiang-feature-upgrade.js?v=1.2.1"></script>
 <script src="./yunjiang-project-center.js?v=1.5.1"></script>
 <script src="./yunjiang-adaptation-workbench.js?v=1.1.0"></script>
 <script src="./yunjiang-global-workbench.js?v=1.0.0"></script>

@@ -413,6 +413,12 @@
     if(await bridge.connect()){
       try{run={id:"",startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};resetBackendUI();await bridge.start(idea);return;}catch(error){bridge.active=false;addRunEvidence("error","新版后端启动失败",error.message,"连接桥");showToast("新版后端不可用，已切换兼容模式",true);}
     }
+    const configuredBase=String(loadSettings().apiBaseUrl||"");
+    if(/\.up\.railway\.app/i.test(configuredBase)){
+      addRunEvidence("error","云端引擎连接失败","未进入旧版直连模式，避免请求不存在的 /chat/completions 接口","连接桥");
+      showToast("云端引擎连接失败，请稍后重试或检查 Railway 状态",true);
+      return;
+    }
     return fallbackStart.apply(this,arguments);
   };
   const localConfirm=window.confirmCurrentStep;
