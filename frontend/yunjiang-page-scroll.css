@@ -97,6 +97,8 @@ body {
 .backend-live-activity.is-done .backend-live-state { color: #047857; background: #d1fae5; }
 .backend-live-activity.is-error .backend-live-icon { background: linear-gradient(135deg, #fb7185, #ef4444); animation: none; }
 .backend-live-activity.is-error .backend-live-state { color: #b91c1c; background: #fee2e2; }
+.backend-live-activity.is-paused .backend-live-icon { color: #6d28d9; background: #ede9fe; animation: none; }
+.backend-live-activity.is-paused .backend-live-state { color: #6d28d9; background: #ede9fe; }
 
 @keyframes yj-live-breathe {
   0%, 100% { transform: scale(1); box-shadow: 0 7px 18px rgba(124, 92, 246, .22); }
