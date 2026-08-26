@@ -5,7 +5,7 @@
     const pageScrollStyle=document.createElement('link');
     pageScrollStyle.id='yj-page-scroll-style';
     pageScrollStyle.rel='stylesheet';
-    pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.0.0',runtimeScript.src).href;
+pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.src).href;
     document.head.appendChild(pageScrollStyle);
   }
   const SESSION_KEY='yunjiang_active_session_v4', LOG_KEY='yunjiang_agent_run_v4';

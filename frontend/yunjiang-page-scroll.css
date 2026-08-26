@@ -1,44 +1,72 @@
-/* 云匠工作台 · 整页滚动适配
-   工作台内容允许自然撑高页面，短窗口不再压缩或裁切底部区域。 */
+/* 云匠工作台 · 双层滚动布局
+   页面滚动负责浏览工作台组件，画布和侧栏在桌面端各自滚动。 */
 html,
 body {
   height: auto !important;
   min-height: 100% !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(124, 92, 246, 0.48) rgba(148, 163, 184, 0.1);
 }
 
 .app-container {
-  --yj-workspace-min-height: 920px;
+  --yj-sticky-top: 76px;
+  --yj-panel-height: clamp(680px, calc(100vh - 88px), 940px);
   height: auto !important;
   min-height: 100vh !important;
-  grid-template-rows: 64px minmax(var(--yj-workspace-min-height), auto) auto !important;
-  align-items: stretch;
+  grid-template-rows: 64px auto auto !important;
+  align-items: start !important;
   overflow: visible !important;
 }
 
+/* 中间工作区自然撑开页面，但画布本身保持稳定高度。 */
 .main-workspace {
   height: auto !important;
-  min-height: var(--yj-workspace-min-height);
+  min-height: 0 !important;
+  align-self: start;
   overflow: visible !important;
 }
 
+.content-display-card.canvas-card {
+  flex: 0 0 auto !important;
+  height: var(--yj-panel-height) !important;
+  min-height: 620px !important;
+  max-height: 940px !important;
+  overflow: hidden !important;
+}
+
+.canvas-card .canvas-toolbar,
+.canvas-card .a4-toolbar,
+.canvas-card .card-status-header {
+  flex: 0 0 auto;
+}
+
+.canvas-card .script-body-scroll {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* 桌面端侧栏停留在视口内，内容超出时在侧栏内部滚动。 */
 .left-panel.sidebar-left,
 .right-sidebar {
-  height: auto !important;
-  min-height: var(--yj-workspace-min-height);
-  max-height: none !important;
-}
-
-/* 左右栏仍保留自己的内容滚动，整页滚动负责浏览完整工作台。 */
-.left-panel.sidebar-left {
+  position: sticky !important;
+  top: var(--yj-sticky-top) !important;
+  align-self: start !important;
+  height: var(--yj-panel-height) !important;
+  min-height: 0 !important;
+  max-height: var(--yj-panel-height) !important;
+  overflow-x: hidden !important;
   overflow-y: auto !important;
-}
-
-.right-sidebar {
-  overflow: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .footer-bar {
@@ -46,18 +74,43 @@ body {
   z-index: 2;
 }
 
+/* 全屏画布不受普通工作台限高影响。 */
+.content-display-card.canvas-card.is-expanded {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+.canvas-card.is-expanded .script-body-scroll {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
 html::-webkit-scrollbar,
-body::-webkit-scrollbar {
+body::-webkit-scrollbar,
+.script-body-scroll::-webkit-scrollbar,
+.left-panel.sidebar-left::-webkit-scrollbar,
+.right-sidebar::-webkit-scrollbar {
   width: 10px;
 }
 
 html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track {
+body::-webkit-scrollbar-track,
+.script-body-scroll::-webkit-scrollbar-track,
+.left-panel.sidebar-left::-webkit-scrollbar-track,
+.right-sidebar::-webkit-scrollbar-track {
   background: rgba(148, 163, 184, 0.08);
 }
 
 html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb {
+body::-webkit-scrollbar-thumb,
+.script-body-scroll::-webkit-scrollbar-thumb,
+.left-panel.sidebar-left::-webkit-scrollbar-thumb,
+.right-sidebar::-webkit-scrollbar-thumb {
   min-height: 56px;
   border: 2px solid transparent;
   border-radius: 999px;
@@ -66,20 +119,42 @@ body::-webkit-scrollbar-thumb {
 }
 
 html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover {
+body::-webkit-scrollbar-thumb:hover,
+.script-body-scroll::-webkit-scrollbar-thumb:hover,
+.left-panel.sidebar-left::-webkit-scrollbar-thumb:hover,
+.right-sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(124, 92, 246, 0.72);
   background-clip: padding-box;
 }
 
-@media (max-height: 820px) {
-  .app-container {
-    --yj-workspace-min-height: 860px;
-  }
-}
-
+/* 窄屏恢复单一的页面自然滚动，避免触控设备出现嵌套滚动冲突。 */
 @media (max-width: 900px) {
-  .app-container {
-    --yj-workspace-min-height: 780px;
+  .main-workspace,
+  .content-display-card.canvas-card,
+  .left-panel.sidebar-left,
+  .right-sidebar {
+    position: static !important;
+    top: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .canvas-card .script-body-scroll {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .content-display-card.canvas-card.is-expanded {
+    position: fixed !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .canvas-card.is-expanded .script-body-scroll {
+    overflow-y: auto !important;
   }
 }
-
