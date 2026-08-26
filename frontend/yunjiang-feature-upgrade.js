@@ -5,7 +5,7 @@
     const pageScrollStyle=document.createElement('link');
     pageScrollStyle.id='yj-page-scroll-style';
     pageScrollStyle.rel='stylesheet';
-pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.src).href;
+pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.1',runtimeScript.src).href;
     document.head.appendChild(pageScrollStyle);
   }
   const SESSION_KEY='yunjiang_active_session_v4', LOG_KEY='yunjiang_agent_run_v4';
@@ -327,12 +327,21 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.sr
   function resetBackendUI(){
     isCreating=true;pauseRequested=false;resumeRequested=false;stepsCompleted=0;currentStep=0;generatedResults={};
     document.body.classList.add("engine-running");document.body.classList.remove("engine-paused","awaiting-human");
-    document.getElementById("welcomeScreen").style.display="none";document.getElementById("outputContainer").innerHTML="";
+    document.getElementById("welcomeScreen").style.display="none";document.getElementById("outputContainer").innerHTML="";bridge.completedExperts=0;
     document.querySelectorAll("[data-expert]").forEach(el=>el.classList.remove("completed","done","active","working"));
     const btn=document.getElementById("generateBtn");btn.disabled=false;btn.innerHTML="<span>后端创作中...</span><span>⏳</span>";btn.onclick=togglePauseResume;
     const status=document.getElementById("engineStatusValue");if(status)status.textContent="连接后端";
+    renderBackendActivity({state:"connecting",title:"正在连接云匠 Agent 引擎",detail:"建立实时事件通道，准备接收专家执行步骤",progress:0});
   }
   function expertLabel(id){return ({"§10":"实战指挥","§0":"灵魂捕手","§2":"合规守门员","§8":"项目配置师","§1":"角色铸造师","§3":"结构建筑师","§4":"对白大师","§5":"分集编剧","§12":"集纲审核","§11":"场景工匠","§6":"格式工匠","§7":"质量审计","§9":"改稿编辑","§13":"视觉导演","§14":"商业操盘","§16":"剧本审核","§15":"品控总监"})[id]||id;}
+  function renderBackendActivity(options){
+    const output=document.getElementById("outputContainer");if(!output)return;
+    let panel=document.getElementById("backend-live-activity");
+    if(!panel){panel=document.createElement("section");panel.id="backend-live-activity";panel.className="backend-live-activity";output.parentNode.insertBefore(panel,output);}
+    const state=options?.state||"working",progress=Math.max(0,Math.min(17,Number(options?.progress)||0));
+    panel.className="backend-live-activity is-"+state;
+    panel.innerHTML='<div class="backend-live-icon">'+(state==="done"?"✓":state==="error"?"!":"✦")+'</div><div class="backend-live-copy"><div class="backend-live-eyebrow">当前执行步骤 <span>'+progress+' / 17</span></div><strong>'+esc(options?.title||"云匠引擎正在执行")+'</strong><p>'+esc(options?.detail||"正在等待后端返回实时事件")+'</p><div class="backend-live-track"><i style="width:'+Math.round(progress/17*100)+'%"></i></div></div><span class="backend-live-state">'+(state==="done"?"已完成":state==="error"?"异常":"实时运行中")+'</span>';
+  }
   function renderBackendOutput(expertId,content){
     const stepNum=SOURCE_STEP[expertId]||EXPERT_STEP[expertId];if(!stepNum)return;
     const safe=sanitizeLLMOutput(content||"");bridge.outputs[expertId]=safe;generatedResults[stepNum]=safe;
@@ -342,7 +351,9 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.sr
     const target=document.getElementById("stream-content-"+stepNum);if(target)target.innerHTML=renderMarkdown(safe);
     const nameMap={"§10":"mission_commander","§0":"soul_catcher","§2":"compliance_guard","§8":"project_configurator","§1":"character_forger","§3":"structure_architect","§4":"dialogue_master","§5":"episode_writer","§12":"episode_outline_reviewer","§11":"scene_craftsman","§6":"format_craftsman","§7":"quality_auditor","§9":"revision_editor","§13":"visual_director","§14":"business_strategist","§16":"script_reviewer","§15":"quality_director"};
     const el=document.querySelector('[data-expert="'+nameMap[expertId]+'"]');if(el){el.classList.remove("working","active");el.classList.add("done","completed");}
-    stepsCompleted=Math.max(stepsCompleted,stepNum);currentStep=stepNum;updateBroadcastNodes();updateExpertGroupProgress();scrollToPageBottom();feature.saveSession();
+    bridge.completedExperts=Math.min(17,(bridge.completedExperts||0)+1);
+    renderBackendActivity({state:"done",title:expertLabel(expertId)+"已完成当前步骤",detail:"产物已写入画布，正在等待下一位专家接续执行",progress:bridge.completedExperts});
+    stepsCompleted=Math.max(stepsCompleted,stepNum);currentStep=stepNum;updateBroadcastNodes();updateExpertGroupProgress();feature.saveSession();
   }
   function markWorking(event){
     const id=event.expert_id,step=EXPERT_STEP[id];currentStep=step||currentStep;
@@ -350,6 +361,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.sr
     const names={"§10":"mission_commander","§0":"soul_catcher","§2":"compliance_guard","§8":"project_configurator","§1":"character_forger","§3":"structure_architect","§4":"dialogue_master","§5":"episode_writer","§12":"episode_outline_reviewer","§11":"scene_craftsman","§6":"format_craftsman","§7":"quality_auditor","§9":"revision_editor","§13":"visual_director","§14":"business_strategist","§16":"script_reviewer","§15":"quality_director"};
     const el=document.querySelector('[data-expert="'+names[id]+'"]');if(el)el.classList.add("active","working");
     const task=document.getElementById("statusTaskInfo");if(task)task.textContent="· "+expertLabel(id)+"正在执行真实后端任务";
+    const stepDataItem=window.stepData?.[step]||{};
+    renderBackendActivity({state:"working",title:expertLabel(id)+"正在执行"+(stepDataItem.title?" · "+stepDataItem.title:""),detail:event.task||event.judgement||event.message||"正在分析输入、执行专业判断并生成中间结果",progress:Math.min(17,(bridge.completedExperts||0)+1)});
     addRunEvidence("working","专家开始执行",event.task||expertLabel(id),expertLabel(id));
   }
   function showBackendCheckpoint(stopExpert){
@@ -385,7 +398,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.sr
     }else if(event.type==="quality_gate")addRunEvidence("check","质量门禁完成",JSON.stringify(event.result||{}).slice(0,420),expertLabel(event.expert_id));
     else if(event.type==="revision_loop")addRunEvidence("check","监督层触发返工","第 "+event.revision+" 轮局部返工","监督层 Agent");
     else if(event.type==="checkpoint")showBackendCheckpoint(event.expert_id);
-    else if(event.type==="workflow_error"){addRunEvidence("error","后端工作流异常",event.error||"未知错误","Orchestrator");finishBackend(false,event.error);}
+    else if(event.type==="workflow_error"){renderBackendActivity({state:"error",title:"工作流执行异常",detail:event.error||"未知错误",progress:bridge.completedExperts||0});addRunEvidence("error","后端工作流异常",event.error||"未知错误","Orchestrator");finishBackend(false,event.error);}
     else if(event.type==="workflow_state"&&event.status==="completed")finishBackend(true);
     feature.saveSession();
   };
@@ -421,6 +434,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.0',runtimeScript.sr
     bridge.active=false;isCreating=false;document.body.classList.remove("engine-running","awaiting-human");
     const btn=document.getElementById("generateBtn");btn.disabled=false;btn.innerHTML="<span>再来一版</span><span>↻</span>";btn.onclick=startCreation;
     const status=document.getElementById("engineStatusValue");if(status)status.textContent="已完成";
+    renderBackendActivity({state:"done",title:"云匠 Agent 工作流已完成",detail:"17 位专家、质量门禁与交付链路均已完成，全部产物可在画布中查看",progress:17});
     addRunEvidence("done","后端工作流完成","17位专家、门禁与返工链路执行结束","Orchestrator");saveCurrentSessionToHistory();feature.saveSession();updateBackendBadge();showToast("后端真实工作流已完成");
   }
   const fallbackStart=window.startCreation;

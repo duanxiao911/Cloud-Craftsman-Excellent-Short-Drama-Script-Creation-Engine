@@ -54,6 +54,55 @@ body {
   scrollbar-gutter: stable;
 }
 
+/* 画布内实时执行卡：请求发出即显示，跟随 SSE 专家事件更新。 */
+.backend-live-activity {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: center;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  background: rgba(250, 248, 255, 0.92);
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.1);
+  backdrop-filter: blur(18px) saturate(135%);
+}
+
+.backend-live-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff;
+  font-size: 19px;
+  background: linear-gradient(135deg, #8b5cf6, #4f7df3);
+  box-shadow: 0 7px 18px rgba(124, 92, 246, 0.26);
+  animation: yj-live-breathe 1.5s ease-in-out infinite;
+}
+
+.backend-live-copy { min-width: 0; }
+.backend-live-eyebrow { color: #7c3aed; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.backend-live-eyebrow span { margin-left: 7px; color: #64748b; letter-spacing: 0; }
+.backend-live-copy strong { display: block; margin-top: 3px; color: #1e293b; font-size: 14px; }
+.backend-live-copy p { margin: 3px 0 8px; color: #64748b; font-size: 12px; line-height: 1.45; }
+.backend-live-track { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(148, 163, 184, .2); }
+.backend-live-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8b5cf6, #3b82f6); transition: width .35s ease; }
+.backend-live-state { padding: 5px 9px; border-radius: 999px; color: #6d28d9; background: #ede9fe; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.backend-live-activity.is-done .backend-live-icon { background: linear-gradient(135deg, #34d399, #14b8a6); animation: none; }
+.backend-live-activity.is-done .backend-live-state { color: #047857; background: #d1fae5; }
+.backend-live-activity.is-error .backend-live-icon { background: linear-gradient(135deg, #fb7185, #ef4444); animation: none; }
+.backend-live-activity.is-error .backend-live-state { color: #b91c1c; background: #fee2e2; }
+
+@keyframes yj-live-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 7px 18px rgba(124, 92, 246, .22); }
+  50% { transform: scale(1.05); box-shadow: 0 9px 26px rgba(124, 92, 246, .4); }
+}
+
 /* 桌面端侧栏停留在视口内，内容超出时在侧栏内部滚动。 */
 .left-panel.sidebar-left,
 .right-sidebar {
@@ -129,6 +178,8 @@ body::-webkit-scrollbar-thumb:hover,
 
 /* 窄屏恢复单一的页面自然滚动，避免触控设备出现嵌套滚动冲突。 */
 @media (max-width: 900px) {
+  .backend-live-activity { position: relative; grid-template-columns: 42px minmax(0, 1fr); }
+  .backend-live-state { grid-column: 2; justify-self: start; }
   .main-workspace,
   .content-display-card.canvas-card,
   .left-panel.sidebar-left,
