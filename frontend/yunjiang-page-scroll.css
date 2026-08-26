@@ -103,6 +103,18 @@ body {
   50% { transform: scale(1.05); box-shadow: 0 9px 26px rgba(124, 92, 246, .4); }
 }
 
+.yj-cancel-choice { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, .38); backdrop-filter: blur(10px); }
+.yj-cancel-dialog { width: min(520px, 100%); padding: 26px; border: 1px solid rgba(255,255,255,.72); border-radius: 24px; background: rgba(255,255,255,.94); box-shadow: 0 28px 80px rgba(30,41,59,.24); color: #1e293b; }
+.yj-cancel-mark { display: grid; width: 48px; height: 48px; place-items: center; margin-bottom: 14px; border-radius: 15px; color: #ef4444; background: #fee2e2; font-size: 20px; }
+.yj-cancel-dialog h3 { margin: 0; font-size: 21px; }
+.yj-cancel-dialog p { margin: 10px 0 18px; color: #64748b; font-size: 14px; line-height: 1.65; }
+.yj-cancel-summary { display: grid; grid-template-columns: 1fr auto; gap: 9px 16px; margin-bottom: 20px; padding: 14px 16px; border-radius: 14px; background: #f8fafc; color: #64748b; font-size: 13px; }
+.yj-cancel-summary b { color: #312e81; }
+.yj-cancel-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+.yj-cancel-actions button { min-height: 40px; padding: 0 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #475569; cursor: pointer; font-weight: 700; }
+.yj-cancel-actions button.danger { border-color: #fecaca; color: #dc2626; background: #fff7f7; }
+.yj-cancel-actions button.primary { border-color: transparent; color: #fff; background: linear-gradient(135deg,#8b5cf6,#4f7df3); box-shadow: 0 8px 20px rgba(99,102,241,.22); }
+
 /* 桌面端侧栏停留在视口内，内容超出时在侧栏内部滚动。 */
 .left-panel.sidebar-left,
 .right-sidebar {
