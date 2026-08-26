@@ -287,7 +287,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.2',runtimeScript.sr
     "§7":{step:7,source:"§6",next:null,title:"分集剧本等待你的决策",message:"场景设计与格式化剧本已经完成。确认后将进入质量审计、返工和最终签发流程。"}
   };
   const SOURCE_STEP={"§1":4,"§12":6,"§6":7};
-  const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:"",connectWarning:"",capabilitiesVerified:false};
+  const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:"",connectWarning:"",capabilitiesVerified:false,connectPromise:null};
   window.YJBackendBridge=bridge;
 
   function apiBase(){
@@ -306,20 +306,23 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.2',runtimeScript.sr
     return response.json();
   }
   async function probeEndpoint(path,attempts=1){let lastError=null;for(let attempt=0;attempt<attempts;attempt++){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);try{const response=await fetch(bridge.base+path,{cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal});clearTimeout(timer);if(response.ok)return response;lastError=new Error(path+" HTTP "+response.status);}catch(error){clearTimeout(timer);lastError=error;}if(attempt<attempts-1)await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));}throw lastError||new Error(path+" 请求失败");}
-  bridge.connect=async function(){
-    bridge.base=apiBase();
-    if(!bridge.base){bridge.available=false;bridge.lastConnectError="API 地址解析失败：没有找到有效的 HTTP 服务地址";updateBackendBadge();return false;}
-    try{
-      await probeEndpoint("/health",2);
-      bridge.available=true;bridge.capabilitiesVerified=false;bridge.connectWarning="";
-      // Skills 是云端运行能力的稳定公开清单；专家展示接口仅作为可选扩展，
-      // 不应阻断真实工作流启动。
-      try{const skills=await probeEndpoint("/api/v1/skills",2);const data=await skills.json();const count=Array.isArray(data)?data.length:Number(data?.count||Object.keys(data?.skills||{}).length);bridge.capabilitiesVerified=count>0;if(!bridge.capabilitiesVerified)bridge.connectWarning="Skills 清单为空，已按健康服务继续连接";}catch(error){bridge.connectWarning="Skills 清单暂时不可用（"+(error.message||"网络异常")+"），已按健康服务继续连接";}
-      try{const packsResponse=await probeEndpoint("/api/v1/style-packs",1);const data=await packsResponse.json();bridge.stylePacks=data.packs||[];document.querySelectorAll(".style-pack-btn").forEach(button=>{const pack=bridge.stylePacks.find(item=>item.id===button.dataset.pack);if(pack){button.title=pack.description+"｜v"+pack.version;button.dataset.version=pack.version;}});const activePackId=feature.getStylePack();if(bridge.stylePacks.length&&!bridge.stylePacks.some(item=>item.id===activePackId))window.selectStylePack?.("cinematic",true);}catch(error){bridge.connectWarning=bridge.connectWarning||"风格包清单暂时不可用，使用前端内置风格包";}
-      bridge.lastConnectError="";
-    }catch(error){bridge.available=false;bridge.lastConnectError="连接 "+bridge.base+" 失败："+(error.name==="AbortError"?"请求超时":error.message||"网络异常");}
-    updateBackendBadge();
-    return bridge.available;
+  bridge.connect=function(){
+    if(bridge.connectPromise)return bridge.connectPromise;
+    const pending=(async()=>{
+      bridge.base=apiBase();bridge.lastConnectError="";
+      if(!bridge.base){bridge.available=false;bridge.lastConnectError="API 地址解析失败：没有找到有效的 HTTP 服务地址";updateBackendBadge();return false;}
+      try{
+        await probeEndpoint("/health",2);
+        bridge.available=true;bridge.capabilitiesVerified=false;bridge.connectWarning="";
+        // Skills 与风格包属于增强能力；健康服务可用时不阻断工作流启动。
+        try{const skills=await probeEndpoint("/api/v1/skills",2);const data=await skills.json();const count=Array.isArray(data)?data.length:Number(data?.count||Object.keys(data?.skills||{}).length);bridge.capabilitiesVerified=count>0;if(!bridge.capabilitiesVerified)bridge.connectWarning="Skills 清单为空，已按健康服务继续连接";}catch(error){bridge.connectWarning="Skills 清单暂时不可用（"+(error.message||"网络异常")+"），已按健康服务继续连接";}
+        try{const packsResponse=await probeEndpoint("/api/v1/style-packs",1);const data=await packsResponse.json();bridge.stylePacks=data.packs||[];document.querySelectorAll(".style-pack-btn").forEach(button=>{const pack=bridge.stylePacks.find(item=>item.id===button.dataset.pack);if(pack){button.title=pack.description+"｜v"+pack.version;button.dataset.version=pack.version;}});const activePackId=feature.getStylePack();if(bridge.stylePacks.length&&!bridge.stylePacks.some(item=>item.id===activePackId))window.selectStylePack?.("cinematic",true);}catch(error){bridge.connectWarning=bridge.connectWarning||"风格包清单暂时不可用，使用前端内置风格包";}
+        bridge.lastConnectError="";updateBackendBadge();return true;
+      }catch(error){bridge.available=false;bridge.lastConnectError="连接 "+bridge.base+" 失败："+(error.name==="AbortError"?"请求超时":error.message||"网络异常");updateBackendBadge();return false;}
+    })();
+    bridge.connectPromise=pending;
+    pending.finally(()=>{if(bridge.connectPromise===pending)bridge.connectPromise=null;});
+    return pending;
   };
   function updateBackendBadge(){
     let badge=document.getElementById("backendLinkBadge");
