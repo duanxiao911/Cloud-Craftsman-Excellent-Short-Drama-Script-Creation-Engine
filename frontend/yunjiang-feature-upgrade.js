@@ -449,14 +449,11 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.3',runtimeScript.sr
   const fallbackStart=window.startCreation;
   window.startCreation=async function(){
     const idea=document.getElementById("ideaInput").value.trim();if(!idea){showToast("请输入你的短剧想法",true);return;}
-    if(await bridge.connect()){
-      try{feature.resetRun();resetBackendUI();await bridge.start(idea);return;}catch(error){bridge.active=false;addRunEvidence("error","新版后端启动失败",error.message,"连接桥");showToast("新版后端不可用，已切换兼容模式",true);}
-    }
+    const healthReady=await bridge.connect();if(!bridge.base)bridge.base=apiBase();
+    try{feature.resetRun();resetBackendUI();await bridge.start(idea);if(!healthReady)addRunEvidence("check","健康检查未完成但工作流已创建",bridge.base+" 的 /api/v1/create 已成功响应","连接桥");return;}catch(error){bridge.active=false;isCreating=false;document.body.classList.remove("engine-running","engine-paused");const message="工作流创建失败（"+bridge.base+"/api/v1/create）："+(error.message||"网络异常");bridge.lastConnectError=message;addRunEvidence("error","云端工作流创建失败",message,"连接桥");renderBackendActivity({state:"error",title:"云端工作流创建失败",detail:message,progress:0});const status=document.getElementById("engineStatusValue");if(status)status.textContent="连接失败";const btn=document.getElementById("generateBtn");if(btn){btn.disabled=false;btn.innerHTML="<span>重新尝试</span><span>↻</span>";btn.onclick=startCreation;}showToast(message,true);}
     const configuredBase=String(loadSettings().apiBaseUrl||"");
     if(/\.up\.railway\.app/i.test(configuredBase)){
-      const detail=bridge.lastConnectError||("无法连接云端服务 "+(bridge.base||apiBase()));
-      addRunEvidence("error","云端引擎连接失败",detail+"；未进入旧版直连模式，避免请求不存在的 /chat/completions 接口","连接桥");
-      showToast("云端引擎连接失败："+detail,true);
+      updateBackendBadge();
       return;
     }
     return fallbackStart.apply(this,arguments);
