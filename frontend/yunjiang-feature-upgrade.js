@@ -249,6 +249,15 @@
     }
   };
   function saveSession(){try{localStorage.setItem(SESSION_KEY,JSON.stringify({version:3,idea:document.getElementById('ideaInput')?.value||'',scene:document.getElementById('ideaInput')?.dataset.scene||'',stylePack:activeStylePack,results:generatedResults||{},steps:stepsCompleted||0,current:currentStep||0,checkpoint:[4,6,7].includes(currentStep)?currentStep:0,backendWorkflowId:window.YJBackendBridge?.workflowId||'',lastBackendEventId:window.YJBackendBridge?.lastEventId||0,savedAt:new Date().toISOString()}))}catch(e){}}
+  // 后端桥位于独立作用域，通过这个小型公开接口共享必要状态，
+  // 避免直接引用 activeStylePack、run、saveSession 等私有变量。
+  window.YJFeatureRuntime={
+    getStylePack:()=>activeStylePack,
+    resetRun:()=>{run={id:'',startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};renderEvidence()},
+    setRunIdentity:(id,startedAt)=>{run.id=id||run.id;run.startedAt=startedAt||run.startedAt||new Date().toISOString();localStorage.setItem(LOG_KEY,JSON.stringify(run));renderEvidence()},
+    saveSession:saveSession,
+    downloadJSON:downloadJSON
+  };
   window.clearActiveSession=function(){localStorage.removeItem(SESSION_KEY);showToast('当前续存进度已清除')};
   function installLaunchpad(){let mount=document.getElementById('leftReviewLaunchpadMount');if(!mount){const panel=document.querySelector('.left-panel.sidebar-left,.left-panel');if(panel){mount=document.createElement('div');mount.id='leftReviewLaunchpadMount';panel.appendChild(mount)}}if(mount&&!document.getElementById('reviewLaunchpad'))mount.innerHTML='<div class="review-launchpad review-launchpad-left" id="reviewLaunchpad"><div><h3>评审快速入口</h3><p>载入完整示例，快速复核角色、集纲与剧本。</p><div class="scene-presets"><span><button class="scene-preset" onclick="applyScenePreset(\'heritage\')">🏛 非遗</button> <button class="example-link" onclick="loadSceneExample(\'heritage\')">示例</button></span><span><button class="scene-preset" onclick="applyScenePreset(\'male\')">⚡ 男频</button> <button class="example-link" onclick="loadSceneExample(\'male\')">示例</button></span><span><button class="scene-preset" onclick="applyScenePreset(\'campus\')">💗 甜宠</button> <button class="example-link" onclick="loadSceneExample(\'campus\')">示例</button></span></div></div><button class="quick-demo-btn" onclick="startQuickDemo()">▶ 60秒体验</button><button class="cancel-creation-btn" id="cancelCreationBtn" onclick="cancelCurrentCreation()">■ 取消当前创作</button></div>';updateCancelCreationButton()}
   window.updateCancelCreationButton=function(){const btn=document.getElementById('cancelCreationBtn');if(!btn)return;const active=!!(window.YJBackendBridge?.active||isCreating||document.body.classList.contains('engine-running'));btn.disabled=!active;btn.classList.toggle('is-active',active);btn.textContent=active?'■ 取消当前创作':'✓ 当前无进行中任务'};
@@ -263,6 +272,10 @@
 })();
 /* v5 新后端桥：真实 Orchestrator SSE、三检查点决策和服务端 Agent Run 证据。 */
 (function(){
+  const feature=window.YJFeatureRuntime||{
+    getStylePack:()=>localStorage.getItem("yunjiang_style_pack_v1")||"cinematic",
+    resetRun:()=>{},setRunIdentity:()=>{},saveSession:()=>{},downloadJSON:()=>{}
+  };
   const EXPERT_STEP={"§10":13,"§0":1,"§2":2,"§8":3,"§1":4,"§3":6,"§4":5,"§5":7,"§12":16,"§11":11,"§6":9,"§7":10,"§9":12,"§13":8,"§14":14,"§16":17,"§15":15};
   const CHECKPOINTS={
     "§3":{step:4,source:"§1",next:"§11",title:"角色设定等待你的决策",message:"角色铸造师已经完成角色设定。确认、修改或直接编辑后，后端才会继续进入剧情结构与分集大纲。"},
@@ -298,7 +311,7 @@
       bridge.available=skills.ok;
       if(bridge.available){
         const packsResponse=await fetch(bridge.base+"/api/v1/style-packs",{cache:"no-store"});
-        if(packsResponse.ok){const data=await packsResponse.json();bridge.stylePacks=data.packs||[];document.querySelectorAll(".style-pack-btn").forEach(button=>{const pack=bridge.stylePacks.find(item=>item.id===button.dataset.pack);if(pack){button.title=pack.description+"｜v"+pack.version;button.dataset.version=pack.version;}});if(!bridge.stylePacks.some(item=>item.id===activeStylePack)){activeStylePack="cinematic";selectStylePack(activeStylePack,true);}}
+        if(packsResponse.ok){const data=await packsResponse.json();bridge.stylePacks=data.packs||[];document.querySelectorAll(".style-pack-btn").forEach(button=>{const pack=bridge.stylePacks.find(item=>item.id===button.dataset.pack);if(pack){button.title=pack.description+"｜v"+pack.version;button.dataset.version=pack.version;}});const activePackId=feature.getStylePack();if(!bridge.stylePacks.some(item=>item.id===activePackId)){window.selectStylePack?.("cinematic",true);}}
       }
       bridge.lastConnectError="";
     }catch(error){bridge.available=false;bridge.lastConnectError=error.message||"无法完成云端能力校验";}
@@ -329,7 +342,7 @@
     const target=document.getElementById("stream-content-"+stepNum);if(target)target.innerHTML=renderMarkdown(safe);
     const nameMap={"§10":"mission_commander","§0":"soul_catcher","§2":"compliance_guard","§8":"project_configurator","§1":"character_forger","§3":"structure_architect","§4":"dialogue_master","§5":"episode_writer","§12":"episode_outline_reviewer","§11":"scene_craftsman","§6":"format_craftsman","§7":"quality_auditor","§9":"revision_editor","§13":"visual_director","§14":"business_strategist","§16":"script_reviewer","§15":"quality_director"};
     const el=document.querySelector('[data-expert="'+nameMap[expertId]+'"]');if(el){el.classList.remove("working","active");el.classList.add("done","completed");}
-    stepsCompleted=Math.max(stepsCompleted,stepNum);currentStep=stepNum;updateBroadcastNodes();updateExpertGroupProgress();scrollToPageBottom();saveSession();
+    stepsCompleted=Math.max(stepsCompleted,stepNum);currentStep=stepNum;updateBroadcastNodes();updateExpertGroupProgress();scrollToPageBottom();feature.saveSession();
   }
   function markWorking(event){
     const id=event.expert_id,step=EXPERT_STEP[id];currentStep=step||currentStep;
@@ -347,7 +360,7 @@
     panel.innerHTML='<div class="checkpoint-bubble"><div class="checkpoint-title">'+cp.title+'</div><div class="checkpoint-message">'+cp.message+'</div><div class="checkpoint-actions"><button class="step-btn step-btn-confirm" onclick="confirmCurrentStep('+cp.step+')">确认并继续</button><button class="step-btn step-btn-revise" onclick="showReviseInput('+cp.step+')">提出修改意见</button><button class="step-btn step-btn-edit" onclick="showEditArea('+cp.step+')">直接编辑</button></div></div>';
     document.getElementById("outputContainer").appendChild(panel);currentWaitingStep=cp.step;stepWaiting=true;document.body.classList.add("awaiting-human");
     const status=document.getElementById("engineStatusValue");if(status)status.textContent="等待决策";
-    addRunEvidence("checkpoint",cp.title,"后端工作流已真实暂停；确认前不会运行下游专家",expertLabel(cp.source));scrollToPageBottom();saveSession();
+    addRunEvidence("checkpoint",cp.title,"后端工作流已真实暂停；确认前不会运行下游专家",expertLabel(cp.source));scrollToPageBottom();feature.saveSession();
   }
   bridge.handleEvent=function(event){
     try{const key="yunjiang_runtime_events_v1",events=JSON.parse(localStorage.getItem(key)||"[]");events.push({...event,time:event.time||event.timestamp||new Date().toISOString(),title:event.title||event.type});localStorage.setItem(key,JSON.stringify(events.slice(-200)))}catch(error){}
@@ -374,7 +387,7 @@
     else if(event.type==="checkpoint")showBackendCheckpoint(event.expert_id);
     else if(event.type==="workflow_error"){addRunEvidence("error","后端工作流异常",event.error||"未知错误","Orchestrator");finishBackend(false,event.error);}
     else if(event.type==="workflow_state"&&event.status==="completed")finishBackend(true);
-    saveSession();
+    feature.saveSession();
   };
   bridge.consume=async function(){
     if(bridge.consuming||!bridge.workflowId)return;bridge.consuming=true;
@@ -401,20 +414,20 @@
   bridge.start=async function(idea){
     const settings=loadSettings(),packId=(localStorage.getItem("yunjiang_style_pack_v1")||"cinematic"),packMeta=bridge.stylePacks.find(item=>item.id===packId)||{};const payload={story_direction:idea,drama_type:selectedStyle||null,total_episodes:settings.episodeCount||30,style_pack_id:packId,style_pack_version:packMeta.version||null,stop_at:"§3"};
     const data=await jsonFetch("/api/v1/create",{method:"POST",body:JSON.stringify(payload)});bridge.workflowId=data.workflow_id;bridge.lastEventId=0;bridge.outputs={};bridge.active=true;updateCancelCreationButton?.();
-    run.id=bridge.workflowId;run.startedAt=new Date().toISOString();addRunEvidence("done","后端工作流已创建","首个人工暂停点：角色设定","决策层 Agent");updateBackendBadge();saveSession();bridge.consume();
+    feature.setRunIdentity(bridge.workflowId,new Date().toISOString());addRunEvidence("done","后端工作流已创建","首个人工暂停点：角色设定","决策层 Agent");updateBackendBadge();feature.saveSession();bridge.consume();
   };
   async function finishBackend(ok,error){
     if(!ok){const status=document.getElementById("engineStatusValue");if(status)status.textContent="执行异常";return;}
     bridge.active=false;isCreating=false;document.body.classList.remove("engine-running","awaiting-human");
     const btn=document.getElementById("generateBtn");btn.disabled=false;btn.innerHTML="<span>再来一版</span><span>↻</span>";btn.onclick=startCreation;
     const status=document.getElementById("engineStatusValue");if(status)status.textContent="已完成";
-    addRunEvidence("done","后端工作流完成","17位专家、门禁与返工链路执行结束","Orchestrator");saveCurrentSessionToHistory();saveSession();updateBackendBadge();showToast("后端真实工作流已完成");
+    addRunEvidence("done","后端工作流完成","17位专家、门禁与返工链路执行结束","Orchestrator");saveCurrentSessionToHistory();feature.saveSession();updateBackendBadge();showToast("后端真实工作流已完成");
   }
   const fallbackStart=window.startCreation;
   window.startCreation=async function(){
     const idea=document.getElementById("ideaInput").value.trim();if(!idea){showToast("请输入你的短剧想法",true);return;}
     if(await bridge.connect()){
-      try{run={id:"",startedAt:new Date().toISOString(),events:[],experts:[],checks:0,outputs:0};resetBackendUI();await bridge.start(idea);return;}catch(error){bridge.active=false;addRunEvidence("error","新版后端启动失败",error.message,"连接桥");showToast("新版后端不可用，已切换兼容模式",true);}
+      try{feature.resetRun();resetBackendUI();await bridge.start(idea);return;}catch(error){bridge.active=false;addRunEvidence("error","新版后端启动失败",error.message,"连接桥");showToast("新版后端不可用，已切换兼容模式",true);}
     }
     const configuredBase=String(loadSettings().apiBaseUrl||"");
     if(/\.up\.railway\.app/i.test(configuredBase)){
@@ -449,7 +462,7 @@
   const localExport=window.exportRunEvidence;
   window.exportRunEvidence=async function(){
     if(!bridge.workflowId)return localExport();
-    try{const evidence=await jsonFetch("/api/v1/evidence/"+encodeURIComponent(bridge.workflowId));downloadJSON(evidence,bridge.workflowId+"-server-evidence.json");showToast("已导出后端真实运行证据");}catch(error){localExport();}
+    try{const evidence=await jsonFetch("/api/v1/evidence/"+encodeURIComponent(bridge.workflowId));feature.downloadJSON(evidence,bridge.workflowId+"-server-evidence.json");showToast("已导出后端真实运行证据");}catch(error){localExport();}
   };
   document.addEventListener("DOMContentLoaded",async function(){await bridge.connect();let saved=null;try{saved=JSON.parse(localStorage.getItem("yunjiang_active_session_v4")||"null");}catch(error){}if(saved&&saved.backendWorkflowId){bridge.workflowId=saved.backendWorkflowId;bridge.lastEventId=Number(saved.lastBackendEventId)||0;bridge.active=true;updateBackendBadge();bridge.consume();}});
 })();
