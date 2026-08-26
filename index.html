@@ -6722,11 +6722,45 @@ function renderMarkdown(md) {
   }
 
   async function testApiConnection() {
-    const baseUrl = document.getElementById('apiBaseUrl').value.trim() || 'https://api.deepseek.com';
+    let baseUrl = document.getElementById('apiBaseUrl').value.trim() || DEFAULT_SETTINGS.apiBaseUrl;
     const key = document.getElementById('apiKey').value.trim();
     const model = document.getElementById('apiModel').value.trim() || 'deepseek-v4-flash';
     const resultEl = document.getElementById('apiTestResult');
     const testBtn = document.getElementById('settingsTestBtn');
+
+    // 旧 Railway 域名已停用：自动迁移到当前云匠 Agent API。
+    if (/drama-engine-production/i.test(baseUrl)) {
+      baseUrl = DEFAULT_SETTINGS.apiBaseUrl;
+      document.getElementById('apiBaseUrl').value = baseUrl;
+      const migrated = { ...loadSettings(), apiBaseUrl: baseUrl };
+      localStorage.setItem('yunjiang_settings', JSON.stringify(migrated));
+      settings = migrated;
+    }
+
+    // Railway 部署的是 Agent API，不是浏览器直连模型代理。
+    if (/\.up\.railway\.app/i.test(baseUrl)) {
+      const healthUrl = baseUrl.replace(/\/$/, '') + '/health';
+      resultEl.style.display = 'block';
+      resultEl.style.background = 'rgba(59,130,246,0.1)';
+      resultEl.style.color = 'var(--text-secondary)';
+      resultEl.innerHTML = '正在检查云匠 Agent API...<br>URL: ' + healthUrl;
+      testBtn.disabled = true;
+      try {
+        const response = await fetch(healthUrl, { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.status !== 'healthy') throw new Error('HTTP ' + response.status);
+        resultEl.style.background = 'rgba(16,185,129,0.1)';
+        resultEl.style.color = '#10b981';
+        resultEl.innerHTML = '云匠 Agent API 连接成功！<br>服务: ' + (data.service || 'yunjiang-agent-engine') + '<br>模型: ' + (data.model || model) + '<br>LLM: ' + (data.llm_configured ? '已配置' : '未配置');
+      } catch (e) {
+        resultEl.style.background = 'rgba(239,68,68,0.1)';
+        resultEl.style.color = '#ef4444';
+        resultEl.innerHTML = '云匠 Agent API 连接失败<br>URL: ' + healthUrl + '<br>错误: ' + e.message;
+      } finally {
+        testBtn.disabled = false;
+      }
+      return;
+    }
 
     if (!key) {
       resultEl.style.display = 'block';
