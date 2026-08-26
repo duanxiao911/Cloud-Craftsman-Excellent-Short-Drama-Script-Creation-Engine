@@ -270,7 +270,7 @@
     "§7":{step:7,source:"§6",next:null,title:"分集剧本等待你的决策",message:"场景设计与格式化剧本已经完成。确认后将进入质量审计、返工和最终签发流程。"}
   };
   const SOURCE_STEP={"§1":4,"§12":6,"§6":7};
-  const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[]};
+  const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:""};
   window.YJBackendBridge=bridge;
 
   function apiBase(){
@@ -292,13 +292,16 @@
     try{
       const health=await fetch(bridge.base+"/health",{cache:"no-store"});
       if(!health.ok)throw new Error("health "+health.status);
-      const experts=await fetch(bridge.base+"/api/v1/experts",{cache:"no-store"});
-      bridge.available=experts.ok;
+      // Skills 是云端运行能力的稳定公开清单；专家展示接口仅作为可选扩展，
+      // 不应阻断真实工作流启动。
+      const skills=await fetch(bridge.base+"/api/v1/skills",{cache:"no-store"});
+      bridge.available=skills.ok;
       if(bridge.available){
         const packsResponse=await fetch(bridge.base+"/api/v1/style-packs",{cache:"no-store"});
         if(packsResponse.ok){const data=await packsResponse.json();bridge.stylePacks=data.packs||[];document.querySelectorAll(".style-pack-btn").forEach(button=>{const pack=bridge.stylePacks.find(item=>item.id===button.dataset.pack);if(pack){button.title=pack.description+"｜v"+pack.version;button.dataset.version=pack.version;}});if(!bridge.stylePacks.some(item=>item.id===activeStylePack)){activeStylePack="cinematic";selectStylePack(activeStylePack,true);}}
       }
-    }catch(error){bridge.available=false;}
+      bridge.lastConnectError="";
+    }catch(error){bridge.available=false;bridge.lastConnectError=error.message||"无法完成云端能力校验";}
     updateBackendBadge();
     return bridge.available;
   };
@@ -415,8 +418,9 @@
     }
     const configuredBase=String(loadSettings().apiBaseUrl||"");
     if(/\.up\.railway\.app/i.test(configuredBase)){
-      addRunEvidence("error","云端引擎连接失败","未进入旧版直连模式，避免请求不存在的 /chat/completions 接口","连接桥");
-      showToast("云端引擎连接失败，请稍后重试或检查 Railway 状态",true);
+      const detail=bridge.lastConnectError||"无法完成 Skills 能力校验";
+      addRunEvidence("error","云端引擎连接失败",detail+"；未进入旧版直连模式，避免请求不存在的 /chat/completions 接口","连接桥");
+      showToast("云端引擎连接失败："+detail,true);
       return;
     }
     return fallbackStart.apply(this,arguments);
