@@ -155,14 +155,23 @@ class StoryEngineValidator:
 
     @staticmethod
     def _validate_opponent(engine: Dict[str, Any], issues: List[GateIssue]) -> None:
-        opponent = engine.get("opponent_mechanism")
-        if not isinstance(opponent, dict):
-            issues.append(GateIssue("engine.opponent_schema", "opponent_mechanism 必须是结构化对象", "提供id、pattern和至少三级escalation_levels"))
+        opponent_value = engine.get("opponent_mechanism")
+        if isinstance(opponent_value, dict):
+            opponents = [opponent_value]
+        elif isinstance(opponent_value, list) and opponent_value:
+            opponents = opponent_value
+        else:
+            issues.append(GateIssue("engine.opponent_schema", "opponent_mechanism 必须是结构化对象或非空对象数组", "提供一个或多个含id、pattern和至少三级escalation_levels的对象"))
             return
-        if not opponent.get("id") or not opponent.get("pattern"):
-            issues.append(GateIssue("engine.opponent_fields", "对手阻断缺少id或pattern", "明确对手如何持续针对主角目标"))
-        if len(opponent.get("escalation_levels", [])) < 3:
-            issues.append(GateIssue("engine.opponent_escalation", "对手阻断升级少于3级", "设计资源、关系、身份逐级升级"))
+        for index, opponent in enumerate(opponents):
+            if not isinstance(opponent, dict):
+                issues.append(GateIssue(f"engine.opponent_schema.{index}", f"opponent_mechanism[{index}] 必须是结构化对象", "提供含id、pattern和至少三级escalation_levels的对象"))
+                continue
+            if not opponent.get("id") or not opponent.get("pattern"):
+                issues.append(GateIssue(f"engine.opponent_fields.{index}", f"对手阻断[{index}]缺少id或pattern", "明确对手如何持续针对主角目标"))
+            escalation_levels = opponent.get("escalation_levels")
+            if not isinstance(escalation_levels, list) or len(escalation_levels) < 3:
+                issues.append(GateIssue(f"engine.opponent_escalation.{index}", f"对手阻断[{index}]升级少于3级", "设计资源、关系、身份逐级升级"))
 
 
 class GenerationGate:

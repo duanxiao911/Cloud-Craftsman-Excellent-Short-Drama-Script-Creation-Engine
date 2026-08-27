@@ -71,9 +71,34 @@ def test_story_engine_requires_ids_coverage_escalation_and_payoff_order():
     result = StoryEngineValidator().validate(engine)
     codes = {item.code for item in result.issues}
     assert "engine.phase_coverage" in codes
-    assert "engine.opponent_escalation" in codes
+    assert "engine.opponent_escalation.0" in codes
     assert any(code.startswith("engine.foreshadow_order") for code in codes)
     assert "engine.duplicate_id" in codes
+
+
+def test_story_engine_accepts_multiple_structured_opponents():
+    engine = valid_engine()
+    first = deepcopy(engine["opponent_mechanism"])
+    second = {
+        "id": "OM2",
+        "pattern": "利用制度持续封锁主角的证据链",
+        "escalation_levels": [
+            {"level": 1, "episode": 5, "description": "封锁卷宗"},
+            {"level": 2, "episode": 15, "description": "威胁证人"},
+            {"level": 3, "episode": 25, "description": "构陷主角"},
+        ],
+    }
+    engine["opponent_mechanism"] = [first, second]
+    result = StoryEngineValidator().validate(engine)
+    assert result.passed is True
+
+
+def test_story_engine_rejects_invalid_item_in_opponent_array():
+    engine = valid_engine()
+    engine["opponent_mechanism"] = [engine["opponent_mechanism"], "invalid"]
+    result = StoryEngineValidator().validate(engine)
+    codes = {item.code for item in result.issues}
+    assert "engine.opponent_schema.1" in codes
 
 
 def test_auto_development_repairs_assessment_and_engine_before_persisting():

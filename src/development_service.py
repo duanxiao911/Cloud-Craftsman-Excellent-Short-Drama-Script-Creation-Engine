@@ -107,7 +107,7 @@ decision必须按以下硬规则计算，不得凭“仍可完善”自由裁量
 已通过立项：{json.dumps(assessment, ensure_ascii=False)}
 返修信息：{repair}
 episode_capacity必须30—80。phase_goals至少3项且用episode_start/end无缝覆盖全剧。
-opponent_mechanism必须含id,pattern,escalation_levels且至少3级。
+opponent_mechanism可为单个对象，或多个对手组成的非空对象数组；每个对象必须含id、pattern、escalation_levels且至少3级。
 以下字段必须严格使用指定对象数组结构，不得用points、stages等嵌套结构替代顶层必填字段：
 emotional_debts每项含id,debtor,creditor,payoff_episode；
 secrets每项含id,holder,audience_knowledge,reveal_episode；
