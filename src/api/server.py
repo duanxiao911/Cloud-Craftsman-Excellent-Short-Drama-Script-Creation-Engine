@@ -739,16 +739,27 @@ def create_app() -> FastAPI:
         state = orchestrator.state
         if state.status != WorkflowStatus.PAUSED:
             raise HTTPException(status_code=409, detail="工作流当前不在人工检查点")
-        if request.expert_id not in state.step_outputs:
+        output = state.step_outputs.get(request.expert_id)
+        current_expert = (
+            state.expert_sequence[state.current_step]
+            if 0 <= state.current_step < len(state.expert_sequence)
+            else None
+        )
+        # A quality-gate pause deliberately removes the rejected output so the
+        # same expert can run again. That is a retry decision, not an artifact
+        # confirmation, and must be accepted without a stored output.
+        retry_rejected_step = output is None and current_expert == request.expert_id
+        if output is None and not retry_rejected_step:
             raise HTTPException(status_code=400, detail=f"专家 {request.expert_id} 尚无可确认产物")
-        output = state.step_outputs[request.expert_id]
-        if request.edited_content is not None:
+        if output is not None and request.edited_content is not None:
             output.content = request.edited_content
             orchestrator._update_context_from_output(request.expert_id, output, state.context_snapshot)
         orchestrator._save_checkpoint()
         _emit(workflow_id, "human_decision", expert_id=request.expert_id,
-              edited=request.edited_content is not None, next_stop=request.stop_at)
-        return {"ok": True, "workflow_id": workflow_id, "status": state.status.value}
+              edited=output is not None and request.edited_content is not None,
+              retry=retry_rejected_step, next_stop=request.stop_at)
+        return {"ok": True, "workflow_id": workflow_id, "status": state.status.value,
+                "retry": retry_rejected_step}
 
     @app.post("/api/v1/resume/{workflow_id}")
     async def resume_workflow(workflow_id: str, background_tasks: BackgroundTasks,

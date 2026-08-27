@@ -291,6 +291,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     "§11":{step:6,source:"§12",next:"§7",title:"剧情大纲等待你的决策",message:"结构、分集目标和集纲审核已经完成。确认故事走向后，后端才会继续生成场景与格式化分集剧本。"},
     "§7":{step:7,source:"§6",next:null,title:"分集剧本等待你的决策",message:"场景设计与格式化剧本已经完成。确认后将进入质量审计、返工和最终签发流程。"}
   };
+  const WORKFLOW_ORDER=["§10","§0","§2","§8","§1","§3","§4","§5","§12","§11","§6","§7","§9","§13","§14","§16","§15"];
+  function nextPlannedCheckpoint(expertId){const current=WORKFLOW_ORDER.indexOf(expertId);return ["§3","§11","§7"].find(id=>WORKFLOW_ORDER.indexOf(id)>current)||null;}
   const SOURCE_STEP={"§1":4,"§12":6,"§6":7};
   const EXPERT_NAME={"§10":"mission_commander","§0":"soul_catcher","§2":"compliance_guard","§8":"project_configurator","§1":"character_forger","§3":"structure_architect","§4":"dialogue_master","§5":"episode_writer","§12":"episode_outline_reviewer","§11":"scene_craftsman","§6":"format_craftsman","§7":"quality_auditor","§9":"revision_editor","§13":"visual_director","§14":"business_strategist","§16":"script_reviewer","§15":"quality_director"};
   const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:"",connectWarning:"",capabilitiesVerified:false,connectPromise:null};
@@ -394,11 +396,12 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     addRunEvidence("working","专家开始执行",event.task||expertLabel(id),expertLabel(id));
   }
   function showBackendCheckpoint(stopExpert,event={}){
-    const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:stopExpert==="§2"?"§3":null,title:expertLabel(stopExpert)+"需要人工确认",message:event.reason||"质量门禁暂停了工作流。请审核当前产物，确认后继续运行后续专家。"};bridge.checkpoint={...cp,stopExpert};
+    const isGatePause=!!event.reason&&!String(event.reason).startsWith("human_checkpoint:");
+    const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:nextPlannedCheckpoint(stopExpert),retry:isGatePause,title:isGatePause?expertLabel(stopExpert)+"质量门禁待处理":expertLabel(stopExpert)+"需要人工确认",message:event.reason||"质量门禁暂停了工作流。确认后将重新执行当前专家，再继续运行后续专家。"};bridge.checkpoint={...cp,stopExpert};
     const sourceText=bridge.outputs[cp.source]||generatedResults[cp.step]||"";if(sourceText){generatedResults[cp.step]=sourceText;renderBackendOutput(cp.source,sourceText);}
     document.getElementById("action-btns-"+cp.step)?.remove();
     const panel=document.createElement("div");panel.className="step-action-btns checkpoint-dialog";panel.id="action-btns-"+cp.step;
-    panel.innerHTML='<div class="checkpoint-bubble"><div class="checkpoint-title">'+cp.title+'</div><div class="checkpoint-message">'+cp.message+'</div><div class="checkpoint-actions"><button class="step-btn step-btn-confirm" onclick="confirmCurrentStep('+cp.step+')">确认并继续</button><button class="step-btn step-btn-revise" onclick="showReviseInput('+cp.step+')">提出修改意见</button><button class="step-btn step-btn-edit" onclick="showEditArea('+cp.step+')">直接编辑</button></div></div>';
+    panel.innerHTML='<div class="checkpoint-bubble"><div class="checkpoint-title">'+cp.title+'</div><div class="checkpoint-message">'+cp.message+'</div><div class="checkpoint-actions"><button class="step-btn step-btn-confirm" onclick="confirmCurrentStep('+cp.step+')">'+(cp.retry?'确认并重试当前步骤':'确认并继续')+'</button>'+(cp.retry?'':'<button class="step-btn step-btn-revise" onclick="showReviseInput('+cp.step+')">提出修改意见</button><button class="step-btn step-btn-edit" onclick="showEditArea('+cp.step+')">直接编辑</button>')+'</div></div>';
     document.getElementById("outputContainer").appendChild(panel);currentWaitingStep=cp.step;stepWaiting=true;document.body.classList.add("awaiting-human");
     const status=document.getElementById("engineStatusValue");if(status)status.textContent="等待决策";
     addRunEvidence("checkpoint",cp.title,"后端工作流已真实暂停；确认前不会运行下游专家",expertLabel(cp.source));scrollToPageBottom();feature.saveSession();
@@ -494,7 +497,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   window.confirmCurrentStep=async function(stepNum){
     if(!bridge.active||!bridge.checkpoint||bridge.checkpoint.step!==stepNum)return localConfirm(stepNum);
     const cp=bridge.checkpoint;try{
-      await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint",{method:"POST",body:JSON.stringify({expert_id:cp.source,edited_content:generatedResults[stepNum]||bridge.outputs[cp.source]||"",stop_at:cp.next})});
+      await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint",{method:"POST",body:JSON.stringify({expert_id:cp.source,edited_content:cp.retry?null:(generatedResults[stepNum]||bridge.outputs[cp.source]||""),stop_at:cp.next})});
       document.getElementById("action-btns-"+stepNum)?.remove();document.body.classList.remove("awaiting-human");stepWaiting=false;currentWaitingStep=0;bridge.checkpoint=null;
       addRunEvidence("checkpoint","人工决策已写回后端","已确认 "+expertLabel(cp.source)+(cp.next?"；下一暂停点 "+cp.next:"；进入终审"),"人在回路");
       await jsonFetch("/api/v1/resume/"+encodeURIComponent(bridge.workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});bridge.consume();
