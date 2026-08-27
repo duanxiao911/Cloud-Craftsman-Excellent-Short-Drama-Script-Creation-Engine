@@ -655,9 +655,11 @@ def create_app() -> FastAPI:
                     idle_ticks += 1
                     yield f"data: {json.dumps({'type': 'heartbeat', 'event_id': cursor})}\n\n"
                 orchestrator = workflows.get(workflow_id)
+                # PAUSED is not terminal: keep the SSE channel alive while the
+                # user reviews a checkpoint so the same stream can deliver
+                # resumed expert events without a close/reconnect race.
                 terminal = orchestrator and orchestrator.state and orchestrator.state.status in {
-                    WorkflowStatus.PAUSED, WorkflowStatus.COMPLETED, WorkflowStatus.FAILED,
-                    WorkflowStatus.CANCELED,
+                    WorkflowStatus.COMPLETED, WorkflowStatus.FAILED, WorkflowStatus.CANCELED,
                 }
                 if terminal and not [event for event in workflow_events.get(workflow_id, []) if event["event_id"] > cursor]:
                     break

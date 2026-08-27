@@ -295,7 +295,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   function nextPlannedCheckpoint(expertId){const current=WORKFLOW_ORDER.indexOf(expertId);return ["§3","§11","§7"].find(id=>WORKFLOW_ORDER.indexOf(id)>current)||null;}
   const SOURCE_STEP={"§1":4,"§12":6,"§6":7};
   const EXPERT_NAME={"§10":"mission_commander","§0":"soul_catcher","§2":"compliance_guard","§8":"project_configurator","§1":"character_forger","§3":"structure_architect","§4":"dialogue_master","§5":"episode_writer","§12":"episode_outline_reviewer","§11":"scene_craftsman","§6":"format_craftsman","§7":"quality_auditor","§9":"revision_editor","§13":"visual_director","§14":"business_strategist","§16":"script_reviewer","§15":"quality_director"};
-  const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:"",connectWarning:"",capabilitiesVerified:false,connectPromise:null};
+  const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:"",connectWarning:"",capabilitiesVerified:false,connectPromise:null,completedExpertIds:new Set()};
   window.YJBackendBridge=bridge;
 
   function apiBase(){
@@ -341,7 +341,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   function resetBackendUI(){
     isCreating=true;pauseRequested=false;resumeRequested=false;stepsCompleted=0;currentStep=0;generatedResults={};
     document.body.classList.add("engine-running");document.body.classList.remove("engine-paused","awaiting-human");
-    const welcome=document.getElementById("welcomeScreen");if(welcome)welcome.style.display="none";const output=document.getElementById("outputContainer");if(output)output.innerHTML="";bridge.completedExperts=0;
+    const welcome=document.getElementById("welcomeScreen");if(welcome)welcome.style.display="none";const output=document.getElementById("outputContainer");if(output)output.innerHTML="";bridge.completedExpertIds=new Set();bridge.completedExperts=0;
     document.querySelectorAll("[data-expert]").forEach(el=>{el.classList.remove("completed","done","active","working");delete el.dataset.runtimeState;el.querySelector('.backend-skill-runtime')?.remove();});
     document.querySelectorAll('.step-item').forEach((item,index)=>setPhaseStatus(index+1,'ready'));
     const btn=document.getElementById("generateBtn");btn.disabled=false;btn.innerHTML="<span>后端创作中...</span><span>⏳</span>";btn.onclick=togglePauseResume;
@@ -382,7 +382,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     if(!card){card=document.createElement("div");card.className="output-card";card.id="step-card-"+stepNum;card.innerHTML='<div class="output-header"><div class="output-icon">'+(step.icon||"🔧")+'</div><div><div class="output-title">'+(step.title||expertLabel(expertId))+'</div><div class="output-meta">'+expertLabel(expertId)+' · 后端真实产物</div></div></div><div class="output-body"><div id="stream-content-'+stepNum+'"></div></div>';document.getElementById("outputContainer").appendChild(card);}
     const target=document.getElementById("stream-content-"+stepNum);if(target)target.innerHTML=renderMarkdown(safe);
     syncRuntimePanels({expert_id:expertId},"done");
-    bridge.completedExperts=Math.min(17,(bridge.completedExperts||0)+1);
+    bridge.completedExpertIds.add(expertId);bridge.completedExperts=Math.min(17,bridge.completedExpertIds.size);
     renderBackendActivity({state:"done",title:expertLabel(expertId)+"已完成当前步骤",detail:"产物已写入画布，正在等待下一位专家接续执行",progress:bridge.completedExperts});
     stepsCompleted=Math.max(stepsCompleted,stepNum);currentStep=stepNum;updateBroadcastNodes();updateExpertGroupProgress();feature.saveSession();
   }
@@ -428,7 +428,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
       addRunEvidence("check","监督层定向派发返工","仅退回 "+expertLabel(event.target_expert)+"｜第 "+(feedback.retry||1)+" 次｜"+((feedback.validation_errors||[]).join("；")||feedback.reason||"修复当前产物"),"监督层 Agent");
     }else if(event.type==="quality_gate")addRunEvidence("check","质量门禁完成",JSON.stringify(event.result||{}).slice(0,420),expertLabel(event.expert_id));
     else if(event.type==="revision_loop")addRunEvidence("check","监督层触发返工","第 "+event.revision+" 轮局部返工","监督层 Agent");
-    else if(event.type==="checkpoint")showBackendCheckpoint(event.expert_id,event);
+    else if(event.type==="checkpoint"){if(Array.isArray(event.completed_experts)){bridge.completedExpertIds=new Set(event.completed_experts);bridge.completedExperts=bridge.completedExpertIds.size;}showBackendCheckpoint(event.expert_id,event);}
     else if(event.type==="workflow_error"){renderBackendActivity({state:"error",title:"工作流执行异常",detail:event.error||"未知错误",progress:bridge.completedExperts||0});addRunEvidence("error","后端工作流异常",event.error||"未知错误","Orchestrator");finishBackend(false,event.error);}
     else if(event.type==="workflow_state"&&event.status==="completed")finishBackend(true);
     feature.saveSession();
@@ -442,6 +442,11 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
       const reader=response.body.getReader(),decoder=new TextDecoder();let buffer="";
       while(true){const part=await reader.read();if(part.done)break;buffer+=decoder.decode(part.value,{stream:true});const blocks=buffer.split("\n\n");buffer=blocks.pop()||"";for(const block of blocks){const line=block.split("\n").find(x=>x.startsWith("data:"));if(!line)continue;try{const event=JSON.parse(line.slice(5).trim());if(event.type!=="heartbeat")bridge.handleEvent(event);}catch(error){}}}
     }catch(error){if(error.name!=="AbortError"){if(isMissingWorkflow(error))expireWorkflowSession("事件流中的工作流已失效");else{addRunEvidence("error","SSE连接中断",error.message,"事件桥");showToast("后端事件流中断，可从断点恢复",true);}}}finally{bridge.consuming=false;bridge.cancelController=null;updateBackendBadge();updateCancelCreationButton?.();}
+  };
+  bridge.restartConsume=function(){
+    bridge.reconnectRequested=true;if(bridge.cancelController)bridge.cancelController.abort();
+    const reconnect=()=>{if(!bridge.active){bridge.reconnectRequested=false;return;}if(bridge.consuming){bridge.reconnectTimer=setTimeout(reconnect,80);return;}bridge.reconnectRequested=false;bridge.consume();};
+    clearTimeout(bridge.reconnectTimer);bridge.reconnectTimer=setTimeout(reconnect,0);
   };
   window.recoverBackendSession=async function(session){
     if(!session?.backendWorkflowId||bridge.active)return false;
@@ -500,7 +505,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
       await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint",{method:"POST",body:JSON.stringify({expert_id:cp.source,edited_content:cp.retry?null:(generatedResults[stepNum]||bridge.outputs[cp.source]||""),stop_at:cp.next})});
       document.getElementById("action-btns-"+stepNum)?.remove();document.body.classList.remove("awaiting-human");stepWaiting=false;currentWaitingStep=0;bridge.checkpoint=null;
       addRunEvidence("checkpoint","人工决策已写回后端","已确认 "+expertLabel(cp.source)+(cp.next?"；下一暂停点 "+cp.next:"；进入终审"),"人在回路");
-      await jsonFetch("/api/v1/resume/"+encodeURIComponent(bridge.workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});bridge.consume();
+      await jsonFetch("/api/v1/resume/"+encodeURIComponent(bridge.workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});bridge.restartConsume();
     }catch(error){if(isMissingWorkflow(error)){expireWorkflowSession("后端找不到当前工作流，可能刚刚发生了重新部署或重启");return;}showToast("确认写回失败："+error.message,true);addRunEvidence("error","人工决策写回失败",error.message,"人在回路");if(confirmButton){confirmButton.disabled=false;confirmButton.textContent=cp.retry?"确认并重试当前步骤":"确认并继续";}}finally{bridge.confirming=false;}
   };
   const localSubmitRevise=window.submitRevise;
