@@ -733,8 +733,7 @@ def create_app() -> FastAPI:
             "workflow_id": workflow_id, "items": items, "count": len(items),
         }
 
-    @app.post("/api/v1/workflow/{workflow_id}/checkpoint")
-    async def save_checkpoint_decision(workflow_id: str, request: CheckpointDecisionRequest):
+    def _apply_checkpoint_decision(workflow_id: str, request: CheckpointDecisionRequest):
         orchestrator = workflows.get(workflow_id)
         if not orchestrator or not orchestrator.state:
             raise HTTPException(status_code=404, detail=f"工作流 {workflow_id} 未找到")
@@ -762,8 +761,31 @@ def create_app() -> FastAPI:
         _emit(workflow_id, "human_decision", expert_id=request.expert_id,
               edited=output is not None and request.edited_content is not None,
               retry=retry_rejected_step, next_stop=request.stop_at)
+        return orchestrator, state, retry_rejected_step
+
+    @app.post("/api/v1/workflow/{workflow_id}/checkpoint")
+    async def save_checkpoint_decision(workflow_id: str, request: CheckpointDecisionRequest):
+        orchestrator, state, retry_rejected_step = _apply_checkpoint_decision(workflow_id, request)
         return {"ok": True, "workflow_id": workflow_id, "status": state.status.value,
                 "retry": retry_rejected_step}
+
+    @app.post("/api/v1/workflow/{workflow_id}/checkpoint-and-resume")
+    async def checkpoint_and_resume(workflow_id: str, request: CheckpointDecisionRequest,
+                                    background_tasks: BackgroundTasks):
+        """Atomically persist a human decision and schedule the same workflow to resume."""
+        orchestrator, state, retry_rejected_step = _apply_checkpoint_decision(workflow_id, request)
+
+        def run_confirmed_resume():
+            try:
+                resumed = orchestrator.resume(workflow_id, stop_at=request.stop_at)
+                _emit(workflow_id, "workflow_state", status=resumed.status.value,
+                      current_step=resumed.current_step, error=resumed.error_message)
+            except Exception as error:
+                _emit(workflow_id, "workflow_error", error=str(error))
+
+        background_tasks.add_task(run_confirmed_resume)
+        return {"ok": True, "workflow_id": workflow_id, "status": "resuming",
+                "retry": retry_rejected_step, "stop_at": request.stop_at}
 
     @app.post("/api/v1/resume/{workflow_id}")
     async def resume_workflow(workflow_id: str, background_tasks: BackgroundTasks,
