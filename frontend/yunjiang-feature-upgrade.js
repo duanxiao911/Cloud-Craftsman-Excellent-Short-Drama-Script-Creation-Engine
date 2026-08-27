@@ -310,7 +310,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   }
   async function jsonFetch(path,options){
     const response=await fetch(bridge.base+path,{headers:{"Content-Type":"application/json",...(options&&options.headers||{})},...options});
-    if(!response.ok)throw new Error((await response.text().catch(()=>""))||("HTTP "+response.status));
+    if(!response.ok){const error=new Error((await response.text().catch(()=>""))||("HTTP "+response.status));error.status=response.status;error.path=path;throw error;}
     return response.json();
   }
   async function probeEndpoint(path,attempts=1){let lastError=null;for(let attempt=0;attempt<attempts;attempt++){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);try{const response=await fetch(bridge.base+path,{cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal});clearTimeout(timer);if(response.ok)return response;lastError=new Error(path+" HTTP "+response.status);}catch(error){clearTimeout(timer);lastError=error;}if(attempt<attempts-1)await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));}throw lastError||new Error(path+" 请求失败");}
@@ -320,7 +320,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
       bridge.base=apiBase();bridge.lastConnectError="";
       if(!bridge.base){bridge.available=false;bridge.lastConnectError="API 地址解析失败：没有找到有效的 HTTP 服务地址";updateBackendBadge();return false;}
       try{
-        await probeEndpoint("/health",2);
+        const healthResponse=await probeEndpoint("/health",2),health=await healthResponse.json();bridge.serverVersion=health.version||"unknown";bridge.checkpointProtocol=health.checkpoint_protocol||"legacy";
         bridge.available=true;bridge.capabilitiesVerified=false;bridge.connectWarning="";
         // Skills 与风格包属于增强能力；健康服务可用时不阻断工作流启动。
         try{const skills=await probeEndpoint("/api/v1/skills",2);const data=await skills.json();const count=Array.isArray(data)?data.length:Number(data?.count||Object.keys(data?.skills||{}).length);bridge.capabilitiesVerified=count>0;if(!bridge.capabilitiesVerified)bridge.connectWarning="Skills 清单为空，已按健康服务继续连接";}catch(error){bridge.connectWarning="Skills 清单暂时不可用（"+(error.message||"网络异常")+"），已按健康服务继续连接";}
@@ -336,7 +336,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     let badge=document.getElementById("backendLinkBadge");
     const strip=document.getElementById("capabilityStrip");
     if(strip&&!badge){badge=document.createElement("span");badge.id="backendLinkBadge";badge.className="layer-badge";strip.appendChild(badge);}
-    if(badge){badge.classList.toggle("on",bridge.available);badge.title=bridge.connectWarning||"";badge.textContent=bridge.available?(bridge.active?"后端执行中":bridge.capabilitiesVerified?"后端已连接":"后端已连接 · 能力同步中"):"本地兼容模式";}
+    if(badge){badge.classList.toggle("on",bridge.available);badge.title=(bridge.connectWarning?bridge.connectWarning+"｜":"")+"前端 1.3.10｜后端 "+(bridge.serverVersion||"未识别")+"｜断点协议 "+(bridge.checkpointProtocol||"legacy");badge.textContent=bridge.available?(bridge.active?"后端执行中":bridge.capabilitiesVerified?"后端已连接":"后端已连接 · 能力同步中"):"本地兼容模式";}
   }
   function resetBackendUI(){
     isCreating=true;pauseRequested=false;resumeRequested=false;stepsCompleted=0;currentStep=0;generatedResults={};
@@ -448,6 +448,10 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     const reconnect=()=>{if(!bridge.active){bridge.reconnectRequested=false;return;}if(bridge.consuming){bridge.reconnectTimer=setTimeout(reconnect,80);return;}bridge.reconnectRequested=false;bridge.consume();};
     clearTimeout(bridge.reconnectTimer);bridge.reconnectTimer=setTimeout(reconnect,0);
   };
+  bridge.armResumeWatchdog=function(cp){
+    clearTimeout(bridge.resumeWatchdog);const workflowId=bridge.workflowId;
+    bridge.resumeWatchdog=setTimeout(async()=>{if(!bridge.active||bridge.workflowId!==workflowId)return;try{const progress=await jsonFetch("/api/v1/progress/"+encodeURIComponent(workflowId));if(progress.status==="paused"&&progress.current_expert===cp.stopExpert){addRunEvidence("check","恢复看门狗发现工作流仍停在原断点","自动补发恢复请求；断点 "+cp.stopExpert,"会话管理器");await jsonFetch("/api/v1/resume/"+encodeURIComponent(workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});bridge.restartConsume();}else if(progress.status==="running"){bridge.restartConsume();}else if(progress.status==="failed"){renderBackendActivity({state:"error",title:"后端恢复失败",detail:"工作流进入 failed 状态，请查看 Agent Run 错误证据",progress:bridge.completedExperts||0});}}catch(error){addRunEvidence("error","恢复看门狗检查失败",error.message,"会话管理器");}},3500);
+  };
   window.recoverBackendSession=async function(session){
     if(!session?.backendWorkflowId||bridge.active)return false;
     if(!await bridge.connect())return false;
@@ -502,10 +506,11 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   window.confirmCurrentStep=async function(stepNum){
     if(!bridge.active||!bridge.checkpoint||bridge.checkpoint.step!==stepNum)return localConfirm(stepNum);
     if(bridge.confirming)return;bridge.confirming=true;const cp=bridge.checkpoint,confirmButton=document.querySelector("#action-btns-"+stepNum+" .step-btn-confirm");if(confirmButton){confirmButton.disabled=true;confirmButton.textContent=cp.retry?"正在重试...":"正在确认...";}try{
-      await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint-and-resume",{method:"POST",body:JSON.stringify({expert_id:cp.source,edited_content:cp.retry?null:(generatedResults[stepNum]||bridge.outputs[cp.source]||""),stop_at:cp.next})});
+      const payload={expert_id:cp.source,edited_content:cp.retry?null:(generatedResults[stepNum]||bridge.outputs[cp.source]||""),stop_at:cp.next};addRunEvidence("working","正在提交人工决策","断点 "+cp.stopExpert+"｜确认产物 "+cp.source+"｜协议 "+(bridge.checkpointProtocol||"legacy"),"人在回路");
+      try{await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint-and-resume",{method:"POST",body:JSON.stringify(payload)});}catch(error){if(error.status!==404)throw error;addRunEvidence("check","线上后端尚未支持原子恢复接口","已自动切换兼容协议","会话管理器");await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint",{method:"POST",body:JSON.stringify(payload)});await jsonFetch("/api/v1/resume/"+encodeURIComponent(bridge.workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});}
       document.getElementById("action-btns-"+stepNum)?.remove();document.body.classList.remove("awaiting-human");stepWaiting=false;currentWaitingStep=0;bridge.checkpoint=null;
       addRunEvidence("checkpoint","人工决策已写回后端","已确认 "+expertLabel(cp.source)+(cp.next?"；下一暂停点 "+cp.next:"；进入终审"),"人在回路");
-      renderBackendActivity({state:"working",title:"人工决策已确认，工作流正在继续",detail:"后端已经接收决定，正在启动下一位专家",progress:bridge.completedExperts||0});bridge.restartConsume();
+      renderBackendActivity({state:"working",title:"人工决策已确认，工作流正在继续",detail:"后端已经接收决定，正在启动下一位专家",progress:bridge.completedExperts||0});bridge.restartConsume();bridge.armResumeWatchdog(cp);
     }catch(error){if(isMissingWorkflow(error)){expireWorkflowSession("后端找不到当前工作流，可能刚刚发生了重新部署或重启");return;}showToast("确认写回失败："+error.message,true);addRunEvidence("error","人工决策写回失败",error.message,"人在回路");if(confirmButton){confirmButton.disabled=false;confirmButton.textContent=cp.retry?"确认并重试当前步骤":"确认并继续";}}finally{bridge.confirming=false;}
   };
   const localSubmitRevise=window.submitRevise;

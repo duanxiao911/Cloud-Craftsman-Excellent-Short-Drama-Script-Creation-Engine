@@ -379,7 +379,8 @@ def create_app() -> FastAPI:
         return {
             "status": "healthy",
             "service": "yunjiang-agent-engine",
-            "version": "final-1.0.0",
+            "version": "workflow-1.3.10",
+            "checkpoint_protocol": "atomic-resume-v1",
             "llm_configured": bool(config.llm.api_key or os.getenv("OPENAI_API_KEY")),
             "model": config.llm.model,
         }
