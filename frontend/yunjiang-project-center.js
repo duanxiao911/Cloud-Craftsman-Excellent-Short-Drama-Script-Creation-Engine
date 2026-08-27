@@ -2010,49 +2010,17 @@
         window._yjHooked = true;
         var origStartCreation = window.startCreation;
         window.startCreation = async function(opts) {
-          // 如果携带项目上下文，由这里统一创建workflow
+          // 项目上下文交给最终后端桥统一创建，避免一次点击产生两个 workflow。
           if (opts && opts.project_id) {
-            try {
-              showToast('创作引擎启动中...');
-              var config = opts.config || {};
-              var materials = [
-                config.platform ? '发布平台：' + config.platform : '',
-                config.audience ? '目标受众：' + config.audience : '',
-                config.constraints ? '制作约束：' + config.constraints : ''
-              ].filter(Boolean).join('\n');
-              var workflowPayload = {
-                project_id: opts.project_id,
-                story_direction: opts.idea || '',
-                drama_type: config.genre || '',
-                total_episodes: config.total_episodes || 5,
-                user_materials: materials,
-                style_pack_id: config.style_pack_id || 'cinematic'
-              };
-              if (opts.mode === 'pro' && config.checkpoint_policy === 'human') {
-                workflowPayload.stop_at = 'character_forger';
-              }
-              var workflowData = await apiPost('/api/v1/create', workflowPayload);
-              if (workflowData && workflowData.workflow_id) {
-                var wfId = workflowData.workflow_id;
-                // 三方统一 workflow_id
-                if (currentProject) {
-                  currentProject.workflow_id = wfId;
-                }
-                try { localStorage.setItem('yj_current_project', JSON.stringify(currentProject)); } catch(e) {}
-                // 同步到bridge
-                if (window.YJBackendBridge) {
-                  window.YJBackendBridge.workflowId = wfId;
-                }
-                console.log('[YJ] Workflow统一绑定:', wfId, 'project:', opts.project_id);
-                showToast('创作引擎已启动！');
-              }
-            } catch(e) {
-              console.error('[YJ] 创建workflow失败', e);
-              showToast('引擎启动失败：' + (e.message || ''));
-            }
+            showToast('创作引擎启动中...');
           }
-          // 执行原始创作流程（前端17步可视化）
-          return origStartCreation.apply(this, arguments);
+          // 执行唯一创作链，并在创建成功后把最终 workflow_id 回写项目。
+          var result = await origStartCreation.apply(this, arguments);
+          if (opts && opts.project_id && window.YJBackendBridge && window.YJBackendBridge.workflowId) {
+            if (currentProject) currentProject.workflow_id = window.YJBackendBridge.workflowId;
+            try { localStorage.setItem('yj_current_project', JSON.stringify(currentProject)); } catch(e) {}
+          }
+          return result;
         };
         clearInterval(tryHook);
       }

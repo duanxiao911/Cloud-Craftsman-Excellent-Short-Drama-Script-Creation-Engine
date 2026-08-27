@@ -279,6 +279,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.3',runtimeScript.sr
 })();
 /* v5 新后端桥：真实 Orchestrator SSE、三检查点决策和服务端 Agent Run 证据。 */
 (function(){
+  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const feature=window.YJFeatureRuntime||{
     getStylePack:()=>localStorage.getItem("yunjiang_style_pack_v1")||"cinematic",
     resetRun:()=>{},setRunIdentity:()=>{},saveSession:()=>{},downloadJSON:()=>{}
@@ -336,7 +337,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.3',runtimeScript.sr
   function resetBackendUI(){
     isCreating=true;pauseRequested=false;resumeRequested=false;stepsCompleted=0;currentStep=0;generatedResults={};
     document.body.classList.add("engine-running");document.body.classList.remove("engine-paused","awaiting-human");
-    document.getElementById("welcomeScreen").style.display="none";document.getElementById("outputContainer").innerHTML="";bridge.completedExperts=0;
+    const welcome=document.getElementById("welcomeScreen");if(welcome)welcome.style.display="none";const output=document.getElementById("outputContainer");if(output)output.innerHTML="";bridge.completedExperts=0;
     document.querySelectorAll("[data-expert]").forEach(el=>el.classList.remove("completed","done","active","working"));
     const btn=document.getElementById("generateBtn");btn.disabled=false;btn.innerHTML="<span>后端创作中...</span><span>⏳</span>";btn.onclick=togglePauseResume;
     const status=document.getElementById("engineStatusValue");if(status)status.textContent="连接后端";
@@ -433,8 +434,10 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.3',runtimeScript.sr
       updateBackendBadge();updateCancelCreationButton?.();bridge.consume();return true;
     }catch(error){return false;}
   };
-  bridge.start=async function(idea){
+  bridge.start=async function(idea,context={}){
     const settings=loadSettings(),packId=(localStorage.getItem("yunjiang_style_pack_v1")||"cinematic"),packMeta=bridge.stylePacks.find(item=>item.id===packId)||{};const payload={story_direction:idea,drama_type:selectedStyle||null,total_episodes:settings.episodeCount||30,style_pack_id:packId,style_pack_version:packMeta.version||null,stop_at:"§3"};
+    if(context.project_id)payload.project_id=context.project_id;
+    if(context.config){const config=context.config;payload.drama_type=config.genre||payload.drama_type;payload.total_episodes=config.total_episodes||payload.total_episodes;payload.style_pack_id=config.style_pack_id||payload.style_pack_id;payload.user_materials=[config.platform?'发布平台：'+config.platform:'',config.audience?'目标受众：'+config.audience:'',config.constraints?'制作约束：'+config.constraints:''].filter(Boolean).join('\n');}
     const data=await jsonFetch("/api/v1/create",{method:"POST",body:JSON.stringify(payload)});bridge.workflowId=data.workflow_id;bridge.lastEventId=0;bridge.outputs={};bridge.active=true;updateCancelCreationButton?.();
     feature.setRunIdentity(bridge.workflowId,new Date().toISOString());addRunEvidence("done","后端工作流已创建","首个人工暂停点：角色设定","决策层 Agent");updateBackendBadge();feature.saveSession();bridge.consume();
   };
@@ -447,10 +450,10 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.3',runtimeScript.sr
     addRunEvidence("done","后端工作流完成","17位专家、门禁与返工链路执行结束","Orchestrator");saveCurrentSessionToHistory();feature.saveSession();updateBackendBadge();showToast("后端真实工作流已完成");
   }
   const fallbackStart=window.startCreation;
-  window.startCreation=async function(){
-    const idea=document.getElementById("ideaInput").value.trim();if(!idea){showToast("请输入你的短剧想法",true);return;}
+  window.startCreation=async function(context={}){
+    const input=document.getElementById("ideaInput");const idea=String(context.idea||(input&&input.value)||"").trim();if(!idea){showToast("请输入你的短剧想法",true);return;}if(input&&context.idea)input.value=context.idea;
     const healthReady=await bridge.connect();if(!bridge.base)bridge.base=apiBase();
-    try{feature.resetRun();resetBackendUI();await bridge.start(idea);if(!healthReady)addRunEvidence("check","健康检查未完成但工作流已创建",bridge.base+" 的 /api/v1/create 已成功响应","连接桥");return;}catch(error){bridge.active=false;isCreating=false;document.body.classList.remove("engine-running","engine-paused");const message="工作流创建失败（"+bridge.base+"/api/v1/create）："+(error.message||"网络异常");bridge.lastConnectError=message;addRunEvidence("error","云端工作流创建失败",message,"连接桥");renderBackendActivity({state:"error",title:"云端工作流创建失败",detail:message,progress:0});const status=document.getElementById("engineStatusValue");if(status)status.textContent="连接失败";const btn=document.getElementById("generateBtn");if(btn){btn.disabled=false;btn.innerHTML="<span>重新尝试</span><span>↻</span>";btn.onclick=startCreation;}showToast(message,true);}
+    try{feature.resetRun();resetBackendUI();await bridge.start(idea,context);if(!healthReady)addRunEvidence("check","健康检查未完成但工作流已创建",bridge.base+" 的 /api/v1/create 已成功响应","连接桥");return;}catch(error){bridge.active=false;isCreating=false;document.body.classList.remove("engine-running","engine-paused");const message="工作流创建失败（"+bridge.base+"/api/v1/create）："+(error.message||"网络异常");bridge.lastConnectError=message;addRunEvidence("error","云端工作流创建失败",message,"连接桥");renderBackendActivity({state:"error",title:"云端工作流创建失败",detail:message,progress:0});const status=document.getElementById("engineStatusValue");if(status)status.textContent="连接失败";const btn=document.getElementById("generateBtn");if(btn){btn.disabled=false;btn.innerHTML="<span>重新尝试</span><span>↻</span>";btn.onclick=startCreation;}showToast(message,true);}
     const configuredBase=String(loadSettings().apiBaseUrl||"");
     if(/\.up\.railway\.app/i.test(configuredBase)){
       updateBackendBadge();
