@@ -41,6 +41,10 @@ def main() -> None:
         assert state.status == WorkflowStatus.PAUSED
         assert len(state.completed_steps) == 5
 
+        # A live workflow must still resume if an ephemeral filesystem loses the
+        # checkpoint after the human decision has already reached the process.
+        (Path(workspace) / "wf_smoke.checkpoint.json").unlink()
+
         state = orchestrator.resume("wf_smoke", stop_at="§11")
         assert state.status == WorkflowStatus.PAUSED
         assert len(state.completed_steps) == 9

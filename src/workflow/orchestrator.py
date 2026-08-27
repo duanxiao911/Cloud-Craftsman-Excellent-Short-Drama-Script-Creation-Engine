@@ -1067,7 +1067,17 @@ class Orchestrator:
 
     def resume(self, workflow_id: str, stop_at: Optional[str] = None) -> WorkflowState:
         """从断点恢复工作流"""
-        state = self._load_checkpoint(workflow_id)
+        # A live API workflow already owns the authoritative paused state in memory.
+        # Prefer it over the checkpoint file: on ephemeral deployments (for example
+        # Railway) the file may disappear between the decision write and resume,
+        # even though both requests are handled by the same orchestrator instance.
+        state = (
+            self.state
+            if self.state
+            and self.state.workflow_id == workflow_id
+            and self.state.status == WorkflowStatus.PAUSED
+            else self._load_checkpoint(workflow_id)
+        )
         if not state:
             raise ValueError(f"未找到断点: {workflow_id}")
         if state.status == WorkflowStatus.CANCELED:
