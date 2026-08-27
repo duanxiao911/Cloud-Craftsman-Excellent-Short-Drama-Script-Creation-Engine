@@ -110,6 +110,28 @@ python -m src.api.server
 
 `demo-v7.html` 也可以在设置面板中直接填入 OpenAI 兼容的 API 配置（如 DeepSeek），无需后端即可开始创作。
 
+### 17专家 / Skill 全链路验收
+
+先运行免费、确定性的状态机验收。它会自动执行17位专家、处理三个创作检查点与终审签发点，并在 `reports/` 输出逐专家诊断报告：
+
+```bash
+python scripts/run_17_expert_acceptance.py \
+  --mode deterministic \
+  --output reports/17_expert_acceptance_deterministic.json
+```
+
+真实模型验收必须显式允许产生API费用，并配置 `DRAMA_LLM_API_KEY` 或 `OPENAI_API_KEY`：
+
+```bash
+python scripts/run_17_expert_acceptance.py \
+  --mode live \
+  --allow-paid-api \
+  --timeout-per-expert 90 \
+  --output reports/17_expert_acceptance_live.json
+```
+
+报告包含每位专家绑定的Skill版本、执行次数、耗时、产物长度、结构校验、质量门禁、定向返工、人工检查点和Token用量。未添加 `--allow-paid-api` 时，真实模式会直接拒绝运行，避免误耗额度。
+
 ## 环境变量
 
 | 变量 | 说明 | 默认值 |

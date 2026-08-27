@@ -397,7 +397,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   }
   function showBackendCheckpoint(stopExpert,event={}){
     const isGatePause=!!event.reason&&!String(event.reason).startsWith("human_checkpoint:");
-    const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:nextPlannedCheckpoint(stopExpert),retry:isGatePause,title:isGatePause?expertLabel(stopExpert)+"质量门禁待处理":expertLabel(stopExpert)+"需要人工确认",message:event.reason||"质量门禁暂停了工作流。确认后将重新执行当前专家，再继续运行后续专家。"};bridge.checkpoint={...cp,stopExpert};
+    const rejectedOutput=isGatePause&&!(event.completed_experts||[]).includes(stopExpert);
+    const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:nextPlannedCheckpoint(stopExpert),retry:rejectedOutput,title:stopExpert==="§15"?"终审报告等待你的签发":isGatePause?expertLabel(stopExpert)+"质量门禁待处理":expertLabel(stopExpert)+"需要人工确认",message:event.reason||(rejectedOutput?"质量门禁暂停了工作流。确认后将重新执行当前专家，再继续运行后续专家。":"专家产物已经保留，确认后工作流将继续。")} ;bridge.checkpoint={...cp,stopExpert};
     const sourceText=bridge.outputs[cp.source]||generatedResults[cp.step]||"";if(sourceText){generatedResults[cp.step]=sourceText;renderBackendOutput(cp.source,sourceText);}
     document.getElementById("action-btns-"+cp.step)?.remove();
     const panel=document.createElement("div");panel.className="step-action-btns checkpoint-dialog";panel.id="action-btns-"+cp.step;

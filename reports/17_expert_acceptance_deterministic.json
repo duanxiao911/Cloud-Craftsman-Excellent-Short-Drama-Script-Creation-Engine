@@ -1,0 +1,761 @@
+{
+  "schema": "yunjiang.17-expert-acceptance",
+  "schema_version": "1.0.0",
+  "mode": "deterministic",
+  "started_at": "2026-08-27T10:29:01.105047+00:00",
+  "elapsed_seconds": 0.078,
+  "workflow_status": "completed",
+  "workflow_id": "wf_acceptance_20260827_182901",
+  "model": {
+    "provider": "deterministic",
+    "model": "schema-valid-fixture"
+  },
+  "summary": {
+    "experts_expected": 17,
+    "experts_executed": 17,
+    "experts_passed": 17,
+    "skills_registered": 17,
+    "skills_executed": 17,
+    "missing_skill_bindings": [],
+    "checkpoints_seen": 4,
+    "planned_checkpoints_seen": 3,
+    "quality_or_signoff_checkpoints": 1,
+    "failed_experts": [],
+    "completed": true
+  },
+  "checkpoints": [
+    {
+      "time": "2026-08-27T10:29:01.131329+00:00",
+      "expert_id": "§3",
+      "step_index": 5,
+      "reason": "human_checkpoint:§3",
+      "decision": "auto_confirm",
+      "next_stop": "§11"
+    },
+    {
+      "time": "2026-08-27T10:29:01.149501+00:00",
+      "expert_id": "§11",
+      "step_index": 9,
+      "reason": "human_checkpoint:§11",
+      "decision": "auto_confirm",
+      "next_stop": "§7"
+    },
+    {
+      "time": "2026-08-27T10:29:01.162504+00:00",
+      "expert_id": "§7",
+      "step_index": 11,
+      "reason": "human_checkpoint:§7",
+      "decision": "auto_confirm",
+      "next_stop": null
+    },
+    {
+      "time": "2026-08-27T10:29:01.190261+00:00",
+      "expert_id": "§15",
+      "step_index": 16,
+      "reason": "终审已完成，签约硬门禁需要人工签发",
+      "decision": "auto_override_and_retry",
+      "next_stop": null
+    }
+  ],
+  "experts": [
+    {
+      "order": 1,
+      "expert_id": "§10",
+      "skill": {
+        "id": "workflow-strategy",
+        "name": "工作流策略编排",
+        "version": "1.0.0",
+        "checks": [
+          "目标完整性",
+          "专家依赖",
+          "交付范围"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 28,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 2,
+      "expert_id": "§0",
+      "skill": {
+        "id": "story-soul-discovery",
+        "name": "故事灵魂提炼",
+        "version": "1.0.0",
+        "checks": [
+          "核心命题",
+          "情感承诺",
+          "受众价值"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 61,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 3,
+      "expert_id": "§2",
+      "skill": {
+        "id": "content-compliance",
+        "name": "内容合规审查",
+        "version": "1.0.0",
+        "checks": [
+          "内容红线",
+          "平台风险",
+          "文化表达"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 39,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [
+        {
+          "passed": true,
+          "gate": {
+            "condition": "risk_level != red",
+            "on_fail": "pause"
+          }
+        }
+      ],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 4,
+      "expert_id": "§8",
+      "skill": {
+        "id": "project-configuration",
+        "name": "短剧项目配置",
+        "version": "1.0.0",
+        "checks": [
+          "集数规格",
+          "受众定位",
+          "制作边界"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 64,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 5,
+      "expert_id": "§1",
+      "skill": {
+        "id": "character-arc-design",
+        "name": "角色弧线设计",
+        "version": "1.1.0",
+        "checks": [
+          "人物目标",
+          "关系冲突",
+          "成长闭环"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 65,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 6,
+      "expert_id": "§3",
+      "skill": {
+        "id": "story-structure-design",
+        "name": "剧情结构设计",
+        "version": "1.1.0",
+        "checks": [
+          "因果链",
+          "节奏曲线",
+          "关键反转"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 78,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 7,
+      "expert_id": "§4",
+      "skill": {
+        "id": "dialogue-voice-design",
+        "name": "对白声线设计",
+        "version": "1.0.0",
+        "checks": [
+          "角色区分",
+          "潜台词",
+          "口语节奏"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 65,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 8,
+      "expert_id": "§5",
+      "skill": {
+        "id": "episode-script-writing",
+        "name": "分集剧本生成",
+        "version": "1.2.0",
+        "checks": [
+          "场次目标",
+          "戏剧冲突",
+          "结尾钩子"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 216,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 9,
+      "expert_id": "§12",
+      "skill": {
+        "id": "episode-outline-review",
+        "name": "集纲结构审核",
+        "version": "1.0.0",
+        "checks": [
+          "连续性",
+          "重复度",
+          "推进效率"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 49,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 10,
+      "expert_id": "§11",
+      "skill": {
+        "id": "scene-craft",
+        "name": "场景可拍化",
+        "version": "1.0.0",
+        "checks": [
+          "动作表达",
+          "空间关系",
+          "制作可行性"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 76,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 11,
+      "expert_id": "§6",
+      "skill": {
+        "id": "screenplay-formatting",
+        "name": "剧本格式标准化",
+        "version": "1.0.0",
+        "checks": [
+          "场次格式",
+          "人物标记",
+          "制作字段"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 53,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 12,
+      "expert_id": "§7",
+      "skill": {
+        "id": "multi-axis-quality-audit",
+        "name": "多维质量审计",
+        "version": "1.1.0",
+        "checks": [
+          "结构",
+          "人物",
+          "节奏",
+          "情绪",
+          "信息",
+          "兑现"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 122,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [
+        {
+          "passed": true,
+          "gate": {
+            "condition": "total_score >= 6.0",
+            "on_fail": "loop_to_§9"
+          }
+        }
+      ],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 13,
+      "expert_id": "§9",
+      "skill": {
+        "id": "targeted-revision",
+        "name": "定向改稿",
+        "version": "1.0.0",
+        "checks": [
+          "问题归因",
+          "最小修改",
+          "回归验证"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 54,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 14,
+      "expert_id": "§13",
+      "skill": {
+        "id": "visual-storytelling",
+        "name": "视觉叙事设计",
+        "version": "1.0.0",
+        "checks": [
+          "镜头语言",
+          "视觉母题",
+          "声音设计"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 57,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 15,
+      "expert_id": "§14",
+      "skill": {
+        "id": "commercial-positioning",
+        "name": "商业定位评估",
+        "version": "1.0.0",
+        "checks": [
+          "市场差异",
+          "传播钩子",
+          "变现路径"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 63,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 16,
+      "expert_id": "§16",
+      "skill": {
+        "id": "script-production-review",
+        "name": "剧本生产审核",
+        "version": "1.0.0",
+        "checks": [
+          "人物一致",
+          "因果完整",
+          "可拍性"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 71,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [],
+      "feedback": [],
+      "timeout_exceeded": false
+    },
+    {
+      "order": 17,
+      "expert_id": "§15",
+      "skill": {
+        "id": "final-quality-signoff",
+        "name": "终审签发",
+        "version": "1.0.0",
+        "checks": [
+          "质量门禁",
+          "风险收敛",
+          "交付完整"
+        ]
+      },
+      "attempts": 1,
+      "status": "passed",
+      "elapsed_seconds": 0.0,
+      "content_chars": 57,
+      "validation_passed": true,
+      "validation_errors": [],
+      "quality_gates": [
+        {
+          "passed": false,
+          "gate": {
+            "condition": "grade in [S, A]",
+            "on_fail": "rollback"
+          },
+          "action": "pause",
+          "reason": "终审已完成，签约硬门禁需要人工签发",
+          "details": {
+            "passed": false,
+            "release_ready": false,
+            "score": 90.0,
+            "hard_failures": [],
+            "commercial": {
+              "passed": true,
+              "score": 100.0,
+              "sections": {
+                "first_three": {
+                  "name": "first_three_episodes",
+                  "passed": true,
+                  "score": 100.0,
+                  "findings": []
+                },
+                "originality": {
+                  "name": "originality",
+                  "passed": true,
+                  "score": 100.0,
+                  "findings": []
+                },
+                "platform": {
+                  "name": "platform_fit",
+                  "passed": true,
+                  "score": 100,
+                  "findings": []
+                },
+                "cost": {
+                  "name": "production_cost",
+                  "passed": true,
+                  "score": 100,
+                  "findings": []
+                }
+              },
+              "hard_failures": []
+            },
+            "development": {
+              "passed": true,
+              "stage": "pre_generation",
+              "score": 0.9,
+              "issues": []
+            },
+            "audience_experience": {
+              "passed": true,
+              "average": 8.0,
+              "curve_scores": {
+                "identification": 8.0,
+                "expectation": 8.0,
+                "conflict": 8.0,
+                "emotion": 8.0,
+                "information": 8.0,
+                "payoff": 8.0
+              },
+              "issues": []
+            },
+            "narrative_quality": null,
+            "state_fingerprint": "1af126cdd40d5184e86620f862e7e444ac09f66a8ba724406d88018ce37d03da",
+            "fresh": false,
+            "reason": "missing_or_stale_release_audit"
+          },
+          "preserve_output": true
+        }
+      ],
+      "feedback": [],
+      "timeout_exceeded": false
+    }
+  ],
+  "token_usage": {
+    "calls": 17,
+    "observed_calls": 0,
+    "evidence": "mixed_or_estimated",
+    "prompt_tokens": 15336,
+    "completion_tokens": 347,
+    "total_tokens": 15683
+  },
+  "events": [
+    {
+      "time": "2026-08-27T10:29:01.105047+00:00",
+      "type": "expert_start",
+      "expert_id": "§10"
+    },
+    {
+      "time": "2026-08-27T10:29:01.105047+00:00",
+      "type": "expert_complete",
+      "expert_id": "§10",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.105047+00:00",
+      "type": "expert_start",
+      "expert_id": "§0"
+    },
+    {
+      "time": "2026-08-27T10:29:01.105047+00:00",
+      "type": "expert_complete",
+      "expert_id": "§0",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.119769+00:00",
+      "type": "expert_start",
+      "expert_id": "§2"
+    },
+    {
+      "time": "2026-08-27T10:29:01.119769+00:00",
+      "type": "expert_complete",
+      "expert_id": "§2",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.119769+00:00",
+      "type": "quality_gate",
+      "expert_id": "§2",
+      "passed": true,
+      "action": null
+    },
+    {
+      "time": "2026-08-27T10:29:01.122285+00:00",
+      "type": "expert_start",
+      "expert_id": "§8"
+    },
+    {
+      "time": "2026-08-27T10:29:01.123284+00:00",
+      "type": "expert_complete",
+      "expert_id": "§8",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.125290+00:00",
+      "type": "expert_start",
+      "expert_id": "§1"
+    },
+    {
+      "time": "2026-08-27T10:29:01.125290+00:00",
+      "type": "expert_complete",
+      "expert_id": "§1",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.131329+00:00",
+      "type": "expert_start",
+      "expert_id": "§3"
+    },
+    {
+      "time": "2026-08-27T10:29:01.131329+00:00",
+      "type": "expert_complete",
+      "expert_id": "§3",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.133336+00:00",
+      "type": "expert_start",
+      "expert_id": "§4"
+    },
+    {
+      "time": "2026-08-27T10:29:01.135344+00:00",
+      "type": "expert_complete",
+      "expert_id": "§4",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.137486+00:00",
+      "type": "expert_start",
+      "expert_id": "§5"
+    },
+    {
+      "time": "2026-08-27T10:29:01.139486+00:00",
+      "type": "expert_complete",
+      "expert_id": "§5",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.142518+00:00",
+      "type": "expert_start",
+      "expert_id": "§12"
+    },
+    {
+      "time": "2026-08-27T10:29:01.143492+00:00",
+      "type": "expert_complete",
+      "expert_id": "§12",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.151501+00:00",
+      "type": "expert_start",
+      "expert_id": "§11"
+    },
+    {
+      "time": "2026-08-27T10:29:01.152485+00:00",
+      "type": "expert_complete",
+      "expert_id": "§11",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.155487+00:00",
+      "type": "expert_start",
+      "expert_id": "§6"
+    },
+    {
+      "time": "2026-08-27T10:29:01.156486+00:00",
+      "type": "expert_complete",
+      "expert_id": "§6",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.164501+00:00",
+      "type": "expert_start",
+      "expert_id": "§7"
+    },
+    {
+      "time": "2026-08-27T10:29:01.165485+00:00",
+      "type": "expert_complete",
+      "expert_id": "§7",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.165485+00:00",
+      "type": "quality_gate",
+      "expert_id": "§7",
+      "passed": true,
+      "action": null
+    },
+    {
+      "time": "2026-08-27T10:29:01.168501+00:00",
+      "type": "expert_start",
+      "expert_id": "§9"
+    },
+    {
+      "time": "2026-08-27T10:29:01.169512+00:00",
+      "type": "expert_complete",
+      "expert_id": "§9",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.172430+00:00",
+      "type": "expert_start",
+      "expert_id": "§13"
+    },
+    {
+      "time": "2026-08-27T10:29:01.173894+00:00",
+      "type": "expert_complete",
+      "expert_id": "§13",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.176519+00:00",
+      "type": "expert_start",
+      "expert_id": "§14"
+    },
+    {
+      "time": "2026-08-27T10:29:01.176519+00:00",
+      "type": "expert_complete",
+      "expert_id": "§14",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.180559+00:00",
+      "type": "expert_start",
+      "expert_id": "§16"
+    },
+    {
+      "time": "2026-08-27T10:29:01.182566+00:00",
+      "type": "expert_complete",
+      "expert_id": "§16",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.184573+00:00",
+      "type": "expert_start",
+      "expert_id": "§15"
+    },
+    {
+      "time": "2026-08-27T10:29:01.186424+00:00",
+      "type": "expert_complete",
+      "expert_id": "§15",
+      "status": "passed"
+    },
+    {
+      "time": "2026-08-27T10:29:01.187430+00:00",
+      "type": "quality_gate",
+      "expert_id": "§15",
+      "passed": false,
+      "action": "pause"
+    }
+  ]
+}

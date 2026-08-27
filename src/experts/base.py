@@ -140,11 +140,12 @@ class LLMClient(ABC):
 
 class OpenAIClient(LLMClient):
     """OpenAI API兼容的LLM客户端"""
-    def __init__(self, api_key: str = "", model: str = "gpt-4o", base_url: str = "https://api.openai.com/v1", temperature: float = 0.7):
+    def __init__(self, api_key: str = "", model: str = "gpt-4o", base_url: str = "https://api.openai.com/v1", temperature: float = 0.7, timeout: float = 60):
         self.api_key = api_key
         self.model = model
         self.base_url = base_url
         self.temperature = temperature
+        self.timeout = timeout
         self._client = None
         self._last_usage: Optional[TokenUsage] = None
 
@@ -174,6 +175,7 @@ class OpenAIClient(LLMClient):
                 messages=[{"role": "user", "content": prompt}],
                 temperature=kwargs.get("temperature", self.temperature),
                 max_tokens=kwargs.get("max_tokens", 4000),
+                timeout=kwargs.get("timeout", self.timeout),
             )
             usage = getattr(response, "usage", None)
             if usage:

@@ -300,18 +300,6 @@ class Orchestrator:
                         validation_passed=False,
                         validation_errors=[item.message for item in gate.issues],
                     )
-            if expert_id == "§15" and not expert_kwargs.pop("bypass_signing_gate", False):
-                signing_node = state.nodes.get("SYS-SIGNING-AUDIT")
-                signing_data = signing_node.data if signing_node else {}
-                fresh = signing_data.get("state_fingerprint") == self._signing_fingerprint(state)
-                if not signing_data.get("release_ready", False) or not fresh:
-                    return ExpertOutput(
-                        expert_name=expert_id,
-                        content="[签约门禁阻止] 项目尚未通过第五期硬门槛",
-                        structured_data={"signing_gate": {**signing_data, "passed": False, "fresh": fresh, "reason": "missing_or_stale_release_audit"}},
-                        validation_passed=False,
-                        validation_errors=["前3集、同质化、平台、成本、故事发动机及观众体验必须全部通过"],
-                    )
             if expert_id == "§9":
                 audience_audit = self.audience_tracker.audit(state)
                 repair_plans = self.repair_planner.build(state, audience_audit)
@@ -739,6 +727,19 @@ class Orchestrator:
                     result["reason"] = f"质量总分{total_score}低于6.0，触发改稿循环"
 
         elif expert_id == "§15":
+            if self.state and self.state.context_snapshot:
+                state = StoryState.from_dict(self.state.context_snapshot.story_state)
+                signing_node = state.nodes.get("SYS-SIGNING-AUDIT")
+                signing_data = signing_node.data if signing_node else {}
+                fresh = signing_data.get("state_fingerprint") == self._signing_fingerprint(state)
+                if not signing_data.get("release_ready", False) or not fresh:
+                    result["passed"] = False
+                    result["action"] = "pause"
+                    result["reason"] = "终审已完成，签约硬门禁需要人工签发"
+                    result["details"] = {**signing_data, "passed": False, "fresh": fresh, "reason": "missing_or_stale_release_audit"}
+                    result["preserve_output"] = True
+                    self._trigger_callback("on_quality_gate", expert_id, result)
+                    return result
             if "D级" in output.content:
                 result["passed"] = False
                 result["action"] = "terminate"
@@ -990,7 +991,7 @@ class Orchestrator:
 
                 if action == "pause":
                     # A blocked generation step has not completed and must be retried after repair.
-                    if gate_result.get("details") and state.completed_steps and state.completed_steps[-1] == step_idx:
+                    if gate_result.get("details") and not gate_result.get("preserve_output") and state.completed_steps and state.completed_steps[-1] == step_idx:
                         state.completed_steps.pop()
                         state.step_outputs.pop(expert_id, None)
                     state.status = WorkflowStatus.PAUSED
@@ -1143,7 +1144,7 @@ class Orchestrator:
             if not gate_result.get("passed", True):
                 action = gate_result.get("action", "")
                 if action == "pause":
-                    if gate_result.get("details") and step_idx in state.completed_steps:
+                    if gate_result.get("details") and not gate_result.get("preserve_output") and step_idx in state.completed_steps:
                         state.completed_steps.remove(step_idx)
                         state.step_outputs.pop(expert_id, None)
                     state.status = WorkflowStatus.PAUSED
