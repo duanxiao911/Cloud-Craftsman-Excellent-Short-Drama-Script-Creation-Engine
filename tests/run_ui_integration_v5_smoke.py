@@ -45,6 +45,18 @@ def main() -> None:
         # checkpoint after the human decision has already reached the process.
         (Path(workspace) / "wf_smoke.checkpoint.json").unlink()
 
+        # Human confirmation must provide an exit from a repeatedly failing
+        # quality gate instead of returning to the same checkpoint forever.
+        orchestrator.approve_next_gate_result("§3")
+        orchestrator._check_quality_gate = MethodType(
+            lambda self, expert_id, output: {
+                "passed": expert_id != "§3",
+                "action": "pause" if expert_id == "§3" else "continue",
+                "reason": "simulated exhausted retry",
+            },
+            orchestrator,
+        )
+
         state = orchestrator.resume("wf_smoke", stop_at="§11")
         assert state.status == WorkflowStatus.PAUSED
         assert len(state.completed_steps) == 9

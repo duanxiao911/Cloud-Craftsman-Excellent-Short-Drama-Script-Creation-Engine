@@ -496,12 +496,12 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   }
   window.confirmCurrentStep=async function(stepNum){
     if(!bridge.active||!bridge.checkpoint||bridge.checkpoint.step!==stepNum)return localConfirm(stepNum);
-    const cp=bridge.checkpoint;try{
+    if(bridge.confirming)return;bridge.confirming=true;const cp=bridge.checkpoint,confirmButton=document.querySelector("#action-btns-"+stepNum+" .step-btn-confirm");if(confirmButton){confirmButton.disabled=true;confirmButton.textContent=cp.retry?"正在重试...":"正在确认...";}try{
       await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint",{method:"POST",body:JSON.stringify({expert_id:cp.source,edited_content:cp.retry?null:(generatedResults[stepNum]||bridge.outputs[cp.source]||""),stop_at:cp.next})});
       document.getElementById("action-btns-"+stepNum)?.remove();document.body.classList.remove("awaiting-human");stepWaiting=false;currentWaitingStep=0;bridge.checkpoint=null;
       addRunEvidence("checkpoint","人工决策已写回后端","已确认 "+expertLabel(cp.source)+(cp.next?"；下一暂停点 "+cp.next:"；进入终审"),"人在回路");
       await jsonFetch("/api/v1/resume/"+encodeURIComponent(bridge.workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});bridge.consume();
-    }catch(error){if(isMissingWorkflow(error)){expireWorkflowSession("后端找不到当前工作流，可能刚刚发生了重新部署或重启");return;}showToast("确认写回失败："+error.message,true);addRunEvidence("error","人工决策写回失败",error.message,"人在回路");}
+    }catch(error){if(isMissingWorkflow(error)){expireWorkflowSession("后端找不到当前工作流，可能刚刚发生了重新部署或重启");return;}showToast("确认写回失败："+error.message,true);addRunEvidence("error","人工决策写回失败",error.message,"人在回路");if(confirmButton){confirmButton.disabled=false;confirmButton.textContent=cp.retry?"确认并重试当前步骤":"确认并继续";}}finally{bridge.confirming=false;}
   };
   const localSubmitRevise=window.submitRevise;
   window.submitRevise=async function(stepNum){

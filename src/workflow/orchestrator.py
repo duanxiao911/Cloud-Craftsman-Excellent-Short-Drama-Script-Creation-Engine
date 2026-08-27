@@ -173,6 +173,7 @@ class Orchestrator:
         self._revision_count: int = 0  # 改稿迭代计数
         self._max_revisions: int = 3   # 最大改稿轮次
         self._repair_cycle_active: bool = False
+        self._human_gate_overrides: set[str] = set()
         self._cancel_requested: bool = False
         self._cancel_reason: Optional[str] = None
         self._callbacks: Dict[str, List[Callable]] = {
@@ -187,6 +188,24 @@ class Orchestrator:
             "on_supervision": [],
             "on_feedback": [],
             "on_cancelled": [],
+        }
+
+    def approve_next_gate_result(self, expert_id: str) -> None:
+        """Allow one human-approved retry to leave an exhausted quality loop."""
+        self._human_gate_overrides.add(expert_id)
+
+    def _apply_human_gate_override(self, expert_id: str, gate_result: Dict[str, Any]) -> Dict[str, Any]:
+        if expert_id not in self._human_gate_overrides:
+            return gate_result
+        self._human_gate_overrides.discard(expert_id)
+        if gate_result.get("passed", True):
+            return gate_result
+        return {
+            **gate_result,
+            "passed": True,
+            "action": "human_override",
+            "reason": "人工确认重试结果并继续后续流程",
+            "human_override": True,
         }
 
     def cancel(self, reason: str = "用户取消") -> WorkflowState:
@@ -965,6 +984,7 @@ class Orchestrator:
             # 质量门禁检查
             gate_result = self._check_quality_gate(expert_id, output)
             self._supervise_gate(expert_id, gate_result)
+            gate_result = self._apply_human_gate_override(expert_id, gate_result)
             if not gate_result.get("passed", True):
                 action = gate_result.get("action", "")
 
@@ -1119,6 +1139,7 @@ class Orchestrator:
                 state.completed_steps.append(step_idx)
             gate_result = self._check_quality_gate(expert_id, output)
             self._supervise_gate(expert_id, gate_result)
+            gate_result = self._apply_human_gate_override(expert_id, gate_result)
             if not gate_result.get("passed", True):
                 action = gate_result.get("action", "")
                 if action == "pause":

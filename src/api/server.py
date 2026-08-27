@@ -754,6 +754,8 @@ def create_app() -> FastAPI:
         if output is not None and request.edited_content is not None:
             output.content = request.edited_content
             orchestrator._update_context_from_output(request.expert_id, output, state.context_snapshot)
+        if retry_rejected_step:
+            orchestrator.approve_next_gate_result(request.expert_id)
         orchestrator._save_checkpoint()
         _emit(workflow_id, "human_decision", expert_id=request.expert_id,
               edited=output is not None and request.edited_content is not None,
