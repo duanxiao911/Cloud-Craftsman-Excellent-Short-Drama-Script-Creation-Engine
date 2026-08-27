@@ -794,9 +794,20 @@ class Orchestrator:
 
     @staticmethod
     def _parse_risk_level(content: str) -> str:
-        if "🔴" in content:
+        normalized = " ".join((content or "").split())
+        no_red_markers = (
+            "无🔴红色风险", "无 🔴 红色风险", "无红色风险", "未发现红色风险",
+            "不存在红色风险", "没有红色风险", "0项红色风险", "0 项红色风险",
+        )
+        if any(marker in normalized for marker in no_red_markers):
+            return "yellow" if "🟡" in normalized else "green"
+        red_markers = (
+            "风险等级：🔴", "风险等级: 🔴", "风险等级:🔴", "判定：🔴",
+            "结论：🔴", "红色风险：存在", "存在红色风险", "发现红色风险",
+        )
+        if any(marker in normalized for marker in red_markers):
             return "red"
-        elif "🟡" in content:
+        elif "🟡" in normalized:
             return "yellow"
         return "green"
 
@@ -965,6 +976,7 @@ class Orchestrator:
                     state.status = WorkflowStatus.PAUSED
                     state.error_message = gate_result.get("reason", "质量门禁未通过")
                     self._save_checkpoint()
+                    self._trigger_callback("on_checkpoint", expert_id, step_idx, state)
                     break
 
                 elif action == "loop_to_§9":
@@ -1106,6 +1118,7 @@ class Orchestrator:
                     state.status = WorkflowStatus.PAUSED
                     state.error_message = gate_result.get("reason", "质量门禁未通过")
                     self._save_checkpoint()
+                    self._trigger_callback("on_checkpoint", expert_id, step_idx, state)
                     reached_end = False
                     break
                 if action == "loop_to_§9" and self._revision_count < self._max_revisions:

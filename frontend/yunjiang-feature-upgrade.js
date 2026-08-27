@@ -392,8 +392,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     renderBackendActivity({state:"working",title:expertLabel(id)+"正在执行"+(stepDataItem.title?" · "+stepDataItem.title:""),detail:event.task||event.judgement||event.message||"正在分析输入、执行专业判断并生成中间结果",progress:Math.min(17,(bridge.completedExperts||0)+1)});
     addRunEvidence("working","专家开始执行",event.task||expertLabel(id),expertLabel(id));
   }
-  function showBackendCheckpoint(stopExpert){
-    const cp=CHECKPOINTS[stopExpert];if(!cp)return;bridge.checkpoint={...cp,stopExpert};
+  function showBackendCheckpoint(stopExpert,event={}){
+    const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:stopExpert==="§2"?"§3":null,title:expertLabel(stopExpert)+"需要人工确认",message:event.reason||"质量门禁暂停了工作流。请审核当前产物，确认后继续运行后续专家。"};bridge.checkpoint={...cp,stopExpert};
     const sourceText=bridge.outputs[cp.source]||generatedResults[cp.step]||"";if(sourceText){generatedResults[cp.step]=sourceText;renderBackendOutput(cp.source,sourceText);}
     document.getElementById("action-btns-"+cp.step)?.remove();
     const panel=document.createElement("div");panel.className="step-action-btns checkpoint-dialog";panel.id="action-btns-"+cp.step;
@@ -424,7 +424,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
       addRunEvidence("check","监督层定向派发返工","仅退回 "+expertLabel(event.target_expert)+"｜第 "+(feedback.retry||1)+" 次｜"+((feedback.validation_errors||[]).join("；")||feedback.reason||"修复当前产物"),"监督层 Agent");
     }else if(event.type==="quality_gate")addRunEvidence("check","质量门禁完成",JSON.stringify(event.result||{}).slice(0,420),expertLabel(event.expert_id));
     else if(event.type==="revision_loop")addRunEvidence("check","监督层触发返工","第 "+event.revision+" 轮局部返工","监督层 Agent");
-    else if(event.type==="checkpoint")showBackendCheckpoint(event.expert_id);
+    else if(event.type==="checkpoint")showBackendCheckpoint(event.expert_id,event);
     else if(event.type==="workflow_error"){renderBackendActivity({state:"error",title:"工作流执行异常",detail:event.error||"未知错误",progress:bridge.completedExperts||0});addRunEvidence("error","后端工作流异常",event.error||"未知错误","Orchestrator");finishBackend(false,event.error);}
     else if(event.type==="workflow_state"&&event.status==="completed")finishBackend(true);
     feature.saveSession();

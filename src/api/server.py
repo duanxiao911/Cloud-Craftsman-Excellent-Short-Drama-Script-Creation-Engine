@@ -250,6 +250,7 @@ def _bind_evidence_callbacks(workflow_id: str, orchestrator: Orchestrator, proje
         _emit(
             workflow_id, "checkpoint", expert_id=expert_id, step_index=step_index,
             completed_experts=[state.expert_sequence[i] for i in state.completed_steps],
+            reason=state.error_message,
         )
         # Update project stage and status on checkpoint
         if project_id:
