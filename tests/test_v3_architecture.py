@@ -63,6 +63,40 @@ def test_budget_preflight_rejects_oversized_context():
         TokenBudgeter().preflight("sys", "kb", "长" * 100, 10, TokenBudget(context=10, total=100))
 
 
+def test_budget_preflight_enforces_output_partition():
+    with pytest.raises(TokenBudgetExceeded):
+        TokenBudgeter().preflight("sys", "kb", "context", 101, TokenBudget(output=100, total=1000))
+
+
+def test_context_omits_state_field_already_represented_by_selected_node():
+    state = make_state()
+    state.engine = {"long_term_goal": "重复内容不应再次注入"}
+    state.add_node(StoryNode("SYS-ENGINE", "story_engine", {"long_term_goal": "节点版本"}))
+    context = ContextSelector().build(state, "episode", ["SYS-ENGINE"], state_fields=("premise", "engine"))
+    assert "engine" not in context["l1"]
+    assert context["l1"]["nodes"]["SYS-ENGINE"]["long_term_goal"] == "节点版本"
+
+
+def test_heavy_experts_use_bounded_task_specific_token_profiles():
+    structure_budget, structure_output = Orchestrator.EXPERT_TOKEN_PROFILES["§3"]
+    episode_budget, episode_output = Orchestrator.EXPERT_TOKEN_PROFILES["§5"]
+    outline_review_budget, outline_review_output = Orchestrator.EXPERT_TOKEN_PROFILES["§12"]
+    review_budget, review_output = Orchestrator.EXPERT_TOKEN_PROFILES["§16"]
+    assert structure_output == 7000
+    assert structure_output == structure_budget.output
+    assert structure_budget.total == 15000
+    assert episode_budget.context >= 16551
+    assert episode_output == episode_budget.output
+    assert outline_review_budget.context >= 6445
+    assert outline_review_output == 2500
+    assert outline_review_output == outline_review_budget.output
+    assert review_budget.context >= 8092
+    assert review_output == review_budget.output
+    assert episode_budget.total < 30000
+    assert outline_review_budget.total < review_budget.total
+    assert review_budget.total < episode_budget.total
+
+
 def test_orchestrator_checkpoint_contains_v3_state(tmp_path):
     orchestrator = Orchestrator(expert_sequence=["§0"], project_path=str(tmp_path))
     orchestrator._init_workflow("主角必须在三天内证明清白")
@@ -245,6 +279,18 @@ def test_token_ledger_does_not_mislabel_estimates_as_observed():
     report = TokenUsageLedger().summarize([observed, estimated])
     assert report["evidence"] == "mixed_or_estimated"
     assert report["observed_calls"] == 1
+
+
+def test_token_ledger_counts_every_retry_and_finish_reason():
+    records = [
+        {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15, "evidence": "observed", "finish_reason": "length"},
+        {"prompt_tokens": 12, "completion_tokens": 3, "total_tokens": 15, "evidence": "observed", "finish_reason": "stop"},
+    ]
+    report = TokenUsageLedger().summarize_records(records)
+    assert report["calls"] == 2
+    assert report["total_tokens"] == 30
+    assert report["finish_reasons"] == {"length": 1, "stop": 1}
+    assert report["truncated_calls"] == 1
 
 
 @pytest.mark.parametrize("operation,kind", [

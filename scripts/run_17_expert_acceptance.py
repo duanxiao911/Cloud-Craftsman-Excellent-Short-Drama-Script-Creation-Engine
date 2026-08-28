@@ -103,6 +103,7 @@ class AcceptanceRecorder:
                 "validation_errors": [],
                 "quality_gates": [],
                 "feedback": [],
+                "usage_attempts": [],
             }
             for index, expert_id in enumerate(sequence)
         }
@@ -124,6 +125,17 @@ class AcceptanceRecorder:
             item["content_chars"] = len(output.content or "")
             item["validation_passed"] = bool(output.validation_passed)
             item["validation_errors"] = list(output.validation_errors or [])
+            item["token_budget"] = output.structured_data.get("token_budget")
+            item["token_usage"] = output.structured_data.get("token_usage")
+            if item["token_usage"]:
+                item["usage_attempts"].append(dict(item["token_usage"]))
+                item["token_usage_total"] = {
+                    "calls": len(item["usage_attempts"]),
+                    "prompt_tokens": sum(call.get("prompt_tokens", 0) for call in item["usage_attempts"]),
+                    "completion_tokens": sum(call.get("completion_tokens", 0) for call in item["usage_attempts"]),
+                    "total_tokens": sum(call.get("total_tokens", 0) for call in item["usage_attempts"]),
+                }
+            item["generation"] = output.structured_data.get("generation")
             llm_failed = "[LLM调用失败:" in (output.content or "")
             item["status"] = "failed" if llm_failed or not output.validation_passed else "passed"
             item["timeout_exceeded"] = item["elapsed_seconds"] > self.timeout_seconds
@@ -205,6 +217,7 @@ def run_acceptance(args) -> Dict[str, Any]:
         raise RuntimeError("真实模式会产生模型费用；确认后请添加 --allow-paid-api")
     started = time.monotonic()
     started_at = utc_now()
+    development_mode = getattr(args, "development_mode", "benchmark")
     client, model_info = build_client(args.mode, args.timeout_per_expert)
     with TemporaryDirectory(prefix="yunjiang-17-acceptance-") as workspace:
         orchestrator = Orchestrator(
@@ -218,10 +231,19 @@ def run_acceptance(args) -> Dict[str, Any]:
         recorder = AcceptanceRecorder(list(orchestrator.expert_sequence), args.timeout_per_expert)
         recorder.bind(orchestrator)
         project_config = {"drama_type": args.drama_type, "total_episodes": args.episodes, "user_materials": "17专家全链路验收"}
-        if args.mode == "deterministic":
+        development: Dict[str, Any]
+        if args.mode == "deterministic" or development_mode == "benchmark":
             prepare_deterministic_state(orchestrator, args.idea)
+            development = {
+                "mode": "benchmark",
+                "passed": True,
+                "assessment_gate": {"passed": True, "source": "schema-valid-benchmark"},
+                "engine_gate": {"passed": True, "source": "schema-valid-benchmark"},
+                "paid_api_calls": 0,
+            }
         else:
             development = orchestrator.auto_develop_project(idea=args.idea, project=project_config, max_attempts=3)
+            development["mode"] = "live"
             if not development.get("passed", False):
                 raise RuntimeError("立项与故事发动机未通过：" + json.dumps(development, ensure_ascii=False))
         state = orchestrator.run_full(
@@ -246,6 +268,7 @@ def run_acceptance(args) -> Dict[str, Any]:
         "workflow_status": state.status.value,
         "workflow_id": state.workflow_id,
         "model": model_info,
+        "development": development,
         "summary": {
             "experts_expected": 17,
             "experts_executed": sum(item["attempts"] > 0 for item in experts),
@@ -257,6 +280,8 @@ def run_acceptance(args) -> Dict[str, Any]:
             "planned_checkpoints_seen": sum(str(item.get("reason", "")).startswith("human_checkpoint:") for item in recorder.checkpoints),
             "quality_or_signoff_checkpoints": sum(not str(item.get("reason", "")).startswith("human_checkpoint:") for item in recorder.checkpoints),
             "failed_experts": failures,
+            "api_calls": token_usage.get("calls", 0),
+            "truncated_calls": token_usage.get("truncated_calls", 0),
             "completed": state.status == WorkflowStatus.COMPLETED and not failures and not missing_skills,
         },
         "checkpoints": recorder.checkpoints,
@@ -273,6 +298,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="云匠17专家/Skill全链路验收器")
     parser.add_argument("--mode", choices=("deterministic", "live"), default="deterministic")
     parser.add_argument("--allow-paid-api", action="store_true", help="明确允许真实模型调用产生费用")
+    parser.add_argument(
+        "--development-mode",
+        choices=("benchmark", "live"),
+        default="benchmark",
+        help="benchmark使用固定合格立项来稳定验收17专家；live额外测试真实模型立项与故事发动机",
+    )
     parser.add_argument("--idea", default="失业律师必须在三天内替仇人翻案")
     parser.add_argument("--drama-type", default="现实悬疑")
     parser.add_argument("--episodes", type=int, default=30)

@@ -137,6 +137,12 @@ class LLMClient(ABC):
         """Return provider-reported usage when available."""
         return None
 
+    def get_last_finish_reason(self) -> Optional[str]:
+        return None
+
+    def get_usage_history(self) -> List[Dict[str, Any]]:
+        return []
+
 
 class OpenAIClient(LLMClient):
     """OpenAI API兼容的LLM客户端"""
@@ -148,6 +154,8 @@ class OpenAIClient(LLMClient):
         self.timeout = timeout
         self._client = None
         self._last_usage: Optional[TokenUsage] = None
+        self._last_finish_reason: Optional[str] = None
+        self._usage_history: List[Dict[str, Any]] = []
 
     def _get_client(self):
         if self._client is None:
@@ -166,6 +174,8 @@ class OpenAIClient(LLMClient):
 
     def complete(self, prompt: str, **kwargs) -> str:
         """调用LLM生成内容"""
+        self._last_usage = None
+        self._last_finish_reason = None
         client = self._get_client()
         if client is None:
             return self._mock_complete(prompt)
@@ -177,6 +187,8 @@ class OpenAIClient(LLMClient):
                 max_tokens=kwargs.get("max_tokens", 4000),
                 timeout=kwargs.get("timeout", self.timeout),
             )
+            choice = response.choices[0]
+            self._last_finish_reason = str(getattr(choice, "finish_reason", "") or "")
             usage = getattr(response, "usage", None)
             if usage:
                 self._last_usage = TokenUsage(
@@ -185,8 +197,11 @@ class OpenAIClient(LLMClient):
                     total_tokens=int(getattr(usage, "total_tokens", 0) or 0),
                     evidence="observed",
                     model=self.model,
+                    finish_reason=self._last_finish_reason,
+                    requested_max_tokens=int(kwargs.get("max_tokens", 4000)),
                 )
-            return response.choices[0].message.content
+                self._usage_history.append(self._last_usage.to_dict())
+            return choice.message.content
         except Exception as e:
             return f"[LLM调用失败: {e}] 请检查API配置"
 
@@ -207,11 +222,19 @@ class OpenAIClient(LLMClient):
         content = f"[Mock LLM响应] 已收到Prompt，长度={len(prompt)}字符。请配置有效的API Key以获取真实LLM响应。"
         prompt_tokens = max(1, len(prompt) // 2)
         completion_tokens = max(1, len(content) // 2)
-        self._last_usage = TokenUsage(prompt_tokens, completion_tokens, prompt_tokens + completion_tokens, "estimated", self.model)
+        self._last_finish_reason = "stop"
+        self._last_usage = TokenUsage(prompt_tokens, completion_tokens, prompt_tokens + completion_tokens, "estimated", self.model, "stop", 0)
+        self._usage_history.append(self._last_usage.to_dict())
         return content
 
     def get_last_usage(self) -> Optional[TokenUsage]:
         return self._last_usage
+
+    def get_last_finish_reason(self) -> Optional[str]:
+        return self._last_finish_reason
+
+    def get_usage_history(self) -> List[Dict[str, Any]]:
+        return [dict(item) for item in self._usage_history]
 
 
 class ExpertBase(ABC):
@@ -385,6 +408,13 @@ class ExpertBase(ABC):
             completion_tokens = estimator(output.content)
             usage = TokenUsage(prompt_tokens, completion_tokens, prompt_tokens + completion_tokens, "estimated")
         output.structured_data["token_usage"] = usage.to_dict()
+        finish_reason = self.llm_client.get_last_finish_reason()
+        truncated = finish_reason in {"length", "max_tokens"}
+        output.structured_data["generation"] = {
+            "finish_reason": finish_reason or "unknown",
+            "requested_max_tokens": output_tokens,
+            "truncated": truncated,
+        }
 
         # 4. 验证输出
         passed, errors = self.validate_output(output.content)
@@ -392,10 +422,25 @@ class ExpertBase(ABC):
         output.validation_errors = errors
         artifact = self.parse_structured_output(output.content)
         schema_errors = validate_artifact(self.expert_id, artifact)
-        native_json = output.content.lstrip().startswith("{") or output.content.lstrip().startswith("```json")
-        if native_json and not schema_errors:
+        stripped = output.content.lstrip()
+        native_json = stripped.startswith(("{", "[", "```json"))
+        json_integrity_error = None
+        if native_json:
+            fenced = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", output.content)
+            candidate = fenced.group(1) if fenced else output.content.strip()
+            try:
+                json.loads(candidate)
+            except (json.JSONDecodeError, TypeError) as exc:
+                json_integrity_error = f"JSON输出不完整或无效: {exc}"
+        if native_json and not schema_errors and not json_integrity_error and not truncated:
             output.validation_passed = True
             output.validation_errors = []
+        if json_integrity_error:
+            output.validation_passed = False
+            output.validation_errors.append(json_integrity_error)
+        if truncated:
+            output.validation_passed = False
+            output.validation_errors.append(f"模型输出因Token上限截断（finish_reason={finish_reason}）")
         if schema_errors:
             output.validation_passed = False
             output.validation_errors.extend(schema_errors)

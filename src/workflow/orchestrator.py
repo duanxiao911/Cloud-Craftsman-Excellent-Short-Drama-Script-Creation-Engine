@@ -99,6 +99,29 @@ class Orchestrator:
     # 完整15专家序列（Wave2扩展）
     FULL_SEQUENCE = ["§10", "§0", "§2", "§8", "§1", "§3", "§4", "§5", "§12", "§11", "§6", "§7", "§9", "§13", "§14", "§16", "§15"]
     BULK_GENERATION_EXPERTS = {"§11", "§6", "§13"}
+    # Heavy experts receive a bounded, task-specific allowance. All other
+    # experts retain the conservative default so the whole workflow does not
+    # become more expensive merely because a few stages need larger artifacts.
+    EXPERT_TOKEN_PROFILES = {
+        # The live acceptance observed one §3 response ending at 5998 tokens
+        # with finish_reason=length. A 7000 ceiling is cheaper than regenerating
+        # the entire structure while remaining bounded below the provider limit.
+        "§3": (TokenBudget(context=5000, output=7000, total=15000), 7000),
+        "§4": (TokenBudget(context=5000, output=6000, total=14000), 6000),
+        "§5": (TokenBudget(context=18000, output=7000, total=28000), 7000),
+        "§12": (TokenBudget(context=8000, output=2500, total=13000), 2500),
+        "§11": (TokenBudget(context=5000, output=6000, total=14000), 6000),
+        "§6": (TokenBudget(context=5000, output=6000, total=14000), 6000),
+        "§9": (TokenBudget(context=5000, output=6000, total=14000), 6000),
+        "§16": (TokenBudget(context=9000, output=3000, total=15000), 3000),
+    }
+    EXPERT_STATE_FIELDS = {
+        "§5": ("premise", "engine"),
+        # The episode-plan artifact already carries the material being audited;
+        # premise/engine/audience state would only duplicate unrelated context.
+        "§12": (),
+        "§16": (),
+    }
 
     # 序列说明
     SEQUENCE_DESCRIPTIONS = {
@@ -312,9 +335,19 @@ class Orchestrator:
                     ensure_ascii=False,
                 )
             selected_ids = self.expert_state_adapter.node_ids_for(state, expert_id, node_ids)
-            context.task_context = self.context_selector.build(state, task, selected_ids, include_raw)
+            context.task_context = self.context_selector.build(
+                state,
+                task,
+                selected_ids,
+                include_raw,
+                state_fields=self.EXPERT_STATE_FIELDS.get(expert_id),
+            )
+            expert_budget, expert_output_tokens = self.EXPERT_TOKEN_PROFILES.get(
+                expert_id, (self.token_budget, self.token_budget.output)
+            )
+            expert_kwargs.setdefault("max_tokens", expert_output_tokens)
             expert_kwargs["_token_budgeter"] = self.token_budgeter
-            expert_kwargs["_token_budget"] = self.token_budget
+            expert_kwargs["_token_budget"] = expert_budget
             
             # §9 改稿编辑需要§7审计报告
             if expert_id == "§9":
@@ -579,6 +612,9 @@ class Orchestrator:
         return result
 
     def get_token_usage_report(self) -> Dict[str, Any]:
+        usage_history = self.llm_client.get_usage_history() if self.llm_client else []
+        if usage_history:
+            return self.token_usage_ledger.summarize_records(usage_history)
         if not self.state:
             return self.token_usage_ledger.summarize([])
         return self.token_usage_ledger.summarize(self.state.step_outputs.values())

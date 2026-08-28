@@ -4,7 +4,7 @@ from pathlib import Path
 
 from src.artifact_schema import EXPERT_ARTIFACT_SCHEMAS
 from src.expert_protocol import CONTRACTS
-from src.experts.base import ExpertBase, ExpertRegistry, LLMClient
+from src.experts.base import ExpertBase, ExpertContext, ExpertRegistry, LLMClient
 from src.story_state import StoryState
 from src.workflow.orchestrator import Orchestrator
 from src.pipeline_orchestrator import PipelineOrchestrator, ExecutionMode
@@ -41,6 +41,18 @@ class QueueLLM(LLMClient):
         return json.loads(self.complete(prompt, **kwargs))
 
 
+class FinishReasonLLM(LLMClient):
+    def __init__(self, response, finish_reason):
+        self.response = response
+        self.finish_reason = finish_reason
+    def complete(self, prompt, **kwargs):
+        return self.response
+    def complete_json(self, prompt, **kwargs):
+        return json.loads(self.complete(prompt, **kwargs))
+    def get_last_finish_reason(self):
+        return self.finish_reason
+
+
 def proposal():
     return valid_proposal()
 
@@ -72,6 +84,22 @@ def test_canonical_roster_has_17_real_experts_and_schemas():
     for expert_id in Orchestrator.FULL_SEQUENCE:
         expert_class = ExpertRegistry.get(expert_id)
         assert expert_class and issubclass(expert_class, ExpertBase)
+
+
+def test_finish_reason_length_is_a_hard_validation_failure():
+    response = json.dumps(ARTIFACTS["§5"], ensure_ascii=False)
+    expert = ExpertRegistry.create_instance("§5", llm_client=FinishReasonLLM(response, "length"))
+    output = expert.execute(ExpertContext(task_context={"test": True}))
+    assert output.validation_passed is False
+    assert output.structured_data["generation"]["truncated"] is True
+    assert any("Token上限截断" in error for error in output.validation_errors)
+
+
+def test_malformed_native_json_cannot_pass_through_fallback_parser():
+    expert = ExpertRegistry.create_instance("§5", llm_client=FinishReasonLLM('{"episodes":[', "stop"))
+    output = expert.execute(ExpertContext(task_context={"test": True}))
+    assert output.validation_passed is False
+    assert any("JSON输出不完整或无效" in error for error in output.validation_errors)
 
 
 def test_pipeline_module_contains_no_second_executor():

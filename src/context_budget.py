@@ -45,7 +45,12 @@ class TokenBudgeter:
 
     def preflight(self, system: str, knowledge: str, context: Any, output_tokens: int, budget: TokenBudget) -> BudgetReport:
         parts = (self.estimate(system), self.estimate(knowledge), self.estimate(context), output_tokens)
-        fits = parts[0] <= budget.system and parts[1] <= budget.knowledge and parts[2] <= budget.context
+        fits = (
+            parts[0] <= budget.system
+            and parts[1] <= budget.knowledge
+            and parts[2] <= budget.context
+            and parts[3] <= budget.output
+        )
         total = sum(parts)
         report = BudgetReport(*parts, total=total, limit=budget.total, fits=fits and total <= budget.total)
         if not report.fits:
@@ -69,8 +74,20 @@ class ContextSelector:
         self.raw_retriever = KnowledgeRetriever(chunk_chars=900, overlap_chars=120)
 
     def build(self, state: StoryState, task: str, node_ids: Optional[Iterable[str]] = None,
-              include_raw: bool = False, query: str = "", raw_token_budget: int = 2200) -> Dict[str, Any]:
-        fields = self.TASK_FIELDS.get(task, ("premise",))
+              include_raw: bool = False, query: str = "", raw_token_budget: int = 2200,
+              state_fields: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+        fields = tuple(state_fields) if state_fields is not None else self.TASK_FIELDS.get(task, ("premise",))
+        selected_ids = list(node_ids or [])
+        selected_kinds = {state.nodes[node_id].kind for node_id in selected_ids if node_id in state.nodes}
+        represented_by_nodes = {
+            "premise": {"premise", "premise_assessment"},
+            "engine": {"story_engine"},
+            "audience_curves": {"audience_curve"},
+        }
+        fields = tuple(
+            field for field in fields
+            if not (represented_by_nodes.get(field, set()) & selected_kinds)
+        )
         l0 = {
             "title": state.project.get("name", ""),
             "genre": state.project.get("genre", ""),
@@ -78,7 +95,7 @@ class ContextSelector:
             "protagonist": state.premise.get("protagonist", ""),
         }
         l1 = {field: getattr(state, field) for field in fields}
-        l1["nodes"] = state.select(node_ids or [])
+        l1["nodes"] = state.select(selected_ids)
         result = {"level": "L1", "l0": l0, "l1": l1}
         if include_raw:
             result["level"] = "L2"

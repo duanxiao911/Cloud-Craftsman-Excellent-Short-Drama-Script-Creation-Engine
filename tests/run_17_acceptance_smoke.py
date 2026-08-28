@@ -15,6 +15,7 @@ def main() -> None:
         output = Path(folder) / "acceptance.json"
         args = Namespace(
             mode="deterministic",
+            development_mode="benchmark",
             allow_paid_api=False,
             idea="失业律师必须在三天内替仇人翻案",
             drama_type="现实悬疑",
@@ -25,6 +26,8 @@ def main() -> None:
         report = run_acceptance(args)
         summary = report["summary"]
         assert report["workflow_status"] == "completed"
+        assert report["development"]["mode"] == "benchmark"
+        assert report["development"]["paid_api_calls"] == 0
         assert summary["experts_executed"] == 17
         assert summary["experts_passed"] == 17
         assert summary["skills_registered"] == 17
