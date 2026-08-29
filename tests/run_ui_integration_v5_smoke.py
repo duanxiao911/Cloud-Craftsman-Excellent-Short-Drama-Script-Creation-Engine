@@ -19,6 +19,12 @@ def main() -> None:
     assert 'return "# 场景设计方案' in frontend_source
     assert 'expertId==="§16"&&Array.isArray(data.issues)' in frontend_source
     assert 'return "# 剧本审核报告' in frontend_source
+    assert 'loadFullExpertOutput(event.expert_id)' in frontend_source
+    assert 'event.output||event.output_preview' not in frontend_source
+
+    api_source = (PROJECT_ROOT / "src" / "api" / "server.py").read_text(encoding="utf-8")
+    assert 'output=output.content,' in api_source
+    assert '"content": output.content if output.content else ""' in api_source
 
     with TemporaryDirectory() as workspace:
         orchestrator = Orchestrator(

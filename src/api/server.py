@@ -886,7 +886,8 @@ def create_app() -> FastAPI:
                 "type": "step_complete",
                 "expert_id": expert_id,
                 "step_index": step_idx,
-                "content": output.content[:800] if output.content else "",
+                "content": output.content if output.content else "",
+                "content_preview": output.content[:800] if output.content else "",
                 "validation_passed": output.validation_passed,
             })
 

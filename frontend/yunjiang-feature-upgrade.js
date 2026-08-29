@@ -388,6 +388,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
         const id=episode.episode_id??episode.episode??(index+1);
         const rows=Object.keys(labels).filter(key=>episode[key]!==undefined&&episode[key]!==null&&String(episode[key]).trim()).map(key=>"- **"+labels[key]+"：** "+String(episode[key]));
         if(Array.isArray(episode.payoffs)&&episode.payoffs.length)rows.push("- **伏笔回收：** "+episode.payoffs.join("；"));
+        else if(episode.payoffs!==undefined&&episode.payoffs!==null&&String(episode.payoffs).trim())rows.push("- **伏笔回收：** "+String(episode.payoffs));
         return "## 第 "+id+" 集\n\n"+rows.join("\n");
       }).join("\n\n");
     }
@@ -445,6 +446,14 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     renderBackendActivity({state:"done",title:expertLabel(expertId)+"已完成当前步骤",detail:"产物已写入画布，正在等待下一位专家接续执行",progress:bridge.completedExperts});
     stepsCompleted=Math.max(stepsCompleted,stepNum);currentStep=stepNum;updateBroadcastNodes();updateExpertGroupProgress();feature.saveSession();
   }
+  async function loadFullExpertOutput(expertId){
+    if(!bridge.workflowId)throw new Error("缺少工作流ID，无法读取完整产物");
+    const result=await jsonFetch("/api/v1/result/"+encodeURIComponent(bridge.workflowId));
+    const record=result?.outputs?.[expertId];
+    const content=typeof record==="string"?record:record?.content;
+    if(!content)throw new Error("后端未返回 "+expertId+" 的完整产物");
+    return content;
+  }
   function markWorking(event){
     const id=event.expert_id,step=EXPERT_STEP[id];currentStep=step||currentStep;
     document.querySelectorAll("[data-expert]").forEach(el=>el.classList.remove("active","working"));
@@ -472,7 +481,11 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     if(event.event_id)bridge.lastEventId=Math.max(bridge.lastEventId,event.event_id);
     if(event.type==="expert_start")markWorking(event);
     else if(event.type==="expert_complete"){
-      renderBackendOutput(event.expert_id,event.output||event.output_preview||"");syncRuntimePanels(event,"done");
+      if(event.output){renderBackendOutput(event.expert_id,event.output);syncRuntimePanels(event,"done");}
+      else if(event.output_preview){
+        renderBackendActivity({state:"working",title:expertLabel(event.expert_id)+"完整产物加载中",detail:"实时事件仅含预览，正在从工作流结果接口读取完整内容",progress:Math.min(17,(bridge.completedExperts||0)+1)});
+        loadFullExpertOutput(event.expert_id).then(content=>{renderBackendOutput(event.expert_id,content);syncRuntimePanels(event,"done");}).catch(error=>{addRunEvidence("error","完整产物读取失败",error.message,expertLabel(event.expert_id));renderBackendActivity({state:"error",title:expertLabel(event.expert_id)+"产物显示失败",detail:"后端只返回了截断预览，请刷新或重启最新后端后重试",progress:bridge.completedExperts});});
+      }
       addRunEvidence("done","专家完成并写入产物",(event.output_preview||"").replace(/\s+/g," ").slice(0,220),expertLabel(event.expert_id));
     }else if(event.type==="style_pack_loaded"){
       const pack=event.style_pack||{};addRunEvidence("done","后端风格经验包已锁定",(pack.name||pack.id||"默认风格")+" v"+(pack.version||"1.0.0")+"｜校验 "+String(pack.checksum||"").slice(0,12),"风格包注册中心");
