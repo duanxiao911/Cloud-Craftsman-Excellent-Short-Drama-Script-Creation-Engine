@@ -288,8 +288,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   const EXPERT_STEP={"§10":13,"§0":1,"§2":2,"§8":3,"§1":4,"§3":6,"§4":5,"§5":7,"§12":16,"§11":11,"§6":9,"§7":10,"§9":12,"§13":8,"§14":14,"§16":17,"§15":15};
   const CHECKPOINTS={
     "§3":{step:4,source:"§1",next:"§11",title:"角色设定等待你的决策",message:"角色铸造师已经完成角色设定。确认、修改或直接编辑后，后端才会继续进入剧情结构与分集大纲。"},
-    // §12 是质量审查报告，不能覆盖 §3/§5 的创作产物。人工确认的应是 §5 分集大纲。
-    "§11":{step:7,source:"§5",next:"§7",title:"剧情大纲等待你的决策",message:"结构、分集目标和集纲审核已经完成。确认故事走向后，后端才会继续生成场景与格式化分集剧本。"},
+    // §12 是检查点协议产物，§5 是用户实际审阅的分集大纲；二者必须分别保存。
+    "§11":{step:7,source:"§12",displaySource:"§5",next:"§7",title:"剧情大纲等待你的决策",message:"结构、分集目标和集纲审核已经完成。确认故事走向后，后端才会继续生成场景与格式化分集剧本。"},
     "§7":{step:7,source:"§6",next:null,title:"分集剧本等待你的决策",message:"场景设计与格式化剧本已经完成。确认后将进入质量审计、返工和最终签发流程。"}
   };
   const WORKFLOW_ORDER=["§10","§0","§2","§8","§1","§3","§4","§5","§12","§11","§6","§7","§9","§13","§14","§16","§15"];
@@ -427,8 +427,9 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   function showBackendCheckpoint(stopExpert,event={}){
     const isGatePause=!!event.reason&&!String(event.reason).startsWith("human_checkpoint:");
     const rejectedOutput=isGatePause&&!(event.completed_experts||[]).includes(stopExpert);
-    const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:nextPlannedCheckpoint(stopExpert),retry:rejectedOutput,title:stopExpert==="§15"?"终审报告等待你的签发":isGatePause?expertLabel(stopExpert)+"质量门禁待处理":expertLabel(stopExpert)+"需要人工确认",message:event.reason||(rejectedOutput?"质量门禁暂停了工作流。确认后将重新执行当前专家，再继续运行后续专家。":"专家产物已经保留，确认后工作流将继续。")} ;bridge.checkpoint={...cp,stopExpert};
-    const sourceText=bridge.outputs[cp.source]||generatedResults[cp.step]||"";if(sourceText)renderBackendOutput(cp.source,sourceText);
+    const plannedCheckpoint=!isGatePause&&CHECKPOINTS[stopExpert];
+    const cp=plannedCheckpoint||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,displaySource:stopExpert,next:nextPlannedCheckpoint(stopExpert),retry:rejectedOutput,title:stopExpert==="§15"?"终审报告等待你的签发":isGatePause?expertLabel(stopExpert)+"质量门禁待处理":expertLabel(stopExpert)+"需要人工确认",message:event.reason||(rejectedOutput?"质量门禁暂停了工作流。确认后将重新执行当前专家，再继续运行后续专家。":"专家产物已经保留，确认后工作流将继续。")} ;bridge.checkpoint={...cp,displaySource:cp.displaySource||cp.source,stopExpert};
+    const displaySource=bridge.checkpoint.displaySource,sourceText=bridge.outputs[displaySource]||generatedResults[cp.step]||"";if(sourceText)renderBackendOutput(displaySource,sourceText);
     document.getElementById("action-btns-"+cp.step)?.remove();
     const panel=document.createElement("div");panel.className="step-action-btns checkpoint-dialog";panel.id="action-btns-"+cp.step;
     panel.innerHTML='<div class="checkpoint-bubble"><div class="checkpoint-title">'+cp.title+'</div><div class="checkpoint-message">'+cp.message+'</div><div class="checkpoint-actions"><button class="step-btn step-btn-confirm" onclick="confirmCurrentStep('+cp.step+')">'+(cp.retry?'确认并重试当前步骤':'确认并继续')+'</button>'+(cp.retry?'':'<button class="step-btn step-btn-revise" onclick="showReviseInput('+cp.step+')">提出修改意见</button><button class="step-btn step-btn-edit" onclick="showEditArea('+cp.step+')">直接编辑</button>')+'</div></div>';
@@ -536,7 +537,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   window.confirmCurrentStep=async function(stepNum){
     if(!bridge.active||!bridge.checkpoint||bridge.checkpoint.step!==stepNum)return localConfirm(stepNum);
     if(bridge.confirming)return;bridge.confirming=true;const cp=bridge.checkpoint,confirmButton=document.querySelector("#action-btns-"+stepNum+" .step-btn-confirm");if(confirmButton){confirmButton.disabled=true;confirmButton.textContent=cp.retry?"正在重试...":"正在确认...";}try{
-      const payload={expert_id:cp.source,edited_content:cp.retry?null:(generatedResults[stepNum]||bridge.outputs[cp.source]||""),stop_at:cp.next};addRunEvidence("working","正在提交人工决策","断点 "+cp.stopExpert+"｜确认产物 "+cp.source+"｜协议 "+(bridge.checkpointProtocol||"legacy"),"人在回路");
+      const displaySource=cp.displaySource||cp.source,displayContent=generatedResults[stepNum]||bridge.outputs[displaySource]||"";
+      const payload={expert_id:cp.source,edited_content:cp.retry?null:(displaySource===cp.source?displayContent:null),artifact_expert_id:displaySource!==cp.source?displaySource:null,edited_artifact_content:displaySource!==cp.source?displayContent:null,stop_at:cp.next};addRunEvidence("working","正在提交人工决策","断点 "+cp.stopExpert+"｜确认产物 "+cp.source+(displaySource!==cp.source?"｜展示产物 "+displaySource:"")+"｜协议 "+(bridge.checkpointProtocol||"legacy"),"人在回路");
       try{await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint-and-resume",{method:"POST",body:JSON.stringify(payload)});}catch(error){if(error.status!==404)throw error;addRunEvidence("check","线上后端尚未支持原子恢复接口","已自动切换兼容协议","会话管理器");await jsonFetch("/api/v1/workflow/"+encodeURIComponent(bridge.workflowId)+"/checkpoint",{method:"POST",body:JSON.stringify(payload)});await jsonFetch("/api/v1/resume/"+encodeURIComponent(bridge.workflowId),{method:"POST",body:JSON.stringify({stop_at:cp.next})});}
       document.getElementById("action-btns-"+stepNum)?.remove();document.body.classList.remove("awaiting-human");stepWaiting=false;currentWaitingStep=0;bridge.checkpoint=null;
       addRunEvidence("checkpoint","人工决策已写回后端","已确认 "+expertLabel(cp.source)+(cp.next?"；下一暂停点 "+cp.next:"；进入终审"),"人在回路");
@@ -549,9 +551,9 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     const input=document.getElementById("revise-input-"+stepNum),feedback=input&&input.value.trim();if(!feedback){showToast("请输入修改意见",true);return;}
     const cp=bridge.checkpoint,btns=document.getElementById("action-btns-"+stepNum);if(input.closest(".revise-input-area"))input.closest(".revise-input-area").remove();if(btns)btns.innerHTML='<span style="color:#9d526c;font-weight:600">后端专家修改中...</span>';
     try{
-      const current=generatedResults[stepNum]||bridge.outputs[cp.source]||"";
-      const data=await jsonFetch("/api/v1/step/"+encodeURIComponent(cp.source),{method:"POST",body:JSON.stringify({user_input:"当前产物：\n"+current+"\n\n修改意见：\n"+feedback+"\n\n请输出修改后的完整内容。",context:null})});
-      generatedResults[stepNum]=data.content||current;bridge.outputs[cp.source]=generatedResults[stepNum];renderBackendOutput(cp.source,generatedResults[stepNum]);showBackendCheckpoint(cp.stopExpert);addRunEvidence("checkpoint","修改稿已返回检查点",feedback,expertLabel(cp.source));showToast("后端专家修改完成，请重新确认");
+      const displaySource=cp.displaySource||cp.source,current=generatedResults[stepNum]||bridge.outputs[displaySource]||"";
+      const data=await jsonFetch("/api/v1/step/"+encodeURIComponent(displaySource),{method:"POST",body:JSON.stringify({user_input:"当前产物：\n"+current+"\n\n修改意见：\n"+feedback+"\n\n请输出修改后的完整内容。",context:null})});
+      generatedResults[stepNum]=data.content||current;bridge.outputs[displaySource]=generatedResults[stepNum];renderBackendOutput(displaySource,generatedResults[stepNum]);showBackendCheckpoint(cp.stopExpert);addRunEvidence("checkpoint","修改稿已返回检查点",feedback,expertLabel(displaySource));showToast("后端专家修改完成，请重新确认");
     }catch(error){showToast("后端修改失败："+error.message,true);showBackendCheckpoint(cp.stopExpert);}
   };
   const localExport=window.exportRunEvidence;

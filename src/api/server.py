@@ -106,9 +106,11 @@ class ResumeRequest(BaseModel):
 
 
 class CheckpointDecisionRequest(BaseModel):
-    """人工检查点决定。edited_content存在时覆盖对应专家产物。"""
+    """人工检查点决定，可分别确认门禁产物和编辑画布展示产物。"""
     expert_id: str
     edited_content: Optional[str] = None
+    artifact_expert_id: Optional[str] = None
+    edited_artifact_content: Optional[str] = None
     stop_at: Optional[str] = None
 
 class ProjectCreate(BaseModel):
@@ -757,11 +759,21 @@ def create_app() -> FastAPI:
         if output is not None and request.edited_content is not None:
             output.content = request.edited_content
             orchestrator._update_context_from_output(request.expert_id, output, state.context_snapshot)
+        artifact_output = None
+        if request.artifact_expert_id:
+            artifact_output = state.step_outputs.get(request.artifact_expert_id)
+            if artifact_output is None:
+                raise HTTPException(status_code=400, detail=f"专家 {request.artifact_expert_id} 尚无可编辑产物")
+            if request.edited_artifact_content is not None:
+                artifact_output.content = request.edited_artifact_content
+                orchestrator._update_context_from_output(request.artifact_expert_id, artifact_output, state.context_snapshot)
         if retry_rejected_step:
             orchestrator.approve_next_gate_result(request.expert_id)
         orchestrator._save_checkpoint()
         _emit(workflow_id, "human_decision", expert_id=request.expert_id,
               edited=output is not None and request.edited_content is not None,
+              artifact_expert_id=request.artifact_expert_id,
+              artifact_edited=artifact_output is not None and request.edited_artifact_content is not None,
               retry=retry_rejected_step, next_stop=request.stop_at)
         return orchestrator, state, retry_rejected_step
 
