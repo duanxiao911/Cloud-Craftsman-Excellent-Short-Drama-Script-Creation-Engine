@@ -288,12 +288,13 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   const EXPERT_STEP={"§10":13,"§0":1,"§2":2,"§8":3,"§1":4,"§3":6,"§4":5,"§5":7,"§12":16,"§11":11,"§6":9,"§7":10,"§9":12,"§13":8,"§14":14,"§16":17,"§15":15};
   const CHECKPOINTS={
     "§3":{step:4,source:"§1",next:"§11",title:"角色设定等待你的决策",message:"角色铸造师已经完成角色设定。确认、修改或直接编辑后，后端才会继续进入剧情结构与分集大纲。"},
-    "§11":{step:6,source:"§12",next:"§7",title:"剧情大纲等待你的决策",message:"结构、分集目标和集纲审核已经完成。确认故事走向后，后端才会继续生成场景与格式化分集剧本。"},
+    // §12 是质量审查报告，不能覆盖 §3/§5 的创作产物。人工确认的应是 §5 分集大纲。
+    "§11":{step:7,source:"§5",next:"§7",title:"剧情大纲等待你的决策",message:"结构、分集目标和集纲审核已经完成。确认故事走向后，后端才会继续生成场景与格式化分集剧本。"},
     "§7":{step:7,source:"§6",next:null,title:"分集剧本等待你的决策",message:"场景设计与格式化剧本已经完成。确认后将进入质量审计、返工和最终签发流程。"}
   };
   const WORKFLOW_ORDER=["§10","§0","§2","§8","§1","§3","§4","§5","§12","§11","§6","§7","§9","§13","§14","§16","§15"];
   function nextPlannedCheckpoint(expertId){const current=WORKFLOW_ORDER.indexOf(expertId);return ["§3","§11","§7"].find(id=>WORKFLOW_ORDER.indexOf(id)>current)||null;}
-  const SOURCE_STEP={"§1":4,"§12":6,"§6":7};
+  const SOURCE_STEP={"§1":4,"§5":7,"§6":7};
   const EXPERT_NAME={"§10":"mission_commander","§0":"soul_catcher","§2":"compliance_guard","§8":"project_configurator","§1":"character_forger","§3":"structure_architect","§4":"dialogue_master","§5":"episode_writer","§12":"episode_outline_reviewer","§11":"scene_craftsman","§6":"format_craftsman","§7":"quality_auditor","§9":"revision_editor","§13":"visual_director","§14":"business_strategist","§16":"script_reviewer","§15":"quality_director"};
   const bridge={available:false,active:false,workflowId:"",lastEventId:0,outputs:{},checkpoint:null,base:"",consuming:false,stylePacks:[],lastConnectError:"",connectWarning:"",capabilitiesVerified:false,connectPromise:null,completedExpertIds:new Set()};
   window.YJBackendBridge=bridge;
@@ -374,13 +375,41 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     panel.className="backend-live-activity is-"+state;
     panel.innerHTML='<div class="backend-live-icon">'+(state==="done"?"✓":state==="error"?"!":"✦")+'</div><div class="backend-live-copy"><div class="backend-live-eyebrow">当前执行步骤 <span>'+progress+' / 17</span></div><strong>'+esc(options?.title||"云匠引擎正在执行")+'</strong><p>'+esc(options?.detail||"正在等待后端返回实时事件")+'</p><div class="backend-live-track"><i style="width:'+Math.round(progress/17*100)+'%"></i></div></div><span class="backend-live-state">'+(state==="done"?"已完成":state==="error"?"异常":"实时运行中")+'</span>';
   }
+  function parseArtifactJSON(content){
+    const raw=String(content||"").trim();
+    const fenced=raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    try{return JSON.parse(fenced?fenced[1]:raw)}catch(error){return null;}
+  }
+  function artifactDisplayContent(expertId,content){
+    const data=parseArtifactJSON(content);if(!data)return content;
+    if(expertId==="§5"&&Array.isArray(data.episodes)){
+      const labels={goal:"本集目标",conflict:"核心冲突",choice:"关键选择",cost:"付出代价",new_information:"新增信息",result:"本集结果",new_hook:"集尾钩子",next_expectation:"下集期待"};
+      return "# 分集故事大纲\n\n"+data.episodes.map((episode,index)=>{
+        const id=episode.episode_id??episode.episode??(index+1);
+        const rows=Object.keys(labels).filter(key=>episode[key]!==undefined&&episode[key]!==null&&String(episode[key]).trim()).map(key=>"- **"+labels[key]+"：** "+String(episode[key]));
+        if(Array.isArray(episode.payoffs)&&episode.payoffs.length)rows.push("- **伏笔回收：** "+episode.payoffs.join("；"));
+        return "## 第 "+id+" 集\n\n"+rows.join("\n");
+      }).join("\n\n");
+    }
+    if(expertId==="§12"&&Array.isArray(data.issues)){
+      const header="# 集纲审核报告\n\n"+(data.summary||"已完成集纲审核")+(data.score!==undefined?"\n\n**评分：** "+data.score:"");
+      if(!data.issues.length)return header+"\n\n- 未发现需要阻断的问题。";
+      return header+"\n\n"+data.issues.map((issue,index)=>"## 问题 "+(index+1)+(issue.episode_id!==undefined?" · 第 "+issue.episode_id+" 集":"")+"\n\n- **诊断：** "+(issue.diagnosis||"未提供")+"\n- **修改建议：** "+(issue.repair||"未提供")).join("\n\n");
+    }
+    if(expertId==="§3"&&(Array.isArray(data.beat_table)||Array.isArray(data.arc_tracking))){
+      const beats=(data.beat_table||[]).map((beat,index)=>"- **转折点 "+(beat.beat_num??index+1)+"：** "+(beat.description||beat.content||JSON.stringify(beat))).join("\n");
+      const arcs=(data.arc_tracking||[]).map(item=>"- "+(item.raw||item.description||JSON.stringify(item))).join("\n");
+      return "# 叙事结构与转折点\n\n## 全剧转折点\n\n"+(beats||"暂无转折点")+"\n\n## 人物弧光\n\n"+(arcs||"暂无弧光记录");
+    }
+    return content;
+  }
   function renderBackendOutput(expertId,content){
     const stepNum=SOURCE_STEP[expertId]||EXPERT_STEP[expertId];if(!stepNum)return;
     const safe=sanitizeLLMOutput(content||"");bridge.outputs[expertId]=safe;generatedResults[stepNum]=safe;
     let card=document.getElementById("step-card-"+stepNum);
     const prompt=stepPrompts[stepNum]||{};const step=stepData[stepNum]||{};
     if(!card){card=document.createElement("div");card.className="output-card";card.id="step-card-"+stepNum;card.innerHTML='<div class="output-header"><div class="output-icon">'+(step.icon||"🔧")+'</div><div><div class="output-title">'+(step.title||expertLabel(expertId))+'</div><div class="output-meta">'+expertLabel(expertId)+' · 后端真实产物</div></div></div><div class="output-body"><div id="stream-content-'+stepNum+'"></div></div>';document.getElementById("outputContainer").appendChild(card);}
-    const target=document.getElementById("stream-content-"+stepNum);if(target)target.innerHTML=renderMarkdown(safe);
+    const target=document.getElementById("stream-content-"+stepNum);if(target)target.innerHTML=renderMarkdown(artifactDisplayContent(expertId,safe));
     syncRuntimePanels({expert_id:expertId},"done");
     bridge.completedExpertIds.add(expertId);bridge.completedExperts=Math.min(17,bridge.completedExpertIds.size);
     renderBackendActivity({state:"done",title:expertLabel(expertId)+"已完成当前步骤",detail:"产物已写入画布，正在等待下一位专家接续执行",progress:bridge.completedExperts});
@@ -399,7 +428,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     const isGatePause=!!event.reason&&!String(event.reason).startsWith("human_checkpoint:");
     const rejectedOutput=isGatePause&&!(event.completed_experts||[]).includes(stopExpert);
     const cp=CHECKPOINTS[stopExpert]||{step:EXPERT_STEP[stopExpert]||Math.max(1,currentStep),source:stopExpert,next:nextPlannedCheckpoint(stopExpert),retry:rejectedOutput,title:stopExpert==="§15"?"终审报告等待你的签发":isGatePause?expertLabel(stopExpert)+"质量门禁待处理":expertLabel(stopExpert)+"需要人工确认",message:event.reason||(rejectedOutput?"质量门禁暂停了工作流。确认后将重新执行当前专家，再继续运行后续专家。":"专家产物已经保留，确认后工作流将继续。")} ;bridge.checkpoint={...cp,stopExpert};
-    const sourceText=bridge.outputs[cp.source]||generatedResults[cp.step]||"";if(sourceText){generatedResults[cp.step]=sourceText;renderBackendOutput(cp.source,sourceText);}
+    const sourceText=bridge.outputs[cp.source]||generatedResults[cp.step]||"";if(sourceText)renderBackendOutput(cp.source,sourceText);
     document.getElementById("action-btns-"+cp.step)?.remove();
     const panel=document.createElement("div");panel.className="step-action-btns checkpoint-dialog";panel.id="action-btns-"+cp.step;
     panel.innerHTML='<div class="checkpoint-bubble"><div class="checkpoint-title">'+cp.title+'</div><div class="checkpoint-message">'+cp.message+'</div><div class="checkpoint-actions"><button class="step-btn step-btn-confirm" onclick="confirmCurrentStep('+cp.step+')">'+(cp.retry?'确认并重试当前步骤':'确认并继续')+'</button>'+(cp.retry?'':'<button class="step-btn step-btn-revise" onclick="showReviseInput('+cp.step+')">提出修改意见</button><button class="step-btn step-btn-edit" onclick="showEditArea('+cp.step+')">直接编辑</button>')+'</div></div>';
