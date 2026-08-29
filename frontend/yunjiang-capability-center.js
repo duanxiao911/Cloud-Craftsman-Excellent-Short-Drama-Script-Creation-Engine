@@ -140,9 +140,14 @@
     const top = document.querySelector('.top-bar');
     const trigger = document.getElementById('agentCenterTrigger');
     if (top && trigger) top.appendChild(trigger);
-    const workspace = document.querySelector('.center-main-area');
     const strip = document.getElementById('agentLiveStrip');
-    if (workspace && strip) workspace.insertBefore(strip, workspace.firstChild);
+    const canvasToolbar = document.querySelector('#canvasCard .canvas-toolbar');
+    const canvasActions = canvasToolbar?.querySelector('.canvas-toolbar-right');
+    const workspace = document.querySelector('.center-main-area');
+    // Keep the live Agent state and the canvas controls in one compact toolbar.
+    // The workspace fallback preserves compatibility if an older page has no canvas toolbar.
+    if (canvasToolbar && strip) canvasToolbar.insertBefore(strip, canvasActions || null);
+    else if (workspace && strip) workspace.insertBefore(strip, workspace.firstChild);
     renderStatic();
     bindTabs();
     refreshAgentCenter();
