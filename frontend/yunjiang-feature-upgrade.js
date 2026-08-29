@@ -396,6 +396,36 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
       if(!data.issues.length)return header+"\n\n- 未发现需要阻断的问题。";
       return header+"\n\n"+data.issues.map((issue,index)=>"## 问题 "+(index+1)+(issue.episode_id!==undefined?" · 第 "+issue.episode_id+" 集":"")+"\n\n- **诊断：** "+(issue.diagnosis||"未提供")+"\n- **修改建议：** "+(issue.repair||"未提供")).join("\n\n");
     }
+    if(expertId==="§11"&&Array.isArray(data.scenes)){
+      const senseLabels={visual:"视觉",audio:"听觉",smell:"嗅觉",touch:"触觉",taste:"味觉"};
+      const scenes=data.scenes.map((scene,index)=>{
+        const sceneId=scene.scene_id||("S"+String(index+1).padStart(2,"0"));
+        const title=scene.name||scene.location||"未命名场景";
+        const timeSpace=[scene.space_type,scene.location,scene.time_of_day].filter(Boolean).join(" · ");
+        const rows=[];
+        if(timeSpace)rows.push("- **时空：** "+timeSpace);
+        if(scene.atmosphere)rows.push("- **氛围：** "+scene.atmosphere);
+        if(scene.narrative_function)rows.push("- **叙事作用：** "+scene.narrative_function);
+        if(scene.emotional_mapping)rows.push("- **情绪映射：** "+scene.emotional_mapping);
+        const senses=scene.senses&&typeof scene.senses==="object"?Object.entries(scene.senses).filter(([,value])=>String(value||"").trim()).map(([key,value])=>(senseLabels[key]||key)+"："+value):[];
+        if(senses.length)rows.push("- **五感设计：** "+senses.join("；"));
+        if(scene.production_notes)rows.push("- **拍摄提示：** "+scene.production_notes);
+        if(scene.transition_out)rows.push("- **转场：** "+scene.transition_out);
+        return "## "+sceneId+" · "+title+"\n\n"+(rows.join("\n")||"- 场景细节待补充");
+      }).join("\n\n");
+      const templates=Array.isArray(data.environment_templates)&&data.environment_templates.length?"\n\n## 环境描写参考\n\n"+data.environment_templates.map(item=>"- "+item).join("\n"):"";
+      return "# 场景设计方案\n\n"+(scenes||"暂未生成有效场景")+templates;
+    }
+    if(expertId==="§16"&&Array.isArray(data.issues)){
+      const decisions={pass:"通过",revise:"修改后通过",reject:"不通过"};
+      const decision=decisions[String(data.decision||"").toLowerCase()]||data.decision||"待判定";
+      const strengths=Array.isArray(data.strengths)&&data.strengths.length?"\n\n## 已确认的优点\n\n"+data.strengths.map(item=>"- "+item).join("\n"):"";
+      const issues=data.issues.length?"\n\n## 待修复问题\n\n"+data.issues.map((issue,index)=>{
+        const node=issue.node_id?" · "+issue.node_id:"";
+        return "### 问题 "+(index+1)+node+"\n\n- **文本证据：** "+(issue.evidence||"未提供")+"\n- **问题诊断：** "+(issue.diagnosis||"未提供")+"\n- **修改方案：** "+(issue.repair||"未提供");
+      }).join("\n\n"):"\n\n## 审核结果\n\n- 未发现需要阻断的问题。";
+      return "# 剧本审核报告\n\n- **综合评分：** "+(data.score??"未评分")+"\n- **审核结论：** "+decision+strengths+issues;
+    }
     if(expertId==="§3"&&(Array.isArray(data.beat_table)||Array.isArray(data.arc_tracking))){
       const beats=(data.beat_table||[]).map((beat,index)=>"- **转折点 "+(beat.beat_num??index+1)+"：** "+(beat.description||beat.content||JSON.stringify(beat))).join("\n");
       const arcs=(data.arc_tracking||[]).map(item=>"- "+(item.raw||item.description||JSON.stringify(item))).join("\n");

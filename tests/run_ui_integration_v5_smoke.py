@@ -14,6 +14,12 @@ from src.workflow.orchestrator import Orchestrator, WorkflowStatus
 
 
 def main() -> None:
+    frontend_source = (PROJECT_ROOT / "frontend" / "yunjiang-feature-upgrade.js").read_text(encoding="utf-8")
+    assert 'expertId==="§11"&&Array.isArray(data.scenes)' in frontend_source
+    assert 'return "# 场景设计方案' in frontend_source
+    assert 'expertId==="§16"&&Array.isArray(data.issues)' in frontend_source
+    assert 'return "# 剧本审核报告' in frontend_source
+
     with TemporaryDirectory() as workspace:
         orchestrator = Orchestrator(
             use_full_sequence=True,
