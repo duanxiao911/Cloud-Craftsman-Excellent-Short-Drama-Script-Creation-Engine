@@ -1,0 +1,200 @@
+/*
+ * Yunjiang narrative motion system
+ * Disney's 12 principles translated into restrained product micro-interactions.
+ * Motion is reserved for state changes and actions; long-form reading stays still.
+ */
+:root {
+  --yj-motion-snap: cubic-bezier(.2,.9,.25,1.25);
+  --yj-motion-soft: cubic-bezier(.22,.8,.28,1);
+  --yj-motion-exit: cubic-bezier(.4,0,1,1);
+  --yj-motion-fast: 150ms;
+  --yj-motion-base: 280ms;
+  --yj-motion-scene: 520ms;
+}
+
+/* Anticipation + squash and stretch: controls prepare, compress, then release. */
+button:not(:disabled),
+.style-pack-btn,
+.idea-chip,
+.genre-tag,
+.expert-item,
+.sub-node-card {
+  transform-origin: 50% 60%;
+  transition:
+    transform var(--yj-motion-fast) var(--yj-motion-soft),
+    box-shadow var(--yj-motion-base) var(--yj-motion-soft),
+    border-color var(--yj-motion-base) ease,
+    background-color var(--yj-motion-base) ease;
+}
+button:not(:disabled):hover,
+.style-pack-btn:hover,
+.idea-chip:hover,
+.genre-tag:hover {
+  transform: translateY(-2px) scale(1.012);
+}
+button:not(:disabled):active,
+.style-pack-btn:active,
+.idea-chip:active,
+.genre-tag:active {
+  transform: translateY(1px) scale(.965, .94);
+  transition-duration: 70ms;
+}
+
+/* Arcs + follow-through: icon movement trails the parent action. */
+.canvas-expand-btn span:first-child,
+.agent-center-trigger .act-live-dot,
+.quick-demo-btn span,
+.output-icon,
+.backend-live-icon,
+.als-orb {
+  transform-origin: 50% 65%;
+  transition: transform 360ms var(--yj-motion-snap), filter 280ms ease;
+}
+.canvas-expand-btn:hover span:first-child { transform: translate(1px,-1px) rotate(8deg) scale(1.12); }
+.agent-center-trigger:hover .act-live-dot { transform: translateY(-2px) scale(1.18); }
+.output-card:hover .output-icon { transform: translateY(-2px) rotate(-3deg) scale(1.06); }
+
+/* Staging: new work enters as one readable scene, without animating its body text. */
+.output-card {
+  animation: yj-scene-enter var(--yj-motion-scene) var(--yj-motion-soft) both;
+  transform-origin: 50% 0;
+}
+.output-card:nth-of-type(2n) { animation-delay: 35ms; }
+.step-action-btns.checkpoint-dialog,
+.step-action-btns:not(.checkpoint-dialog) .checkpoint-bubble {
+  animation: yj-checkpoint-enter 560ms var(--yj-motion-snap) both !important;
+  transform-origin: 50% 90%;
+}
+.backend-live-activity {
+  animation: yj-status-arrive 420ms var(--yj-motion-soft) both;
+}
+
+/* Slow in/out + timing: progress moves decisively, then settles. */
+.als-progress span,
+.backend-live-track i,
+.sci-bar-fill {
+  position: relative;
+  transition: width 720ms cubic-bezier(.16,.84,.24,1) !important;
+}
+.als-progress span::after,
+.backend-live-track i::after {
+  content: "";
+  position: absolute;
+  inset: 0 -18px 0 auto;
+  width: 34px;
+  background: linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent);
+  transform: skewX(-18deg);
+  animation: yj-progress-follow 900ms ease-out both;
+}
+
+/* Secondary action: only the current actor breathes; completed actors settle. */
+.expert-item[data-runtime-state="working"],
+.execution-list article.working {
+  animation: yj-actor-focus 1.8s ease-in-out infinite;
+}
+.expert-item[data-runtime-state="working"] .expert-avatar-sm,
+.execution-list article.working .el-dot {
+  animation: yj-actor-orbit 1.6s ease-in-out infinite !important;
+}
+.expert-item[data-runtime-state="done"],
+.execution-list article.done {
+  animation: yj-complete-settle 440ms var(--yj-motion-snap) both;
+}
+
+/* Exaggeration, used once at decision points so hierarchy remains clear. */
+.checkpoint-row.waiting,
+.agent-live-strip.waiting .als-orb {
+  animation: yj-decision-call 2.4s ease-in-out infinite;
+}
+.checkpoint-row.done > i,
+.backend-live-activity.is-done .backend-live-icon {
+  animation: yj-success-pop 480ms var(--yj-motion-snap) both;
+}
+
+/* Solid drawing + appeal: elevation follows depth, not decoration. */
+.act-capability-grid button:hover,
+.scene-card-grid article:hover,
+.pack-card-grid > button:hover,
+.checkpoint-row:hover,
+.execution-list article:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(50,48,80,.09), 0 2px 5px rgba(50,48,80,.05);
+}
+.agent-center-mask.open .agent-center {
+  animation: yj-drawer-settle 440ms var(--yj-motion-soft) both;
+}
+.act-panel.active > * {
+  animation: yj-panel-item 360ms var(--yj-motion-soft) both;
+}
+.act-panel.active > *:nth-child(2) { animation-delay: 35ms; }
+.act-panel.active > *:nth-child(3) { animation-delay: 70ms; }
+.act-panel.active > *:nth-child(4) { animation-delay: 105ms; }
+
+@keyframes yj-scene-enter {
+  0% { opacity: 0; transform: translateY(18px) scale(.985,.97); filter: blur(2px); }
+  68% { opacity: 1; transform: translateY(-2px) scale(1.002,1.006); filter: blur(0); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+@keyframes yj-checkpoint-enter {
+  0% { opacity: 0; transform: translateY(22px) scale(.97,.92); }
+  62% { opacity: 1; transform: translateY(-4px) scale(1.008,1.02); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes yj-status-arrive {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes yj-progress-follow {
+  0% { opacity: 0; transform: translateX(-45px) skewX(-18deg); }
+  35% { opacity: .85; }
+  100% { opacity: 0; transform: translateX(22px) skewX(-18deg); }
+}
+@keyframes yj-actor-focus {
+  0%,100% { transform: translateY(0); box-shadow: 0 0 0 3px rgba(124,92,255,.08),0 8px 22px rgba(90,70,180,.08); }
+  50% { transform: translateY(-1px); box-shadow: 0 0 0 4px rgba(124,92,255,.12),0 12px 28px rgba(90,70,180,.13); }
+}
+@keyframes yj-actor-orbit {
+  0%,100% { transform: translate(0,0) scale(.96); }
+  35% { transform: translate(1px,-2px) scale(1.07); }
+  65% { transform: translate(-1px,-1px) scale(1.02); }
+}
+@keyframes yj-complete-settle {
+  0% { transform: scale(.985); }
+  58% { transform: scale(1.012); }
+  100% { transform: none; }
+}
+@keyframes yj-decision-call {
+  0%,100% { transform: translateY(0); box-shadow: 0 8px 22px rgba(215,133,56,.08); }
+  50% { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(215,133,56,.15); }
+}
+@keyframes yj-success-pop {
+  0% { transform: scale(.72) rotate(-8deg); }
+  65% { transform: scale(1.12) rotate(2deg); }
+  100% { transform: none; }
+}
+@keyframes yj-drawer-settle {
+  0% { opacity: .6; transform: translateX(38px) scaleX(.985); }
+  72% { opacity: 1; transform: translateX(-2px) scaleX(1.002); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes yj-panel-item {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Accessibility: preserve state communication without spatial movement. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .output-card { animation-duration: 360ms; }
+  .act-panel.active > * { animation-delay: 0ms !important; }
+  .expert-item[data-runtime-state="working"] { animation-name: none; }
+}

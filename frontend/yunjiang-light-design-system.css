@@ -1,0 +1,262 @@
+/* Yunjiang scoped light design system. No reset and no unscoped component rules. */
+:root {
+  --yj-light-bg-page:#f8fafc;
+  --yj-light-bg-elevated:#fff;
+  --yj-light-bg-subtle:#f1f5f9;
+  --yj-light-bg-muted:#e2e8f0;
+  --yj-light-border:#e2e8f0;
+  --yj-light-border-strong:#cbd5e1;
+  --yj-light-focus:#4f46e5;
+  --yj-light-text:#0f172a;
+  --yj-light-text-secondary:#475569;
+  --yj-light-text-muted:#94a3b8;
+  --yj-light-primary:#4f46e5;
+  --yj-light-primary-hover:#4338ca;
+  --yj-light-primary-active:#3730a3;
+  --yj-light-primary-soft:#eef2ff;
+  --yj-light-primary-muted:#c7d2fe;
+  --yj-light-success:#059669;
+  --yj-light-success-soft:#ecfdf5;
+  --yj-light-warning:#d97706;
+  --yj-light-warning-soft:#fffbeb;
+  --yj-light-danger:#dc2626;
+  --yj-light-danger-soft:#fef2f2;
+  --yj-light-shadow-xs:0 1px 2px rgba(15,23,42,.04);
+  --yj-light-shadow-sm:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
+  --yj-light-shadow-md:0 4px 8px -2px rgba(15,23,42,.07),0 2px 4px -2px rgba(15,23,42,.04);
+  --yj-light-radius-sm:6px;
+  --yj-light-radius-md:8px;
+  --yj-light-radius-lg:12px;
+  --yj-light-radius-xl:16px;
+  --yj-light-font:"Inter","PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+}
+
+/* Token bridge: only active in light mode, preserving existing dark theme values. */
+html[data-theme="light"] {
+  --yj-brand:var(--yj-light-primary);
+  --yj-brand-2:#6366f1;
+  --yj-line:var(--yj-light-border);
+  --yj-muted:var(--yj-light-text-muted);
+}
+html[data-theme="light"] body {
+  color:var(--yj-light-text);
+  background-color:var(--yj-light-bg-page);
+  font-family:var(--yj-light-font);
+}
+
+/* Portal navigation */
+html[data-theme="light"] body .yj-project-navbar {
+  background:rgba(255,255,255,.96);
+  border-bottom:1px solid var(--yj-light-border);
+  box-shadow:var(--yj-light-shadow-xs);
+  backdrop-filter:saturate(1.15) blur(14px);
+}
+html[data-theme="light"] body .yj-project-navbar-nav a {
+  color:var(--yj-light-text-secondary);
+  font-weight:500;
+}
+html[data-theme="light"] body .yj-project-navbar-nav a:hover,
+html[data-theme="light"] body .yj-project-navbar-nav a.active {
+  color:var(--yj-light-text);
+  background:var(--yj-light-primary-soft);
+}
+
+/* Studio portal: quiet hierarchy, consistent three-card system. */
+html[data-theme="light"] body .yj-project-home.yj-studio-portal {
+  max-width:1200px;
+  color:var(--yj-light-text);
+}
+html[data-theme="light"] body .yj-project-home-badge {
+  color:var(--yj-light-primary);
+  background:var(--yj-light-primary-soft);
+  border:1px solid rgba(79,70,229,.1);
+  box-shadow:none;
+}
+html[data-theme="light"] body .yj-studio-portal-head h1,
+html[data-theme="light"] body .yj-project-home h1 {
+  color:var(--yj-light-text);
+  font-weight:600;
+  letter-spacing:-.025em;
+}
+html[data-theme="light"] body .yj-studio-portal-head p,
+html[data-theme="light"] body .yj-project-home .yj-subtitle {
+  color:var(--yj-light-text-secondary);
+}
+html[data-theme="light"] body .yj-workbench-grid {
+  gap:20px;
+}
+html[data-theme="light"] body .yj-workbench-card {
+  min-height:300px;
+  padding:24px;
+  border:1px solid var(--yj-light-border);
+  border-radius:var(--yj-light-radius-lg);
+  background:var(--yj-light-bg-elevated);
+  box-shadow:var(--yj-light-shadow-xs);
+  backdrop-filter:none;
+}
+html[data-theme="light"] body .yj-workbench-card:hover {
+  border-color:var(--yj-light-border-strong);
+  box-shadow:var(--yj-light-shadow-md);
+}
+html[data-theme="light"] body .yj-workbench-card::before {
+  opacity:.32;
+}
+html[data-theme="light"] body .yj-workbench-card h2 {
+  color:var(--yj-light-text);
+  font-size:22px;
+  font-weight:600;
+}
+html[data-theme="light"] body .yj-workbench-card>p {
+  color:var(--yj-light-text-secondary);
+  font-size:13px;
+}
+html[data-theme="light"] body .yj-workbench-flow span {
+  color:var(--yj-light-text-secondary);
+  background:var(--yj-light-bg-subtle);
+  border-radius:var(--yj-light-radius-md);
+}
+
+/* Utility and demo cards */
+html[data-theme="light"] body .yj-portal-utility,
+html[data-theme="light"] body .yj-demo-grid {
+  gap:16px;
+}
+html[data-theme="light"] body .yj-portal-utility>button,
+html[data-theme="light"] body .yj-demo-card {
+  border:1px solid var(--yj-light-border);
+  border-radius:var(--yj-light-radius-lg);
+  background:var(--yj-light-bg-elevated);
+  box-shadow:var(--yj-light-shadow-xs);
+  backdrop-filter:none;
+}
+html[data-theme="light"] body .yj-portal-utility>button:hover,
+html[data-theme="light"] body .yj-demo-card:hover {
+  border-color:var(--yj-light-border-strong);
+  box-shadow:var(--yj-light-shadow-sm);
+}
+html[data-theme="light"] body .yj-portal-utility b,
+html[data-theme="light"] body .yj-demo-card h3 {
+  color:var(--yj-light-text);
+  font-weight:600;
+}
+html[data-theme="light"] body .yj-portal-utility small,
+html[data-theme="light"] body .yj-demo-card p,
+html[data-theme="light"] body .yj-demo-card ul {
+  color:var(--yj-light-text-muted);
+}
+
+/* Namespaced buttons; no global button reset. */
+html[data-theme="light"] body .yj-home-btn,
+html[data-theme="light"] body .step-btn,
+html[data-theme="light"] body .canvas-expand-btn,
+html[data-theme="light"] body .agent-live-strip>button,
+html[data-theme="light"] body .act-ghost-btn,
+html[data-theme="light"] body .ci-actions button {
+  min-height:36px;
+  border-radius:var(--yj-light-radius-md);
+  font-family:var(--yj-light-font);
+  font-weight:500;
+}
+html[data-theme="light"] body .yj-home-btn-primary,
+html[data-theme="light"] body .step-btn-confirm,
+html[data-theme="light"] body .ci-actions button:first-child {
+  color:#fff;
+  border-color:var(--yj-light-primary);
+  background:var(--yj-light-primary);
+  box-shadow:none;
+}
+html[data-theme="light"] body .yj-home-btn-primary:hover,
+html[data-theme="light"] body .step-btn-confirm:hover,
+html[data-theme="light"] body .ci-actions button:first-child:hover {
+  border-color:var(--yj-light-primary-hover);
+  background:var(--yj-light-primary-hover);
+}
+html[data-theme="light"] body .yj-home-btn-ghost,
+html[data-theme="light"] body .step-btn-revise,
+html[data-theme="light"] body .step-btn-edit,
+html[data-theme="light"] body .canvas-expand-btn,
+html[data-theme="light"] body .agent-live-strip>button,
+html[data-theme="light"] body .act-ghost-btn {
+  color:var(--yj-light-text-secondary);
+  border:1px solid var(--yj-light-border);
+  background:transparent;
+  box-shadow:none;
+}
+html[data-theme="light"] body .yj-home-btn-ghost:hover,
+html[data-theme="light"] body .step-btn-revise:hover,
+html[data-theme="light"] body .step-btn-edit:hover,
+html[data-theme="light"] body .canvas-expand-btn:hover,
+html[data-theme="light"] body .agent-live-strip>button:hover,
+html[data-theme="light"] body .act-ghost-btn:hover {
+  color:var(--yj-light-text);
+  border-color:var(--yj-light-border-strong);
+  background:var(--yj-light-bg-subtle);
+}
+
+/* Workbench surfaces and form controls. Long-form output lists remain untouched. */
+html[data-theme="light"] body .content-display-card.canvas-card,
+html[data-theme="light"] body .sidebar-card,
+html[data-theme="light"] body .process-section-card,
+html[data-theme="light"] body .broadcast-section-card,
+html[data-theme="light"] body .modern-input-card {
+  border-color:var(--yj-light-border);
+  background:var(--yj-light-bg-elevated);
+  box-shadow:var(--yj-light-shadow-sm);
+}
+html[data-theme="light"] body .canvas-toolbar {
+  border-bottom-color:var(--yj-light-border);
+}
+html[data-theme="light"] body .canvas-title,
+html[data-theme="light"] body .output-title {
+  color:var(--yj-light-text);
+}
+html[data-theme="light"] body .output-meta,
+html[data-theme="light"] body .als-copy small {
+  color:var(--yj-light-text-muted);
+}
+html[data-theme="light"] body :where(.modern-input-card,.chat-input-wrapper,.input-box) input,
+html[data-theme="light"] body :where(.modern-input-card,.chat-input-wrapper,.input-box) textarea,
+html[data-theme="light"] body :where(.modern-input-card,.chat-input-wrapper,.input-box) select,
+html[data-theme="light"] body .yj-project-modal input,
+html[data-theme="light"] body .yj-project-modal textarea,
+html[data-theme="light"] body .yj-project-modal select {
+  color:var(--yj-light-text);
+  border:1px solid var(--yj-light-border);
+  border-radius:var(--yj-light-radius-md);
+  background:var(--yj-light-bg-elevated);
+  font-family:var(--yj-light-font);
+}
+html[data-theme="light"] body :where(.modern-input-card,.chat-input-wrapper,.input-box) input:focus,
+html[data-theme="light"] body :where(.modern-input-card,.chat-input-wrapper,.input-box) textarea:focus,
+html[data-theme="light"] body :where(.modern-input-card,.chat-input-wrapper,.input-box) select:focus,
+html[data-theme="light"] body .yj-project-modal :is(input,textarea,select):focus {
+  outline:none;
+  border-color:var(--yj-light-focus);
+  box-shadow:0 0 0 3px var(--yj-light-primary-soft);
+}
+
+/* Keyboard focus is visible without changing pointer interactions. */
+html[data-theme="light"] body :where(button,a,[role="button"],input,textarea,select):focus-visible {
+  outline:2px solid var(--yj-light-focus);
+  outline-offset:2px;
+}
+
+/* Semantic states */
+html[data-theme="light"] body .checkpoint-row.done,
+html[data-theme="light"] body .backend-live-activity.is-done {
+  border-color:rgba(5,150,105,.18);
+  background:var(--yj-light-success-soft);
+}
+html[data-theme="light"] body .checkpoint-row.waiting,
+html[data-theme="light"] body .agent-live-strip.waiting {
+  border-color:rgba(217,119,6,.2);
+  background:var(--yj-light-warning-soft);
+}
+
+@media(max-width:1024px) {
+  html[data-theme="light"] body .yj-workbench-grid { grid-template-columns:1fr; }
+}
+@media(max-width:768px) {
+  html[data-theme="light"] body .yj-project-home.yj-studio-portal { padding-left:16px; padding-right:16px; }
+  html[data-theme="light"] body .yj-workbench-card { min-height:0; padding:20px; }
+}
