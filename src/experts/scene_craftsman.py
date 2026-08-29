@@ -7,6 +7,8 @@
 基于WAVE2开发计划 + 精品短剧场景设计方法论
 """
 
+import json
+import re
 from typing import List, Dict, Optional
 from .base import ExpertBase, ExpertContext, ExpertOutput
 
@@ -70,45 +72,40 @@ class SceneCraftsmanExpert(ExpertBase):
 - 文化冲突场景：传统空间vs现代空间的对比
 - 文化符号自然融入：不刻意标注，让符号成为生活的一部分
 
-【输出格式】
-```
-【场景设计方案】
-
-项目名称：[项目名称]
-场景总数：[X]个
-
-【场景清单】
-| 场号 | 场景名称 | 空间类型 | 氛围基调 | 叙事功能 |
-| 1 | [名称] | [内/外+地点] | [情绪关键词] | [功能] |
-| ... | ... | ... | ... | ... |
-
-【重点场景详细设计】（选取5-8个关键场景）
-
-### 场景X：[场景名称]
-- 空间：[具体空间描述]
-- 氛围：[基调+焦点+反差]
-- 五感设计：
-  * 视觉：[光线+色彩+关键物体]
-  * 听觉：[环境音+标志性声音]
-  * 嗅觉：[气味标记]
-  * 触觉：[质感+温度]
-  * 味觉：[如有]
-- 情绪映射：[环境如何映射人物内心]
-- 叙事功能：[这个场景推动什么]
-- 关键细节：[2-3个必须出现的细节]
-
-【场景转换设计】
-[列出关键场景之间的转换方式：硬切/环境过渡/时间跳切]
-
-【环境描写模板】
-[提供3-5段可直接使用的场景描写段落]
-```
+【输出协议】
+只输出一个合法 JSON 对象，不要使用 Markdown 代码围栏，不要附加解释。结构如下：
+{
+  "scenes": [
+    {
+      "scene_id": "E01-S01",
+      "episode_id": 1,
+      "name": "场景名称",
+      "location": "具体地点",
+      "space_type": "INT或EXT",
+      "time_of_day": "日或夜",
+      "atmosphere": "基调、焦点与反差",
+      "narrative_function": "该场景推动的情节",
+      "senses": {
+        "visual": "视觉设计",
+        "audio": "听觉设计",
+        "smell": "嗅觉设计",
+        "touch": "触觉设计",
+        "taste": "没有则为空字符串"
+      },
+      "emotional_mapping": "环境如何映射人物内心",
+      "production_notes": "可拍性与关键细节",
+      "transition_out": "进入下一场的转换方式"
+    }
+  ],
+  "environment_templates": ["3-5段可直接使用、每段不超过3行的环境描写"]
+}
 
 铁律：
 - 场景不是装饰，每个场景必须服务叙事
 - 五感描写不是堆砌，选最能传递情绪的3种即可
 - 文化场景不能变成旅游宣传片，文化是叙事动力
 - 环境描写不超过3行（短剧节奏快，不能长篇写景）
+- scenes 必须是非空数组；重点场景必须至少填写3种感官，普通场景至少填写2种
 """
 
     def get_user_prompt(self, context: ExpertContext, **kwargs) -> str:
@@ -151,11 +148,42 @@ class SceneCraftsmanExpert(ExpertBase):
 - 如涉及非遗/文化元素，场景要体现文化质感
 - 环境描写保持简洁（每处不超过3行）
 - 场景空间变化要暗示人物内心和情节走向
+- 严格按系统指定的 JSON 协议输出，不要输出 Markdown 或额外说明
 """
 
         return prompt
 
     def validate_output(self, output: str) -> tuple[bool, List[str]]:
+        candidate = output.strip()
+        fenced = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", candidate)
+        if fenced:
+            candidate = fenced.group(1)
+        if candidate.startswith(("{", "[")):
+            try:
+                artifact = json.loads(candidate)
+            except json.JSONDecodeError as exc:
+                return False, [f"场景 JSON 无效或被截断: {exc}"]
+            scenes = artifact.get("scenes") if isinstance(artifact, dict) else None
+            if not isinstance(scenes, list) or not scenes:
+                return False, ["scenes 必须是非空数组"]
+            errors = []
+            required = ("scene_id", "name", "location", "atmosphere", "narrative_function")
+            for index, scene in enumerate(scenes):
+                if not isinstance(scene, dict):
+                    errors.append(f"第{index + 1}个场景必须是对象")
+                    continue
+                missing = [key for key in required if not str(scene.get(key, "")).strip()]
+                if missing:
+                    errors.append(f"场景{scene.get('scene_id', index + 1)}缺少字段: {', '.join(missing)}")
+                senses = scene.get("senses", {})
+                sense_count = sum(
+                    1 for value in senses.values() if str(value).strip()
+                ) if isinstance(senses, dict) else 0
+                if sense_count < 2:
+                    errors.append(f"场景{scene.get('scene_id', index + 1)}感官设计不足2种")
+            return len(errors) == 0, errors
+
+        # 兼容已经保存的旧版 Markdown 产物；新请求统一使用 JSON。
         errors = []
         # 必须包含场景清单
         if "场景清单" not in output and "场景" not in output:
@@ -172,17 +200,17 @@ class SceneCraftsmanExpert(ExpertBase):
 
     def parse_scene_list(self, output: str) -> List[Dict]:
         """解析场景清单"""
-        import re
         scenes = []
         # 查找场景表格行
-        table_rows = re.findall(r'\|\s*(\d+)\s*\|(.+)\|', output)
+        table_rows = re.findall(r'\|\s*(?:场景)?\s*([A-Za-z0-9_-]+)\s*\|(.+)\|', output)
         for row in table_rows:
             parts = [p.strip() for p in row[1].split('|')]
             scenes.append({
-                "scene_num": int(row[0]),
+                "scene_id": row[0],
                 "name": parts[0] if parts else "",
                 "space_type": parts[1] if len(parts) > 1 else "",
                 "atmosphere": parts[2] if len(parts) > 2 else "",
+                "narrative_function": parts[3] if len(parts) > 3 else "",
             })
         return scenes
 

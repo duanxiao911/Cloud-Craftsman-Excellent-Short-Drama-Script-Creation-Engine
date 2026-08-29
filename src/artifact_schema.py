@@ -27,4 +27,9 @@ def validate_artifact(expert_id: str, artifact: Dict[str, Any]) -> List[str]:
         return [f"未登记专家Schema: {expert_id}"]
     if not isinstance(artifact, dict):
         return ["artifact 必须是对象"]
-    return [f"artifact 缺少字段: {key}" for key in required if key not in artifact]
+    errors = [f"artifact 缺少字段: {key}" for key in required if key not in artifact]
+    if expert_id == "§11" and "scenes" in artifact:
+        scenes = artifact["scenes"]
+        if not isinstance(scenes, list) or not scenes:
+            errors.append("artifact.scenes 必须是非空数组")
+    return errors
