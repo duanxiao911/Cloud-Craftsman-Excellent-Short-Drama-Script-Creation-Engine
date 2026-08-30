@@ -1018,8 +1018,11 @@
         background: #fff;
       }
       /* 首页只保留内容与证据入口，避免两个角色挂件争夺视觉焦点 */
-      body:has(#yj-page-home.yj-page-active) .zhiliu-assistant-widget { display:none !important; }
-      body:has(#yj-page-home.yj-page-active) .evidence-trigger {
+      body.yj-portal-home .zhiliu-assistant-widget,
+      body.yj-portal-home #zhiliuWidget,
+      body.yj-portal-home #assistantDock,
+      body.yj-portal-home #assistantDockText { display:none !important; }
+      body.yj-portal-home .evidence-trigger {
         right: 28px;
         bottom: 24px;
         box-shadow: 0 12px 30px rgba(45,49,88,.12);
@@ -1514,6 +1517,7 @@
   // ========== 视图切换 ==========
   function switchView(view) {
     currentView = view;
+    document.body.classList.toggle('yj-portal-home', view === 'home');
     document.querySelectorAll('.yj-project-page').forEach(function(p) { p.classList.remove('yj-page-active'); });
     document.querySelectorAll('.yj-project-navbar-nav a').forEach(function(a) {
       a.classList.remove('yj-nav-active');
