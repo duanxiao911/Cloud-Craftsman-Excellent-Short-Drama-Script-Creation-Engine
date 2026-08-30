@@ -852,6 +852,205 @@
       [data-theme="dark"] .yj-knowledge-bind > div { background: rgba(15,23,42,.46); border-color: rgba(148,163,184,.14); }
       [data-theme="dark"] .yj-knowledge-bind b { color: #cbd5e1; }
 
+      /* ========== 2026 首页精修：安静、清晰、产品化 ========== */
+      #yj-page-home {
+        background:
+          radial-gradient(circle at 18% 4%, rgba(109,94,252,.075), transparent 28%),
+          radial-gradient(circle at 82% 10%, rgba(46,142,255,.055), transparent 25%),
+          linear-gradient(180deg, #fbfcff 0%, #f7f9fc 64%, #fbfcfe 100%);
+      }
+      .yj-project-navbar {
+        height: 64px;
+        padding: 0 clamp(20px, 2.2vw, 42px);
+        background: rgba(255,255,255,.9);
+        border-bottom-color: rgba(15,23,42,.07);
+        box-shadow: 0 1px 0 rgba(15,23,42,.025);
+      }
+      .yj-project-navbar-brand {
+        min-width: 122px;
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -.35px;
+      }
+      .yj-project-navbar-nav { gap: 2px; }
+      .yj-project-navbar-nav a {
+        padding: 8px 11px;
+        border-radius: 9px;
+        color: #5c6678;
+        font-size: 12px;
+        font-weight: 560;
+      }
+      .yj-project-navbar-nav a.yj-nav-active {
+        color: #6557d9;
+        background: #f0edff;
+        box-shadow: inset 0 0 0 1px rgba(101,87,217,.05);
+      }
+      .yj-project-account-btn,.yj-project-new-btn {
+        min-height: 38px;
+        border-radius: 11px;
+      }
+      .yj-project-new-btn {
+        padding-inline: 17px;
+        background: #6557e8;
+        box-shadow: 0 6px 16px rgba(101,87,232,.18);
+      }
+      .yj-project-page { padding-top: 64px; }
+      .yj-project-home.yj-studio-portal {
+        max-width: 1240px;
+        padding: clamp(44px, 5.2vh, 68px) 28px 64px;
+      }
+      .yj-studio-portal-head {
+        max-width: 820px;
+        margin-bottom: 38px;
+      }
+      .yj-project-home-badge {
+        margin-bottom: 18px;
+        padding: 6px 13px;
+        border: 1px solid rgba(101,87,217,.10);
+        background: rgba(244,242,255,.8);
+        color: #7568df;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 1.25px;
+      }
+      .yj-studio-portal-head h1 {
+        margin-bottom: 13px;
+        font-size: clamp(38px, 4vw, 54px);
+        font-weight: 780;
+        letter-spacing: -2.4px;
+        background: linear-gradient(105deg,#172033 8%,#3d465b 62%,#6658d4 100%);
+        -webkit-background-clip:text;
+        background-clip:text;
+      }
+      .yj-studio-portal-head .yj-subtitle {
+        margin-bottom: 10px;
+        color: #68758a;
+        font-size: 18px;
+        letter-spacing: -.2px;
+      }
+      .yj-studio-portal-head p:last-child {
+        color: #9aa5b7;
+        font-size: 11px;
+        letter-spacing: .18px;
+      }
+      .yj-workbench-grid {
+        grid-template-columns: repeat(3,minmax(0,1fr));
+        gap: 16px;
+        margin: 0 0 16px;
+      }
+      .yj-workbench-card {
+        min-height: 326px;
+        padding: 28px;
+        border: 1px solid rgba(15,23,42,.075);
+        border-radius: 20px;
+        background: rgba(255,255,255,.88);
+        box-shadow: 0 14px 38px rgba(35,45,72,.065), inset 0 1px rgba(255,255,255,.9);
+        backdrop-filter: blur(18px) saturate(1.08);
+        transition: transform .28s cubic-bezier(.2,.8,.2,1), border-color .28s ease, box-shadow .28s ease;
+      }
+      .yj-workbench-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(101,87,217,.16);
+        box-shadow: 0 22px 48px rgba(35,45,72,.11), inset 0 1px #fff;
+      }
+      .yj-workbench-card:before {
+        width: 190px;
+        height: 190px;
+        right: -72px;
+        top: -88px;
+        opacity: .42;
+      }
+      .yj-workbench-eyebrow {
+        font-size: 9px;
+        letter-spacing: 1.45px;
+      }
+      .yj-workbench-number {
+        min-width: 28px;
+        padding: 5px 7px;
+        text-align: center;
+        border-radius: 8px;
+      }
+      .yj-workbench-card h2 {
+        margin: 22px 0 10px;
+        color: #182132;
+        font-size: clamp(20px,1.65vw,25px);
+        letter-spacing: -.65px;
+      }
+      .yj-workbench-card>p {
+        min-height: 62px;
+        color: #718096;
+        font-size: 11px;
+        line-height: 1.8;
+      }
+      .yj-workbench-flow { gap: 4px; margin: 18px 0 22px; }
+      .yj-workbench-flow span {
+        padding: 6px 8px;
+        border: 1px solid rgba(15,23,42,.035);
+        background: #f7f8fb;
+        color: #687386;
+      }
+      .yj-workbench-actions { margin-top: auto; }
+      .yj-workbench-actions .yj-home-btn {
+        min-height: 39px;
+        padding: 9px 15px;
+        border-radius: 10px;
+        font-size: 11px;
+        box-shadow: none;
+      }
+      .yj-adaptation-modes { margin: 15px 0 20px; }
+      .yj-adapt-mode {
+        min-height: 55px;
+        border-color: rgba(33,132,108,.12);
+        background: #f6fbf9;
+      }
+      .yj-portal-utility { gap: 10px; }
+      .yj-portal-utility button {
+        min-height: 64px;
+        padding: 14px 17px;
+        border-color: rgba(15,23,42,.07);
+        border-radius: 14px;
+        background: rgba(255,255,255,.76);
+        transition: transform .2s ease,border-color .2s ease,background .2s ease;
+      }
+      .yj-portal-utility button:hover {
+        transform: translateY(-2px);
+        border-color: rgba(101,87,217,.16);
+        background: #fff;
+      }
+      /* 首页只保留内容与证据入口，避免两个角色挂件争夺视觉焦点 */
+      body:has(#yj-page-home.yj-page-active) .zhiliu-assistant-widget { display:none !important; }
+      body:has(#yj-page-home.yj-page-active) .evidence-trigger {
+        right: 28px;
+        bottom: 24px;
+        box-shadow: 0 12px 30px rgba(45,49,88,.12);
+      }
+      @media(max-width:1500px){
+        .yj-project-navbar-nav a{padding-inline:8px;font-size:11px}
+        .yj-project-navbar-nav a[data-view="achievements"],.yj-project-navbar-nav a[data-view="settings"]{display:none}
+      }
+      @media(max-width:1180px){
+        .yj-project-navbar-nav a[data-view="quickdemo"],.yj-project-navbar-nav a[data-view="knowledge"]{display:none}
+        .yj-workbench-grid{grid-template-columns:1fr 1fr}
+        .yj-workbench-card.global{grid-column:1/-1;min-height:270px}
+      }
+      @media(max-width:760px){
+        .yj-project-navbar{height:58px;padding:0 14px}
+        .yj-project-navbar-brand{min-width:auto}
+        .yj-project-navbar-nav{display:none}
+        .yj-project-account-btn{display:none}
+        .yj-project-page{padding-top:58px}
+        .yj-project-home.yj-studio-portal{padding:36px 16px 48px}
+        .yj-studio-portal-head h1{font-size:34px;letter-spacing:-1.5px}
+        .yj-studio-portal-head .yj-subtitle{font-size:15px;line-height:1.6}
+        .yj-workbench-grid{grid-template-columns:1fr}
+        .yj-workbench-card.global{grid-column:auto}
+        .yj-portal-utility{grid-template-columns:1fr}
+      }
+      @media(prefers-reduced-motion:reduce){
+        .yj-workbench-card,.yj-portal-utility button,.yj-home-btn{transition:none!important}
+        .yj-workbench-card:hover,.yj-portal-utility button:hover{transform:none!important}
+      }
+
       /* ========== 响应式 ========== */
       @media (max-width: 640px) {
         .yj-project-navbar { padding: 0 14px; height: 50px; }
