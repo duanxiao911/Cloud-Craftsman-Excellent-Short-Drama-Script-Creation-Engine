@@ -1054,6 +1054,27 @@
         .yj-workbench-card:hover,.yj-portal-utility button:hover{transform:none!important}
       }
 
+      /* ========== 独立工作台二级入口 ========== */
+      .yj-workbench-entry{
+        min-height:calc(100vh - 64px);
+        padding:clamp(44px,6vh,76px) 24px 72px;
+        color:#182132;
+        background:#f8fafc;
+      }
+      .yj-workbench-entry.adaptation-entry{background:radial-gradient(circle at 76% 8%,rgba(42,178,143,.09),transparent 28%),radial-gradient(circle at 10% 24%,rgba(101,87,232,.065),transparent 26%),#f8fafc}
+      .yj-workbench-entry.global-entry{background:radial-gradient(circle at 78% 8%,rgba(40,132,219,.09),transparent 28%),radial-gradient(circle at 12% 28%,rgba(43,179,143,.07),transparent 27%),#f8fafc}
+      .yj-entry-shell{width:min(1180px,100%);margin:auto}
+      .yj-entry-kicker{display:flex;align-items:center;gap:9px;color:#277f6c;font-size:10px;font-weight:850;letter-spacing:1.35px}.global-entry .yj-entry-kicker{color:#2d73b5}.yj-entry-kicker:before{content:'';width:26px;height:1px;background:currentColor;opacity:.55}
+      .yj-entry-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:52px;align-items:end;padding-bottom:42px;border-bottom:1px solid rgba(15,23,42,.08)}
+      .yj-entry-copy h1{max-width:720px;margin:18px 0 16px;font-size:clamp(38px,4vw,58px);line-height:1.12;letter-spacing:-2.6px}.yj-entry-copy p{max-width:650px;margin:0;color:#68758a;font-size:15px;line-height:1.85}
+      .yj-entry-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.yj-entry-actions button{min-height:44px;padding:0 19px;border:1px solid rgba(15,23,42,.1);border-radius:11px;background:#fff;color:#465267;font-weight:750;cursor:pointer}.yj-entry-actions .primary{border-color:transparent;background:#218c72;color:#fff;box-shadow:0 10px 24px rgba(33,140,114,.19)}.global-entry .yj-entry-actions .primary{background:#287fc5;box-shadow:0 10px 24px rgba(40,127,197,.19)}
+      .yj-entry-summary{padding:22px;border:1px solid rgba(15,23,42,.075);border-radius:18px;background:rgba(255,255,255,.78);box-shadow:0 18px 48px rgba(38,52,78,.07)}.yj-entry-summary>span{color:#96a0b0;font-size:9px;font-weight:800;letter-spacing:1.2px}.yj-entry-summary h3{margin:12px 0 15px;font-size:17px}.yj-entry-summary dl{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0}.yj-entry-summary dt{color:#9aa4b4;font-size:9px}.yj-entry-summary dd{margin:4px 0 0;color:#354155;font-size:12px;font-weight:750}
+      .yj-entry-section{padding-top:34px}.yj-entry-section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:17px}.yj-entry-section-head h2{margin:0;font-size:20px;letter-spacing:-.4px}.yj-entry-section-head p{margin:0;color:#929daf;font-size:11px}
+      .yj-entry-path{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.yj-entry-step{position:relative;min-height:132px;padding:20px;border:1px solid rgba(15,23,42,.07);border-radius:16px;background:rgba(255,255,255,.74)}.yj-entry-step em{display:block;color:#a0a9b8;font:800 9px/1 sans-serif;letter-spacing:1px}.yj-entry-step h3{margin:15px 0 7px;font-size:14px}.yj-entry-step p{margin:0;color:#7b879a;font-size:10px;line-height:1.65}.yj-entry-step:not(:last-child):after{content:'→';position:absolute;right:-10px;top:50%;z-index:2;color:#b7bfcb;font-size:12px}
+      .yj-entry-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}.yj-entry-option{display:flex;align-items:center;gap:15px;padding:18px;border:1px solid rgba(15,23,42,.075);border-radius:16px;background:rgba(255,255,255,.78);cursor:pointer;text-align:left;transition:.2s ease}.yj-entry-option:hover{transform:translateY(-2px);border-color:rgba(33,140,114,.24);background:#fff}.yj-entry-option i{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#edf8f4;font-style:normal;font-size:20px}.global-entry .yj-entry-option i{background:#edf6fc}.yj-entry-option b,.yj-entry-option small{display:block}.yj-entry-option b{font-size:13px;color:#2c374a}.yj-entry-option small{margin-top:4px;color:#8995a7;font-size:10px}
+      @media(max-width:850px){.yj-entry-hero{grid-template-columns:1fr;gap:28px}.yj-entry-path{grid-template-columns:1fr 1fr}.yj-entry-step:nth-child(2):after{display:none}}
+      @media(max-width:560px){.yj-workbench-entry{padding:34px 15px 55px}.yj-entry-copy h1{font-size:34px;letter-spacing:-1.5px}.yj-entry-path,.yj-entry-options{grid-template-columns:1fr}.yj-entry-step:after{display:none}.yj-entry-summary dl{grid-template-columns:1fr}}
+
       /* ========== 响应式 ========== */
       @media (max-width: 640px) {
         .yj-project-navbar { padding: 0 14px; height: 50px; }
@@ -1153,8 +1174,43 @@
         </div>
       </div>
 
-      <div class="yj-project-page" id="yj-page-adaptation" aria-label="文学与漫画IP改编工作台"></div>
-      <div class="yj-project-page" id="yj-page-global" aria-label="文化IP出海制片工作台"></div>
+      <div class="yj-project-page" id="yj-page-adaptation-portal">
+        <main class="yj-workbench-entry adaptation-entry">
+          <div class="yj-entry-shell">
+            <section class="yj-entry-hero">
+              <div class="yj-entry-copy">
+                <div class="yj-entry-kicker">IP ADAPTATION LAB</div>
+                <h1>忠于原作骨架，重构为可拍的故事。</h1>
+                <p>从文学文本或漫画页面出发，提取可溯源事实、锁定不可改动的叙事内核，再完成影视化诊断、人工决策与分场交付。</p>
+                <div class="yj-entry-actions"><button class="primary" data-adaptation-enter="literary">开始文学作品拆解</button><button data-adaptation-enter="manga">开始漫画作品拆解</button></div>
+              </div>
+              <aside class="yj-entry-summary"><span>PRODUCTION STANDARD</span><h3>改编不是重写，而是有依据的转译</h3><dl><div><dt>输入类型</dt><dd>TXT · EPUB · PDF · 漫画</dd></div><div><dt>人工检查点</dt><dd>骨架锁定 · 方案确认</dd></div><div><dt>核心证据</dt><dd>章节 / 页格级溯源</dd></div><div><dt>最终交付</dt><dd>可拍分场与变更台账</dd></div></dl></aside>
+            </section>
+            <section class="yj-entry-section"><div class="yj-entry-section-head"><h2>从原作到镜头的四个关键阶段</h2><p>每一步都有 Agent、Skill 与人工决定记录</p></div><div class="yj-entry-path"><article class="yj-entry-step"><em>01 / EXTRACT</em><h3>事实提取</h3><p>识别人物、事件、对白与出处，不让模型自由脑补。</p></article><article class="yj-entry-step"><em>02 / LOCK</em><h3>骨架锁定</h3><p>确认主题、关键因果和人物主动选择等不可变量。</p></article><article class="yj-entry-step"><em>03 / ADAPT</em><h3>影视化改编</h3><p>解决不可视化、高成本、节奏与现代价值问题。</p></article><article class="yj-entry-step"><em>04 / DELIVER</em><h3>分场交付</h3><p>输出改编前后对照、分场说明书和完整证据链。</p></article></div></section>
+            <section class="yj-entry-section"><div class="yj-entry-section-head"><h2>选择你的原作类型</h2><p>进入后仍可切换模式</p></div><div class="yj-entry-options"><button class="yj-entry-option" data-adaptation-enter="literary"><i>📖</i><span><b>文学作品改编</b><small>适合小说、故事、纪实文本与文本 PDF</small></span></button><button class="yj-entry-option" data-adaptation-enter="manga"><i>▦</i><span><b>漫画作品改编</b><small>识别页序、画格、对白、人物与镜头关系</small></span></button></div></section>
+          </div>
+        </main>
+      </div>
+      <div class="yj-project-page" id="yj-page-global-portal">
+        <main class="yj-workbench-entry global-entry">
+          <div class="yj-entry-shell">
+            <section class="yj-entry-hero">
+              <div class="yj-entry-copy">
+                <div class="yj-entry-kicker">CULTURAL IP GLOBALIZATION</div>
+                <h1>让中国故事被理解，而不是被稀释。</h1>
+                <p>先锁定不可替换的文化资产，再根据目标市场完成风险诊断、本地化表达、双语剧本和发行交付，让每次改编都可解释、可审核。</p>
+                <div class="yj-entry-actions"><button class="primary" data-global-enter>创建文化出海项目</button><button data-portal-demo="global">运行比赛 Demo</button></div>
+              </div>
+              <aside class="yj-entry-summary"><span>GLOBAL DELIVERY</span><h3>文化保真与市场理解同时成立</h3><dl><div><dt>目标市场</dt><dd>东南亚 · 北美 · 欧洲等</dd></div><div><dt>核心门禁</dt><dd>文化资产 · 本地化方向</dd></div><div><dt>语言交付</dt><dd>中文 + 目标市场语言</dd></div><div><dt>最终交付</dt><dd>剧本 · 字幕 · 发行包</dd></div></dl></aside>
+            </section>
+            <section class="yj-entry-section"><div class="yj-entry-section-head"><h2>一条完整的文化出海生产链</h2><p>保留文化身份，降低理解门槛</p></div><div class="yj-entry-path"><article class="yj-entry-step"><em>01 / ASSET</em><h3>文化资产锁定</h3><p>确认技艺、意象、价值观和叙事内核中的不可替换项。</p></article><article class="yj-entry-step"><em>02 / RISK</em><h3>跨文化风险</h3><p>识别理解障碍、价值偏差、刻板印象与平台合规风险。</p></article><article class="yj-entry-step"><em>03 / LOCALIZE</em><h3>本地化转译</h3><p>保持故事骨架，通过行动、语境和节奏完成表达适配。</p></article><article class="yj-entry-step"><em>04 / RELEASE</em><h3>发行交付</h3><p>生成双语剧本、字幕、风险台账与平台发行物料。</p></article></div></section>
+            <section class="yj-entry-section"><div class="yj-entry-options"><button class="yj-entry-option" data-global-enter><i>🌏</i><span><b>进入文化出海制片工作台</b><small>配置文化项目、目标市场、语言和发行平台</small></span></button><button class="yj-entry-option" data-portal-view="knowledge"><i>🧠</i><span><b>查看专家与文化资料库</b><small>了解 Agent、Skill 与专属知识绑定</small></span></button></div></section>
+          </div>
+        </main>
+      </div>
+
+      <div class="yj-project-page" id="yj-page-adaptation" aria-label="文学与漫画IP改编执行工作台"></div>
+      <div class="yj-project-page" id="yj-page-global" aria-label="文化IP出海制片执行工作台"></div>
 
       <div class="yj-project-page" id="yj-page-knowledge">
         <div class="yj-knowledge-wrap">
@@ -1521,13 +1577,14 @@
     document.querySelectorAll('.yj-project-page').forEach(function(p) { p.classList.remove('yj-page-active'); });
     document.querySelectorAll('.yj-project-navbar-nav a').forEach(function(a) {
       a.classList.remove('yj-nav-active');
-      if (a.dataset.view === view) a.classList.add('yj-nav-active');
+      var navView = view === 'adaptation-studio' ? 'adaptation' : view === 'global-studio' ? 'global' : view;
+      if (a.dataset.view === navView) a.classList.add('yj-nav-active');
     });
 
     var appContainer = document.querySelector('.app-container');
     var onboardingScreen = document.querySelector('.onboarding-screen');
     var projectRoot = document.getElementById('yj-project-root');
-    var isProjectView = ['home','projects','adaptation','global','knowledge','achievements','settings','newproject','quickdemo'].indexOf(view) >= 0;
+    var isProjectView = ['home','projects','adaptation','adaptation-studio','global','global-studio','knowledge','achievements','settings','newproject','quickdemo'].indexOf(view) >= 0;
 
     // Toggle original app-container and onboarding-screen visibility
     if (appContainer) {
@@ -1548,11 +1605,19 @@
         loadProjectList();
         break;
       case 'adaptation':
+        document.getElementById('yj-page-adaptation-portal').classList.add('yj-page-active');
+        var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        break;
+      case 'adaptation-studio':
         document.getElementById('yj-page-adaptation').classList.add('yj-page-active');
         var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
         if (window.YJAdaptationWorkbench) window.YJAdaptationWorkbench.open();
         break;
       case 'global':
+        document.getElementById('yj-page-global-portal').classList.add('yj-page-active');
+        var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        break;
+      case 'global-studio':
         document.getElementById('yj-page-global').classList.add('yj-page-active');
         var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
         if (window.YJGlobalWorkbench) window.YJGlobalWorkbench.open();
@@ -1791,13 +1856,13 @@
       currentProject = { project_id: projectId, title: projectName, workflow_id: null, original_idea: idea, project_type: projectType, creation_mode: mode, config: config };
       try { localStorage.setItem('yj_current_project', JSON.stringify(currentProject)); } catch(e) {}
       if(projectType==='globalization'){
-        switchView('global');
+        switchView('global-studio');
         if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.reset();
         showToast('文化出海项目已创建');
         return;
       }
       if(projectType!=='original'){
-        switchView('adaptation');
+        switchView('adaptation-studio');
         if(window.YJAdaptationWorkbench){window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(projectType==='manga_adaptation'?'manga':'literary');}
         showToast(projectType==='manga_adaptation'?'漫画改编项目已创建':'文学改编项目已创建');
         return;
@@ -1844,13 +1909,13 @@
     currentProject = project;
     var projectType=project.project_type||hintedType||'original';
     if(projectType==='globalization'){
-      switchView('global');
+      switchView('global-studio');
       if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.open();
       showToast('已恢复文化出海项目：'+(project.title||''));
       return;
     }
     if(projectType!=='original'){
-      switchView('adaptation');
+      switchView('adaptation-studio');
       if(window.YJAdaptationWorkbench)window.YJAdaptationWorkbench.setMode(projectType==='manga_adaptation'?'manga':'literary');
       showToast('已恢复'+(projectType==='manga_adaptation'?'漫画拆解':'文学改编')+'项目：'+(project.title||''));
       return;
@@ -2047,14 +2112,16 @@
     var homeDemo = document.getElementById('yj-home-demo');
     if (homeDemo) homeDemo.addEventListener('click', function(){switchView('quickdemo');});
 
-    document.querySelectorAll('[data-portal-adaptation]').forEach(function(button){button.addEventListener('click',function(){openAdaptationMode(this.dataset.portalAdaptation);});});
-    document.querySelectorAll('[data-portal-global]').forEach(function(button){button.addEventListener('click',function(){switchView('global');if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.open();});});
+    document.querySelectorAll('[data-portal-adaptation]').forEach(function(button){button.addEventListener('click',function(){switchView('adaptation');});});
+    document.querySelectorAll('[data-portal-global]').forEach(function(button){button.addEventListener('click',function(){switchView('global');});});
+    document.querySelectorAll('[data-adaptation-enter]').forEach(function(button){button.addEventListener('click',function(){openAdaptationMode(this.dataset.adaptationEnter);});});
+    document.querySelectorAll('[data-global-enter]').forEach(function(button){button.addEventListener('click',function(){switchView('global-studio');if(window.YJGlobalWorkbench)window.YJGlobalWorkbench.open();});});
     document.querySelectorAll('[data-portal-view]').forEach(function(button){button.addEventListener('click',function(){switchView(this.dataset.portalView);});});
     document.querySelectorAll('[data-portal-demo]').forEach(function(button){button.addEventListener('click',function(){launchCoreDemo(this.dataset.portalDemo);});});
     document.querySelectorAll('input[name="yj-project-type"]').forEach(function(input){input.addEventListener('change',syncProjectModalMode);});
 
     function openAdaptationMode(mode){
-      switchView('adaptation');
+      switchView('adaptation-studio');
       if(window.YJAdaptationWorkbench){window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(mode==='manga'?'manga':'literary');}
     }
 
@@ -2066,7 +2133,7 @@
     async function launchCoreDemo(type) {
       type=type||'original';
       if(type==='global'){
-        switchView('global');
+        switchView('global-studio');
         if(!window.YJGlobalWorkbench){showToast('文化出海演示模块尚未就绪');return;}
         window.YJGlobalWorkbench.reset();
         showToast('正在运行文化出海比赛 Demo');
@@ -2074,7 +2141,7 @@
         return;
       }
       if(type==='literary'||type==='manga'){
-        switchView('adaptation');
+        switchView('adaptation-studio');
         if(!window.YJAdaptationWorkbench){showToast('改编演示模块尚未就绪');return;}
         window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(type);
         showToast(type==='manga'?'正在运行漫画拆解 Demo':'正在运行文学改编 Demo');
