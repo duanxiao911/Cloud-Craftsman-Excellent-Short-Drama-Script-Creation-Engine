@@ -1605,8 +1605,9 @@
         loadProjectList();
         break;
       case 'adaptation':
-        document.getElementById('yj-page-adaptation-portal').classList.add('yj-page-active');
+        document.getElementById('yj-page-adaptation').classList.add('yj-page-active');
         var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        if (window.YJAdaptationWorkbench) window.YJAdaptationWorkbench.open();
         break;
       case 'adaptation-studio':
         document.getElementById('yj-page-adaptation').classList.add('yj-page-active');
@@ -1614,8 +1615,9 @@
         if (window.YJAdaptationWorkbench) window.YJAdaptationWorkbench.open();
         break;
       case 'global':
-        document.getElementById('yj-page-global-portal').classList.add('yj-page-active');
+        document.getElementById('yj-page-global').classList.add('yj-page-active');
         var ac = document.querySelector('.app-container'); if (ac) ac.style.setProperty('display', 'none', 'important');
+        if (window.YJGlobalWorkbench) window.YJGlobalWorkbench.open();
         break;
       case 'global-studio':
         document.getElementById('yj-page-global').classList.add('yj-page-active');
