@@ -49,7 +49,7 @@ await page.locator('#yj-modal-cancel').click();
 await page.locator('#yj-home-demo').click();
 checks.demoHubVisible = await page.locator('#yj-page-quickdemo.yj-page-active').isVisible();
 checks.fourDemoCards = await page.locator('.yj-demo-card').count().then(count => count === 4);
-checks.fourDemoTypes = await page.locator('.yj-demo-grid').innerText().then(text => ['原创短剧 Demo','文学改编 Demo','漫画拆解 Demo','文化出海 Demo'].every(value => text.includes(value)));
+checks.fourDemoTypes = await page.locator('.yj-demo-grid').innerText().then(text => ['文旅宣传 Demo','文学改编 Demo','漫画拆解 Demo','文化出海 Demo'].every(value => text.includes(value)));
 await page.locator('[data-view="home"]').click();
 await page.evaluate(() => { document.documentElement.setAttribute('data-theme','light'); document.body.setAttribute('data-theme','light'); });
 await page.screenshot({ path: 'tests/studio-portal-final.png', fullPage: true });

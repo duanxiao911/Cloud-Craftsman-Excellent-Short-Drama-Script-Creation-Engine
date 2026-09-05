@@ -68,8 +68,8 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
     window.__yjQuickDemoRunning=true;
     const delay=options.instant?30:1200;
     const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-    const idea=options.idea||'非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。';
-    const phases=[
+    const idea=options.idea||'文旅宣传短剧《在滴水湖，遇见未来的我》：一个犹豫是否留在临港的年轻人，在环湖任务中遇见四种未来的自己。';
+    const legacyPhases=[
       {
         key:'outline',step:1,icon:'📖',title:'故事大纲',expert:'soul_catcher',expertName:'灵魂捕手',
         summary:'确认核心冲突、四段式结构与情感落点',
@@ -178,6 +178,118 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
 **顾沉舟**：我母亲。
 
 **字幕：距离对赌结束，还有30天。**`
+      }
+    ];
+    const phases=[
+      {
+        key:'outline',step:1,icon:'📖',title:'故事大纲',expert:'soul_catcher',expertName:'灵魂捕手',
+        summary:'用青年人生选择连接临港城市形象与湖海意象',
+        content:`# 《在滴水湖，遇见未来的我》故事大纲
+
+## 项目定位
+**类型**：青年群像 · 城市探索 · 轻奇幻 · 治愈文旅宣传短剧
+**建议时长**：5—6分钟
+**传播文案**：离上海很远吗？也许。但它离年轻人想象中的未来，很近。
+
+## 一句话故事
+23岁的林晓到临港参加面试，因犹豫是否留下而来到滴水湖边；她收到一项“日落前找到属于你的那一滴水”的任务，并在环湖途中遇见工程师、帆船女孩、数字创作者和创业青年——他们可能正是四种未来的她。
+
+## 核心传播机制
+- **人物先于景点**：所有城市空间都通过人物任务进入剧情，拒绝导游词式堆砌。
+- **可传播任务**：“寻找临港第一滴水”贯穿全片，也能转化为游客参与话题。
+- **未来身份变装**：戴头盔、抓帆绳、推开玻璃门、走进路演灯光，完成动作匹配转场。
+- **湖海情感隐喻**：一滴水不是被留住，而是知道自己可以走向大海。
+- **城市共创结尾**：邀请观众回答“来到临港，你想成为怎样的自己？”
+
+## 六段式结构
+1. 偏见钩子：朋友质疑临港“太远”，画面以骑行、帆船、天文馆、机器人和城市灯光快速反击。
+2. 一滴水任务：林晓捡到透明瓶与任务卡。
+3. 青年探索小队：四位青年带她进入真实工作、运动、阅读与创业场景。
+4. 未来身份变装：每完成一个任务，她短暂成为那个领域的自己。
+5. 湖与海：日落时理解“一滴水走向大海”的意义。
+6. 城市共创：她接受工作，并选择成为这座尚未写完的城市的一部分。`
+      },
+      {
+        key:'roles',step:4,icon:'👤',title:'人物小传',expert:'character_forger',expertName:'角色铸造师',
+        summary:'建立女主选择弧与四种未来身份镜像',
+        content:`# 人物小传
+
+## 林晓｜23岁｜应届毕业生
+第一次到临港面试。能力不差，却害怕把人生押在陌生的新城。她最初把“远”理解为距离，最终明白真正的远，是不敢走向尚未确定的自己。
+
+## 工程师｜未来身份一
+在湖边测试机器人，冷静而耐心。他让林晓完成一次设备启动，代表她对科技事业和解决问题能力的想象。
+
+## 帆船女孩｜未来身份二
+刚结束训练，教林晓辨认风向。她相信控制不了风，但能调整帆，代表行动力和身体自由。
+
+## 数字创作者｜未来身份三
+在湖岸公共空间远程工作，邀请林晓拍下“一座正在生长的城”，代表创作表达与新的生活方式。
+
+## 创业青年｜未来身份四
+准备日落前的青年路演。他不回避失败，却愿意在年轻城市里先写第一行，代表承担、协作与创造。
+
+## 人物关系
+四人既是临港真实青年群像，也是林晓可能成为的四种自己。他们不替她作决定，只让她看见选择之后的生活。`
+      },
+      {
+        key:'episodes',step:6,icon:'🗂️',title:'叙事结构',expert:'structure_architect',expertName:'结构建筑师',
+        summary:'按5—6分钟主片拆解时间、任务、场景与传播钩子',
+        content:`# 5—6分钟叙事结构
+
+## 00:00—00:20｜偏见钩子
+朋友语音：“你真准备去临港？那里是不是离上海特别远？”车窗倒影切成滴水湖、骑行、帆船、未来建筑、机器人与灯光。字幕：“我也以为，临港只是一座很远的新城。”
+
+## 00:20—00:55｜任务出现
+面试结束，林晓在湖边捡到透明瓶。纸条写着：“请在日落前，找到属于你的那一滴水。”
+
+## 00:55—03:35｜四个青年任务
+启动设备、学习控帆、拍摄生长中的城市、协助完成路演。每个地点都对应一个人物目标、一次帮助和一种临港生活方式。
+
+## 03:35—04:25｜未来身份变装
+四组动作匹配快速回放，林晓短暂切换为工程师、运动员、创作者和创业者，形成可独立拆分的15秒传播段落。
+
+## 04:25—05:15｜湖与海
+日落时她仍未找到“一滴水”。帆船女孩说：“滴水湖不是把一滴水留在这里，而是让它知道，自己可以走向大海。”镜头延伸至东海、港口与远方航线。
+
+## 05:15—05:50｜城市共创
+次日面试官问她为什么选择临港。林晓回答：“因为这座城还没有被写完。我想成为写下它的人之一。”片尾提问：“如果来到临港，你想成为怎样的自己？”`
+      },
+      {
+        key:'script',step:7,icon:'📝',title:'正文剧本',expert:'episode_writer',expertName:'分集编剧',
+        summary:'输出可拍摄、可拆条的分秒级文旅视听脚本示例',
+        content:`# 《在滴水湖，遇见未来的我》正文节选
+
+## 00:00—00:08｜列车车窗｜日/内
+**画面**：林晓的脸映在车窗上，城市轮廓从倒影中后退。手机语音亮起。
+**朋友（语音）**：你真准备去临港？那里是不是离上海特别远？
+**声音**：列车低频运行声，音乐只保留一颗持续音。
+
+## 00:08—00:20｜临港视觉蒙太奇｜日/外
+**画面**：林晓抬头——动作匹配切至环湖骑行、帆船破水、天文馆穹顶、机器人启动、城市灯光依次点亮。
+**林晓（旁白）**：我也以为，临港只是一座很远的新城。
+**字幕**：远，是距离；还是一种还没出发的生活？
+
+## 00:28—00:48｜滴水湖岸｜日/外
+**画面**：面试文件被风吹开。林晓追到水边，看见一只透明瓶停在岸沿。瓶中纸条写着：“日落前，找到属于你的那一滴水。”
+**林晓**：现在连城市都开始出面试题了吗？
+**转场**：她抬起瓶子，瓶底圆形高光匹配切到机器人镜头。
+
+## 03:42—04:10｜未来身份变装｜日/外
+**画面**：戴上头盔——工程师；抓紧帆绳——帆船运动员；推开玻璃门——数字创作者；走入灯光——创业者。四种身份在同一行进方向中连续切换。
+**林晓（旁白）**：原来一座新城，不只告诉你它有什么。它会问你，想在这里成为什么。
+
+## 04:38—05:02｜湖海相接｜日落/外
+**林晓**：可我还是没找到那一滴水。
+**帆船女孩**：滴水湖的意义，从来不是把一滴水留在这里。
+**帆船女孩**：而是让它知道，自己可以走向大海。
+**画面**：湖面高光延伸至东海、港口与远方航线。
+
+## 05:20—05:50｜面试室与城市群像｜次日/内外
+**面试官**：你为什么选择临港？
+**林晓**：因为这座城还没有被写完。我想成为写下它的人之一。
+**落版**：临港滴水湖｜年轻的城，年轻人的城。
+**互动字幕**：如果来到临港，你想成为怎样的自己？`
       }
     ];
 
@@ -541,7 +653,7 @@ pageScrollStyle.href=new URL('yunjiang-page-scroll.css?v=1.1.4',runtimeScript.sr
   bridge.start=async function(idea,context={}){
     const settings=loadSettings(),packId=(localStorage.getItem("yunjiang_style_pack_v1")||"cinematic"),packMeta=bridge.stylePacks.find(item=>item.id===packId)||{};const payload={story_direction:idea,drama_type:selectedStyle||null,total_episodes:settings.episodeCount||30,style_pack_id:packId,style_pack_version:packMeta.version||null,stop_at:"§3"};
     if(context.project_id)payload.project_id=context.project_id;
-    if(context.config){const config=context.config;payload.drama_type=config.genre||payload.drama_type;payload.total_episodes=config.total_episodes||payload.total_episodes;payload.style_pack_id=config.style_pack_id||payload.style_pack_id;payload.user_materials=[config.platform?'发布平台：'+config.platform:'',config.audience?'目标受众：'+config.audience:'',config.constraints?'制作约束：'+config.constraints:''].filter(Boolean).join('\n');}
+    if(context.config){const config=context.config;payload.drama_type=config.genre||payload.drama_type;payload.total_episodes=config.total_episodes||payload.total_episodes;payload.style_pack_id=config.style_pack_id||payload.style_pack_id;const tourism=config.content_mode==='tourism_promo'?['项目类型：文旅宣传视频（单片，不按多集短剧展开）','传播目标：'+(config.campaign_goal||'待配置'),'主片时长：'+(config.duration_seconds||60)+'秒','交付画幅：'+(config.aspect_ratio||'dual'),'目的地事实与可用资产：'+(config.destination_assets||'【待核验】'),'行动号召：'+(config.call_to_action||'待配置'),'强制交付：含时间码、画面、景别、动作、旁白/对白、同期声、音乐音效、转场；同时输出主片、60秒版、15秒版。'].join('\n'):'';payload.user_materials=[tourism,config.platform?'发布平台：'+config.platform:'',config.audience?'目标受众：'+config.audience:'',config.constraints?'制作约束：'+config.constraints:''].filter(Boolean).join('\n');}
     const data=await jsonFetch("/api/v1/create",{method:"POST",body:JSON.stringify(payload)});bridge.workflowId=data.workflow_id;bridge.lastEventId=0;bridge.outputs={};bridge.active=true;updateCancelCreationButton?.();
     feature.setRunIdentity(bridge.workflowId,new Date().toISOString());addRunEvidence("done","后端工作流已创建","首个人工暂停点：角色设定","决策层 Agent");updateBackendBadge();feature.saveSession();bridge.consume();
   };

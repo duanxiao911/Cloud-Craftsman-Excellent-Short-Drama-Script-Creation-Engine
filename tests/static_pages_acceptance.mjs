@@ -98,7 +98,7 @@ checks.quickDemoEntersWorkspace = await page.locator('.app-container').isVisible
 checks.coreRunnerComplete = await page.locator('#yj-core-demo-status').innerText().then(text => text.includes('运行完成')).catch(() => false);
 checks.liveStripShowsFourOfFour = await page.locator('#alsCount').innerText().then(text => text.replace(/\s/g, '') === '4/4').catch(() => false);
 checks.fourCoreOutputs = await page.locator('[data-demo-core]').count().then(count => count === 4);
-checks.coreOutputNames = await page.locator('[data-demo-core] .output-title').allInnerTexts().then(titles => ['故事大纲','人物小传','集纲','正文剧本'].every(name => titles.some(title => title.includes(name))));
+checks.coreOutputNames = await page.locator('[data-demo-core] .output-title').allInnerTexts().then(titles => ['故事大纲','人物小传','叙事结构','正文剧本'].every(name => titles.some(title => title.includes(name))));
 checks.zeroTokenDemo = await page.locator('#yj-core-demo-runner').innerText().then(text => text.includes('零 Token')).catch(() => false);
 checks.broadcastComplete = await page.locator('#bcNode-outline.done, #bcNode-roles.done, #bcNode-episodes.done, #bcNode-script.done').count().then(count => count === 4);
 checks.runEvidence = await page.locator('#runEvidencePanel').innerText().then(text => ['故事大纲','人物小传','集纲','正文剧本'].every(name => text.includes(name))).catch(() => false);

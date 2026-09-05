@@ -6,7 +6,7 @@ from typing import Dict, Any
 SKILLS: Dict[str, Dict[str, Any]] = {
     "§10": {"id": "workflow-strategy", "name": "工作流策略编排", "version": "1.0.0", "checks": ["目标完整性", "专家依赖", "交付范围"]},
     "§0": {"id": "story-soul-discovery", "name": "故事灵魂提炼", "version": "1.0.0", "checks": ["核心命题", "情感承诺", "受众价值"]},
-    "§2": {"id": "content-compliance", "name": "内容合规审查", "version": "1.0.0", "checks": ["内容红线", "平台风险", "文化表达"]},
+    "§2": {"id": "content-compliance", "name": "内容合规审查", "version": "1.1.0", "checks": ["内容红线", "微短剧分类", "发行凭证", "片头编号", "AI标识", "平台风险", "文化表达"]},
     "§8": {"id": "project-configuration", "name": "短剧项目配置", "version": "1.0.0", "checks": ["集数规格", "受众定位", "制作边界"]},
     "§1": {"id": "character-arc-design", "name": "角色弧线设计", "version": "1.1.0", "checks": ["人物目标", "关系冲突", "成长闭环"]},
     "§3": {"id": "story-structure-design", "name": "剧情结构设计", "version": "1.1.0", "checks": ["因果链", "节奏曲线", "关键反转"]},
@@ -45,6 +45,19 @@ MANGA_ADAPTATION_SKILL_PACK: Dict[str, Dict[str, Any]] = {
     "manga-event-reconstruction": {"name": "跨格事件重建", "version": "1.0.0", "agents": ["§3", "§12"], "checks": ["动作连续", "因果链", "禁止脑补"]},
     "manga-shot-mapping": {"name": "画格到镜头映射", "version": "1.0.0", "agents": ["§11", "§13", "§6"], "checks": ["景别", "调度", "可拍性"]},
     "manga-adaptation-validation": {"name": "漫画改编一致性复核", "version": "1.0.0", "agents": ["§7", "§16", "§15"], "checks": ["页格溯源", "骨架守恒", "角色连续"]},
+}
+
+
+# 文旅宣传视频复用现有17专家，以传播任务和分秒级交付替代多集短剧默认结构。
+TOURISM_PROMO_SKILL_PACK: Dict[str, Dict[str, Any]] = {
+    "tourism-brief-configuration": {"name": "文旅传播任务配置", "version": "1.0.0", "agents": ["§10", "§8", "§14"], "checks": ["传播目标", "目标受众", "片长画幅", "平台CTA"]},
+    "destination-fact-verification": {"name": "目的地事实与授权核验", "version": "1.0.0", "agents": ["§2", "§0"], "checks": ["地点真实性", "开放信息", "拍摄授权", "文化表述"]},
+    "tourism-story-concept": {"name": "城市叙事与传播概念", "version": "1.0.0", "agents": ["§0", "§3", "§14"], "checks": ["城市命题", "人物选择", "可模仿入口", "前三秒钩子"]},
+    "destination-route-dramaturgy": {"name": "人物任务化游线设计", "version": "1.0.0", "agents": ["§1", "§3", "§12"], "checks": ["景点任务化", "人物功能", "动线合理", "情绪递进"]},
+    "timecoded-av-script": {"name": "分秒级视听脚本", "version": "1.0.0", "agents": ["§5", "§11", "§6"], "checks": ["时间码", "画面动作", "旁白字数", "同期声", "转场"]},
+    "tourism-visual-identity": {"name": "文旅视觉母题与声音系统", "version": "1.0.0", "agents": ["§13", "§4"], "checks": ["地标识别", "视觉母题", "动作匹配", "音乐音效"]},
+    "platform-cutdown-adaptation": {"name": "多平台拆条适配", "version": "1.0.0", "agents": ["§9", "§14"], "checks": ["主片", "60秒版", "15秒版", "标题封面", "互动话题"]},
+    "tourism-delivery-signoff": {"name": "文旅事实、合规与制作终审", "version": "1.0.0", "agents": ["§7", "§16", "§15"], "checks": ["事实可追溯", "品牌口径", "可拍性", "合规门禁", "交付完整"]},
 }
 
 

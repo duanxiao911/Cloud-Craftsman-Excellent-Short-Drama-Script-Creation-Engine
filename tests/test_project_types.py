@@ -15,8 +15,10 @@ def test_project_type_roundtrip_and_legacy_default(tmp_path):
     )
     original = dao.create_project(user_id="portal_user", title="原创项目")
     global_project = dao.create_project(user_id="portal_user", title="文化出海项目", project_type="globalization")
+    tourism_project = dao.create_project(user_id="portal_user", title="滴水湖文旅宣传", project_type="tourism_promo")
 
     assert literary["project_type"] == "literary_adaptation"
     assert original["project_type"] == "original"
     assert global_project["project_type"] == "globalization"
-    assert {item["project_type"] for item in dao.list_projects("portal_user")} == {"original", "literary_adaptation", "globalization"}
+    assert tourism_project["project_type"] == "tourism_promo"
+    assert {item["project_type"] for item in dao.list_projects("portal_user")} == {"original", "literary_adaptation", "globalization", "tourism_promo"}

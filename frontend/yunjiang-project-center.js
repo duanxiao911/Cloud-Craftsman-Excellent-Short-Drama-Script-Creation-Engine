@@ -367,7 +367,8 @@
       .yj-adaptation-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.yj-adapt-mode{display:flex;gap:10px;align-items:center;padding:11px;border:1px solid rgba(54,171,141,.14);border-radius:12px;background:rgba(245,252,250,.74)}.yj-adapt-mode i{font-style:normal;font-size:18px}.yj-adapt-mode b,.yj-adapt-mode small{display:block}.yj-adapt-mode b{font-size:11px;color:#344256}.yj-adapt-mode small{margin-top:2px;color:#8b97a7;font-size:9px}
       .yj-portal-utility{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.yj-portal-utility button{display:flex;align-items:center;gap:10px;padding:13px 15px;border:1px solid rgba(148,163,184,.13);border-radius:14px;background:rgba(255,255,255,.55);color:#657184;cursor:pointer;text-align:left}.yj-portal-utility button:hover{border-color:rgba(118,101,224,.25);background:rgba(255,255,255,.82)}.yj-portal-utility i{font-style:normal;font-size:18px}.yj-portal-utility b,.yj-portal-utility small{display:block}.yj-portal-utility b{font-size:11px;color:#344156}.yj-portal-utility small{margin-top:2px;color:#99a2b1;font-size:9px}
       .yj-project-type-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.yj-project-type-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:9px;background:#f2f1ff;color:#6a5bd0;font-size:10px;font-weight:800}.yj-project-type-pill.literary{background:#eaf8f3;color:#207d68}.yj-project-type-pill.manga{background:#edf2ff;color:#4e68b8}
-      .yj-project-type-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:13px 0 16px}.yj-project-type-option{position:relative;display:block;cursor:pointer}.yj-project-type-option input{position:absolute;opacity:0}.yj-project-type-option span{display:block;min-height:74px;padding:11px;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:rgba(249,250,252,.78);color:#657184}.yj-project-type-option b,.yj-project-type-option small{display:block}.yj-project-type-option b{font-size:11px;color:#344156}.yj-project-type-option small{margin-top:5px;font-size:9px;line-height:1.45}.yj-project-type-option input:checked+span{border-color:rgba(110,93,225,.38);background:linear-gradient(145deg,#f4f2ff,#eff7ff);box-shadow:0 7px 18px rgba(92,82,191,.1)}
+      .yj-project-type-picker{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:13px 0 16px}.yj-project-type-option{position:relative;display:block;cursor:pointer}.yj-project-type-option input{position:absolute;opacity:0}.yj-project-type-option span{display:block;min-height:74px;padding:11px;border:1px solid rgba(148,163,184,.16);border-radius:12px;background:rgba(249,250,252,.78);color:#657184}.yj-project-type-option b,.yj-project-type-option small{display:block}.yj-project-type-option b{font-size:11px;color:#344156}.yj-project-type-option small{margin-top:5px;font-size:9px;line-height:1.45}.yj-project-type-option input:checked+span{border-color:rgba(110,93,225,.38);background:linear-gradient(145deg,#f4f2ff,#eff7ff);box-shadow:0 7px 18px rgba(92,82,191,.1)}
+      .yj-tourism-fields{display:none;margin:14px 0;padding:14px;border:1px solid rgba(14,165,164,.18);border-radius:14px;background:linear-gradient(145deg,rgba(236,253,245,.7),rgba(239,246,255,.72))}.yj-tourism-fields.active{display:block}.yj-tourism-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.yj-tourism-fields textarea{min-height:76px}
       .yj-demo-hub{max-width:1080px;margin:0 auto;padding:32px 24px 80px}.yj-demo-hero{text-align:center;margin-bottom:25px}.yj-demo-hero h2{margin:0 0 7px;font-size:25px}.yj-demo-hero p{margin:0;color:#8994a6;font-size:12px}.yj-demo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.yj-demo-card{padding:20px;border:1px solid rgba(255,255,255,.82);border-radius:19px;background:rgba(255,255,255,.68);box-shadow:0 12px 36px rgba(62,72,104,.07);backdrop-filter:blur(20px)}.yj-demo-card .icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#eeebff,#eaf5ff);font-size:20px}.yj-demo-card h3{margin:13px 0 6px;font-size:15px}.yj-demo-card p{min-height:52px;margin:0;color:#8490a3;font-size:10px;line-height:1.65}.yj-demo-card ul{min-height:70px;margin:13px 0;padding:0;list-style:none;color:#667286;font-size:9px;line-height:1.8}.yj-demo-card button{width:100%;justify-content:center;padding:10px 12px;font-size:11px}
       [data-theme="dark"] .yj-workbench-card,[data-theme="dark"] .yj-demo-card{background:rgba(25,35,53,.72);border-color:rgba(152,163,190,.12)}[data-theme="dark"] .yj-workbench-card h2,[data-theme="dark"] .yj-adapt-mode b,[data-theme="dark"] .yj-portal-utility b,[data-theme="dark"] .yj-project-type-option b,[data-theme="dark"] .yj-demo-card h3{color:#edf2f8}[data-theme="dark"] .yj-workbench-flow span,[data-theme="dark"] .yj-adapt-mode,[data-theme="dark"] .yj-portal-utility button,[data-theme="dark"] .yj-project-type-option span{background:rgba(29,40,60,.78);color:#aab6c8}[data-theme="dark"] .yj-project-type-option input:checked+span{background:linear-gradient(145deg,#272447,#1c344a)}
 
@@ -683,6 +684,21 @@
       .yj-pro-project-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
       .yj-pro-project-grid > label { min-width:0; }
       .yj-pro-project-fields textarea { min-height:68px; margin-bottom:0; }
+      .yj-compliance-preflight { margin:12px 0 14px; padding:14px; border:1px solid rgba(201,151,54,.22); border-radius:16px; background:linear-gradient(135deg,rgba(255,251,235,.78),rgba(248,250,252,.82)); }
+      .yj-compliance-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:11px; }
+      .yj-compliance-head b { display:block; color:#493f2b; font-size:12px; }
+      .yj-compliance-head small { display:block; margin-top:3px; color:#8b7b5b; font-size:9px; line-height:1.5; }
+      .yj-policy-version { flex:none; padding:4px 7px; border-radius:999px; background:#fff3cf; color:#926c18; font:700 9px/1.2 monospace; }
+      .yj-compliance-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+      .yj-compliance-checks { display:grid; grid-template-columns:1fr 1fr; gap:7px 10px; margin:1px 0 11px; }
+      .yj-compliance-check { display:flex; align-items:flex-start; gap:7px; color:#697386; font-size:10px; line-height:1.45; }
+      .yj-project-modal .yj-compliance-check input { width:14px; height:14px; flex:none; margin:1px 0 0; padding:0; accent-color:#7868df; }
+      .yj-compliance-actions { display:flex; align-items:center; gap:10px; }
+      .yj-compliance-run { padding:8px 11px; border:0; border-radius:9px; background:#252a38; color:#fff; font-size:10px; font-weight:750; cursor:pointer; }
+      .yj-compliance-result { flex:1; min-height:30px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.72); color:#7b8493; font-size:10px; line-height:1.5; }
+      .yj-compliance-result.pass { background:#edf9f4; color:#24795f; }
+      .yj-compliance-result.warn { background:#fff7df; color:#8a6517; }
+      .yj-compliance-result.block { background:#fff0f0; color:#a13a3a; }
       body[data-yj-mode="normal"] .yj-auto-config-card { display:block; }
       body[data-yj-mode="pro"] .yj-pro-project-fields { display:block; }
       body[data-yj-mode="pro"] .yj-project-modal { width: 680px; }
@@ -692,7 +708,7 @@
         gap: 10px;
         margin-top: 8px;
       }
-      @media (max-width: 640px) { .yj-pro-project-grid { grid-template-columns:1fr; } }
+      @media (max-width: 640px) { .yj-pro-project-grid,.yj-compliance-grid,.yj-compliance-checks { grid-template-columns:1fr; } }
 
       /* ========== 专家智库（只读展示） ========== */
       .yj-knowledge-wrap {
@@ -1274,9 +1290,9 @@
       <div class="yj-project-page" id="yj-page-quickdemo">
         <div class="yj-demo-hub">
           <header class="yj-demo-hero"><h2>⚡ 四条核心生产链，零 Token 快速体验</h2><p>每个 Demo 都进入对应工作台，展示专家调度、人工检查点、中间产出与最终价值。</p></header>
-          <input type="hidden" id="yj-demo-idea" value="非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。" />
+          <input type="hidden" id="yj-demo-idea" value="文旅宣传短剧《在滴水湖，遇见未来的我》：一个犹豫是否留在临港的年轻人，在环湖任务中遇见四种未来的自己。" />
           <div class="yj-demo-grid">
-            <article class="yj-demo-card"><span class="icon">✨</span><h3>原创短剧 Demo</h3><p>《最后一炉》从一句创意运行到故事大纲、人物小传、集纲与正文。</p><ul><li>✓ 4项核心产出</li><li>✓ 专家执行过程</li><li>✓ Agent Run 证据</li></ul><button class="yj-home-btn yj-home-btn-primary" id="yj-demo-run" data-demo-type="original">运行原创 Demo</button></article>
+            <article class="yj-demo-card"><span class="icon">🏞️</span><h3>文旅宣传 Demo</h3><p>《在滴水湖，遇见未来的我》从城市命题运行到人物、结构与分秒级正文。</p><ul><li>✓ 人物任务化游线</li><li>✓ 湖海情感意象</li><li>✓ 多平台传播钩子</li></ul><button class="yj-home-btn yj-home-btn-primary" id="yj-demo-run" data-demo-type="tourism">运行文旅 Demo</button></article>
             <article class="yj-demo-card"><span class="icon">📖</span><h3>文学改编 Demo</h3><p>《灯影里的旧账》锁定原著骨架，诊断不可影视化内容并形成分场。</p><ul><li>✓ 原文分块与引用</li><li>✓ 2个人工检查点</li><li>✓ 改编前后对照</li></ul><button class="yj-home-btn yj-home-btn-adapt" data-demo-type="literary">运行文学改编 Demo</button></article>
             <article class="yj-demo-card"><span class="icon">▦</span><h3>漫画拆解 Demo</h3><p>《末班渡口》识别画格、对白和说话人，并映射为真人短剧镜头。</p><ul><li>✓ 3页8个画格</li><li>✓ 对白人工校正</li><li>✓ 画格到镜头映射</li></ul><button class="yj-home-btn yj-home-btn-adapt" data-demo-type="manga">运行漫画拆解 Demo</button></article>
             <article class="yj-demo-card"><span class="icon">🌏</span><h3>文化出海 Demo</h3><p>《最后一炉》锁定非遗内核，生成海外本地化方案、双语剧本和发行交付包。</p><ul><li>✓ 文化资产锁定</li><li>✓ 跨文化风险雷达</li><li>✓ 双语发行交付</li></ul><button class="yj-home-btn yj-home-btn-global" data-demo-type="global">运行文化出海 Demo</button></article>
@@ -1296,11 +1312,24 @@
             <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="literary_adaptation"><span><b>📖 文学改编</b><small>小说、文章与文本 PDF</small></span></label>
             <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="manga_adaptation"><span><b>▦ 漫画改编</b><small>漫画页、画格与对白拆解</small></span></label>
             <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="globalization"><span><b>🌏 文化出海</b><small>跨文化改编、双语与发行包</small></span></label>
+            <label class="yj-project-type-option"><input type="radio" name="yj-project-type" value="tourism_promo"><span><b>🏞️ 文旅宣传</b><small>城市、景区、非遗与目的地传播</small></span></label>
           </div>
           <label class="yj-project-form-label" for="yj-new-project-name">项目名称（可选）</label>
           <input type="text" id="yj-new-project-name" placeholder="项目名称（如：都市逆袭之巅峰人生）" />
           <label class="yj-project-form-label" for="yj-new-project-idea" id="yj-project-input-label">故事想法</label>
           <textarea id="yj-new-project-idea" placeholder="描述你的短剧创意...&#10;例如：一个普通大学生意外获得超能力，在校园中经历爱情、友情与成长的故事，共5集，每集3分钟"></textarea>
+          <section class="yj-tourism-fields" id="yj-tourism-fields">
+            <div class="yj-tourism-grid">
+              <label><span class="yj-project-form-label">传播目标</span><select id="yj-tourism-goal"><option>城市形象传播</option><option>景区引流</option><option>非遗传播</option><option>节庆推广</option><option>招商推介</option></select></label>
+              <label><span class="yj-project-form-label">主片时长</span><select id="yj-tourism-duration"><option value="60">60 秒</option><option value="90">90 秒</option><option value="180">3 分钟</option><option value="360" selected>5—6 分钟</option></select></label>
+              <label><span class="yj-project-form-label">交付画幅</span><select id="yj-tourism-aspect"><option value="dual">横竖双版本</option><option value="16:9">16:9 横屏</option><option value="9:16">9:16 竖屏</option></select></label>
+              <label><span class="yj-project-form-label">发布平台</span><input id="yj-tourism-platform" type="text" placeholder="如：抖音、视频号、文旅大屏" /></label>
+              <label><span class="yj-project-form-label">行动号召 CTA</span><input id="yj-tourism-cta" type="text" placeholder="如：来临港，遇见未来的自己" /></label>
+              <label><span class="yj-project-form-label">目标受众</span><input id="yj-tourism-audience" type="text" placeholder="如：18—35 岁青年游客" /></label>
+            </div>
+            <label class="yj-project-form-label" for="yj-tourism-assets">目的地事实与可用资产</label>
+            <textarea id="yj-tourism-assets" placeholder="填写真实地点、地标、人物、活动、开放信息、拍摄授权和必须保留的品牌口径；不确定的信息将标记为【待核验】。"></textarea>
+          </section>
           <div class="yj-auto-config-card" id="yj-auto-config-card">
             <b>✨ 云匠自动配置</b>
             自动选择题材与风格包 · 调度 17 位专家及其专属资料库 · 自动完成故事大纲、人物小传、集纲、正文与质量门禁
@@ -1317,6 +1346,22 @@
             <label class="yj-project-form-label" for="yj-project-constraints">制作约束（可选）</label>
             <textarea id="yj-project-constraints" placeholder="场景数量、演员规模、预算、禁用表达等"></textarea>
           </div>
+          <section class="yj-compliance-preflight" aria-labelledby="yj-compliance-title">
+            <div class="yj-compliance-head"><div><b id="yj-compliance-title">🛡️ 2026 微短剧发行预检</b><small>依据国家广播电视总局令第16号 · 2026-09-01生效</small></div><span class="yj-policy-version">POLICY 1.0.0</span></div>
+            <div class="yj-compliance-grid">
+              <label><span class="yj-project-form-label">预计制作投资（元）</span><input id="yj-compliance-budget" type="number" min="0" step="10000" value="500000" /></label>
+              <label><span class="yj-project-form-label">主要制作方式</span><select id="yj-compliance-production"><option value="live_action">真人实拍</option><option value="ai_generated">AI生成 / AI制作</option></select></label>
+              <label><span class="yj-project-form-label">特殊题材（逗号分隔）</span><input id="yj-compliance-topics" type="text" placeholder="如：司法、公安；无则留空" /></label>
+              <label><span class="yj-project-form-label">现有发行编号</span><input id="yj-compliance-credential" type="text" placeholder="许可证号 / 批准文件编号 / 节目编号" /></label>
+            </div>
+            <div class="yj-compliance-checks">
+              <label class="yj-compliance-check"><input id="yj-title-card-name" type="checkbox"><span>片头已标注正式剧名</span></label>
+              <label class="yj-compliance-check"><input id="yj-title-card-credential" type="checkbox"><span>片头已标注对应编号</span></label>
+              <label class="yj-compliance-check"><input id="yj-ai-notice" type="checkbox"><span>AI项目每集已有明显提示标识</span></label>
+              <label class="yj-compliance-check"><input id="yj-chinese-subtitles" type="checkbox"><span>外文内容已配中文字幕</span></label>
+            </div>
+            <div class="yj-compliance-actions"><button type="button" class="yj-compliance-run" id="yj-compliance-run">执行发行预检</button><div class="yj-compliance-result" id="yj-compliance-result">填写制作信息后执行预检；未获发行凭证不影响保存创作草稿。</div></div>
+          </section>
           <div class="yj-project-modal-actions">
             <button class="yj-home-btn yj-home-btn-ghost" id="yj-modal-cancel">取消</button>
             <button class="yj-home-btn yj-home-btn-primary" id="yj-modal-create">开始创作</button>
@@ -1719,7 +1764,7 @@
 
     listEl.innerHTML = projects.map(function(p) {
       var projectType = p.project_type || 'original';
-      var typeMeta = projectType === 'globalization' ? {label:'🌏 文化出海',cls:'global',total:7,action:'继续出海'} : projectType === 'manga_adaptation' ? {label:'▦ 漫画改编',cls:'manga',total:8,action:'继续拆解'} : projectType === 'literary_adaptation' ? {label:'📖 文学改编',cls:'literary',total:7,action:'继续改编'} : {label:'✨ 原创短剧',cls:'original',total:17,action:'继续创作'};
+      var typeMeta = projectType === 'tourism_promo' ? {label:'🏞️ 文旅宣传',cls:'tourism',total:17,action:'继续创作'} : projectType === 'globalization' ? {label:'🌏 文化出海',cls:'global',total:7,action:'继续出海'} : projectType === 'manga_adaptation' ? {label:'▦ 漫画改编',cls:'manga',total:8,action:'继续拆解'} : projectType === 'literary_adaptation' ? {label:'📖 文学改编',cls:'literary',total:7,action:'继续改编'} : {label:'✨ 原创短剧',cls:'original',total:17,action:'继续创作'};
       var si = getStatusInfo(p.status);
       var stageCount = getStageCount(p.status, p.current_stage);
       var progressPct = Math.round((Math.min(stageCount,typeMeta.total) / typeMeta.total) * 100);
@@ -1776,19 +1821,65 @@
     var create = document.getElementById('yj-modal-create');
     if (badge) badge.textContent = professional ? '专业驾驶舱' : '自动驾驶';
     var projectType = getSelectedProjectType();
-    var typeLabel = projectType === 'globalization' ? '文化出海' : projectType === 'manga_adaptation' ? '漫画改编' : projectType === 'literary_adaptation' ? '文学改编' : '原创短剧';
+    var typeLabel = projectType === 'tourism_promo' ? '文旅宣传视频' : projectType === 'globalization' ? '文化出海' : projectType === 'manga_adaptation' ? '漫画改编' : projectType === 'literary_adaptation' ? '文学改编' : '原创短剧';
     if (title) title.textContent = (professional ? '🧭 专业项目配置 · ' : '✨ 快速新建 · ') + typeLabel;
-    if (subtitle) subtitle.textContent = projectType === 'globalization' ? '选择已有文化内容或输入案例说明，进入海外受众、风险、本地化与发行交付流程。' : projectType !== 'original' ? '创建改编项目后进入 IP 工作台，建立可回溯的作品事实层。' : professional
+    if (subtitle) subtitle.textContent = projectType === 'tourism_promo' ? '配置传播任务、真实目的地资产和交付规格，生成分秒级视听脚本及多平台拆条。' : projectType === 'globalization' ? '选择已有文化内容或输入案例说明，进入海外受众、风险、本地化与发行交付流程。' : projectType !== 'original' ? '创建改编项目后进入 IP 工作台，建立可回溯的作品事实层。' : professional
       ? '配置平台、受众、风格经验包和人在回路策略，随后进入完整 Agent 调度。'
       : '只需输入故事想法，其余由云匠自动配置。';
-    if (create) create.textContent = projectType === 'original' ? (professional ? '按配置启动' : '开始自动创作') : projectType === 'globalization' ? '创建并进入出海工作台' : '创建并进入改编工作台';
-    var label=document.getElementById('yj-project-input-label'), idea=document.getElementById('yj-new-project-idea'), pro=document.getElementById('yj-pro-project-fields'), auto=document.getElementById('yj-auto-config-card');
-    if(label)label.textContent=projectType==='original'?'故事想法':projectType==='globalization'?'待出海作品 / 文化IP说明':'作品说明 / 授权备注';
-    if(idea)idea.placeholder=projectType==='original'?'描述你的短剧创意...\n例如：一个普通大学生意外获得超能力，在校园中经历爱情、友情与成长的故事。':projectType==='globalization'?'填写待出海作品、文化资产和目标市场；也可直接运行《最后一炉》比赛 Demo。':'填写作品名称、内容简介和当前授权状态；进入工作台后再导入原始文件。';
-    if(projectType!=='original'){if(pro)pro.style.display='none';if(auto)auto.style.display='none';}else{if(pro)pro.style.display='';if(auto)auto.style.display='';}
+    if (create) create.textContent = projectType === 'tourism_promo' ? '创建并启动文旅创作' : projectType === 'original' ? (professional ? '按配置启动' : '开始自动创作') : projectType === 'globalization' ? '创建并进入出海工作台' : '创建并进入改编工作台';
+    var label=document.getElementById('yj-project-input-label'), idea=document.getElementById('yj-new-project-idea'), pro=document.getElementById('yj-pro-project-fields'), auto=document.getElementById('yj-auto-config-card'), tourism=document.getElementById('yj-tourism-fields');
+    if(label)label.textContent=projectType==='tourism_promo'?'传播创意与故事方向':projectType==='original'?'故事想法':projectType==='globalization'?'待出海作品 / 文化IP说明':'作品说明 / 授权备注';
+    if(idea)idea.placeholder=projectType==='tourism_promo'?'描述目的地、传播命题与故事创意...\n例如：青年在滴水湖遇见四种未来的自己，通过一段环湖任务重新选择人生方向。':projectType==='original'?'描述你的短剧创意...\n例如：一个普通大学生意外获得超能力，在校园中经历爱情、友情与成长的故事。':projectType==='globalization'?'填写待出海作品、文化资产和目标市场；也可直接运行《最后一炉》比赛 Demo。':'填写作品名称、内容简介和当前授权状态；进入工作台后再导入原始文件。';
+    if(tourism)tourism.classList.toggle('active',projectType==='tourism_promo');
+    if(projectType!=='original'&&projectType!=='tourism_promo'){if(pro)pro.style.display='none';if(auto)auto.style.display='none';}else{if(pro)pro.style.display=projectType==='tourism_promo'?'none':'';if(auto)auto.style.display='';}
   }
 
   function getSelectedProjectType(){var selected=document.querySelector('input[name="yj-project-type"]:checked');return selected?selected.value:'original';}
+
+  function collectComplianceInput() {
+    var production = document.getElementById('yj-compliance-production').value;
+    var credential = document.getElementById('yj-compliance-credential').value.trim();
+    var topics = document.getElementById('yj-compliance-topics').value.split(/[，,、]/).map(function(item){return item.trim();}).filter(Boolean);
+    var payload = {
+      investment_cny: Math.max(0, Number(document.getElementById('yj-compliance-budget').value) || 0),
+      production_type: production,
+      topics: topics,
+      title_card_has_name: document.getElementById('yj-title-card-name').checked,
+      title_card_has_credential: document.getElementById('yj-title-card-credential').checked,
+      ai_used: production === 'ai_generated',
+      ai_notice_each_episode: document.getElementById('yj-ai-notice').checked,
+      contains_foreign_language: getSelectedProjectType() === 'globalization',
+      chinese_subtitles_complete: document.getElementById('yj-chinese-subtitles').checked
+    };
+    payload._credential = credential;
+    return payload;
+  }
+
+  function renderComplianceResult(result) {
+    var el = document.getElementById('yj-compliance-result');
+    if (!el) return;
+    el.className = 'yj-compliance-result';
+    if (!result) { el.classList.add('warn'); el.textContent = '后端政策接口暂不可用，请先更新并重启引擎服务。'; return; }
+    var blockers = (result.issues || []).filter(function(item){return item.severity === 'blocker';});
+    var warnings = (result.issues || []).filter(function(item){return item.severity === 'warning';});
+    el.classList.add(blockers.length ? 'block' : warnings.length ? 'warn' : 'pass');
+    el.textContent = result.drama_class + '类 · ' + (blockers.length ? '创作可继续，上线暂未就绪：' + blockers.map(function(item){return item.message;}).join('；') : warnings.length ? '硬门禁已满足，仍需确认：' + warnings.map(function(item){return item.message;}).join('；') : '发行预检通过');
+  }
+
+  async function runCompliancePreflight(silent) {
+    var payload = collectComplianceInput();
+    var credential = payload._credential; delete payload._credential;
+    var budget = payload.investment_cny;
+    var special = payload.topics.some(function(topic){return ['政治','军事','外交','国家安全','统战','民族','宗教','司法','公安'].indexOf(topic) >= 0;});
+    var estimatedClass = special || budget >= (payload.production_type === 'ai_generated' ? 800000 : 3000000) ? 'I' : budget >= (payload.production_type === 'ai_generated' ? 300000 : 1000000) ? 'II' : 'III';
+    if (estimatedClass === 'I') payload.license_number = credential;
+    else if (estimatedClass === 'II') payload.approval_document_number = credential;
+    else payload.program_number = credential;
+    var result = await apiPost('/api/v1/compliance/micro-drama/assess', payload);
+    renderComplianceResult(result);
+    if (!silent) showToast(result ? '发行合规预检完成' : '政策接口暂不可用');
+    return {input:payload,result:result};
+  }
 
   function openNewProjectModal(preselectedType) {
     var modal = document.getElementById('yj-new-project-modal');
@@ -1813,7 +1904,7 @@
 
     var projectType=getSelectedProjectType();
     if (!idea) {
-      showToast(projectType==='original'?'请输入你的短剧创意':'请填写作品说明或授权备注');
+      showToast(projectType==='tourism_promo'?'请填写文旅传播创意':projectType==='original'?'请输入你的短剧创意':'请填写作品说明或授权备注');
       return;
     }
 
@@ -1831,6 +1922,22 @@
       genre: '', total_episodes: 5, platform: '自动匹配', audience: '',
       style_pack_id: 'cinematic', checkpoint_policy: 'auto', constraints: ''
     };
+    if(projectType==='tourism_promo'){
+      config.content_mode='tourism_promo';
+      config.genre='文旅宣传视频';
+      config.total_episodes=1;
+      config.campaign_goal=document.getElementById('yj-tourism-goal').value;
+      config.duration_seconds=Number(document.getElementById('yj-tourism-duration').value)||60;
+      config.aspect_ratio=document.getElementById('yj-tourism-aspect').value;
+      config.platform=document.getElementById('yj-tourism-platform').value.trim()||'待配置';
+      config.audience=document.getElementById('yj-tourism-audience').value.trim();
+      config.destination_assets=document.getElementById('yj-tourism-assets').value.trim();
+      config.call_to_action=document.getElementById('yj-tourism-cta').value.trim();
+      config.tourism_skill_pack='tourism-promo-video@1.0.0';
+      config.constraints='单片文旅宣传视频；输出分秒级视听脚本，不按多集短剧展开；未知目的地事实标记【待核验】。';
+    }
+    var compliance = await runCompliancePreflight(true);
+    config.compliance_preflight = compliance;
     var projectName = name || idea.slice(0, 30) + (idea.length > 30 ? '...' : '');
     var btn = document.getElementById('yj-modal-create');
     btn.textContent = '创建中...';
@@ -1863,7 +1970,7 @@
         showToast('文化出海项目已创建');
         return;
       }
-      if(projectType!=='original'){
+      if(projectType==='literary_adaptation'||projectType==='manga_adaptation'){
         switchView('adaptation-studio');
         if(window.YJAdaptationWorkbench){window.YJAdaptationWorkbench.reset();window.YJAdaptationWorkbench.setMode(projectType==='manga_adaptation'?'manga':'literary');}
         showToast(projectType==='manga_adaptation'?'漫画改编项目已创建':'文学改编项目已创建');
@@ -1916,7 +2023,7 @@
       showToast('已恢复文化出海项目：'+(project.title||''));
       return;
     }
-    if(projectType!=='original'){
+    if(projectType==='literary_adaptation'||projectType==='manga_adaptation'){
       switchView('adaptation-studio');
       if(window.YJAdaptationWorkbench)window.YJAdaptationWorkbench.setMode(projectType==='manga_adaptation'?'manga':'literary');
       showToast('已恢复'+(projectType==='manga_adaptation'?'漫画拆解':'文学改编')+'项目：'+(project.title||''));
@@ -2121,6 +2228,8 @@
     document.querySelectorAll('[data-portal-view]').forEach(function(button){button.addEventListener('click',function(){switchView(this.dataset.portalView);});});
     document.querySelectorAll('[data-portal-demo]').forEach(function(button){button.addEventListener('click',function(){launchCoreDemo(this.dataset.portalDemo);});});
     document.querySelectorAll('input[name="yj-project-type"]').forEach(function(input){input.addEventListener('change',syncProjectModalMode);});
+    var complianceRun = document.getElementById('yj-compliance-run');
+    if (complianceRun) complianceRun.addEventListener('click', function(){runCompliancePreflight(false);});
 
     function openAdaptationMode(mode){
       switchView('adaptation-studio');
@@ -2157,7 +2266,7 @@
       }
       var idea = document.getElementById('yj-demo-idea').value.trim();
       if (!idea) {
-        idea = '非遗短剧《最后一炉》：景泰蓝传人林砚为保住祖父留下的老作坊，与投资人顾沉舟达成30天对赌。';
+        idea = '文旅宣传短剧《在滴水湖，遇见未来的我》：一个犹豫是否留在临港的年轻人，在环湖任务中遇见四种未来的自己。';
         document.getElementById('yj-demo-idea').value = idea;
       }
       var resultDiv = document.getElementById('yj-demo-result');

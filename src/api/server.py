@@ -37,6 +37,8 @@ from src.story_state import StoryState
 from src.skill_registry import SKILLS, skill_for
 from src.database import Database, ProjectDAO, UserDAO, get_db
 from src.adaptation_schema import demo_project as adaptation_demo_project, manga_demo_project as adaptation_manga_demo_project, schema_manifest as adaptation_schema_manifest
+from src.engine.rules import MicroDramaReleaseRules
+from src.tourism_promo_schema import schema_manifest as tourism_promo_schema_manifest
 
 
 # ============ Pydantic模型 ============
@@ -161,6 +163,25 @@ class SaveArtifactRequest(BaseModel):
 class AdaptationValidateRequest(BaseModel):
     """验证改编工作台快照是否满足溯源与人工检查点要求。"""
     snapshot: Dict[str, Any]
+
+
+class MicroDramaReleaseAssessRequest(BaseModel):
+    """微短剧上线前分类、凭证和标识预检。"""
+    investment_cny: int = Field(0, ge=0)
+    production_type: str = Field("live_action", pattern="^(live_action|ai_generated)$")
+    topics: List[str] = Field(default_factory=list)
+    drama_class: Optional[str] = Field(None, pattern="^(I|II|III)$")
+    license_number: Optional[str] = None
+    approval_document_number: Optional[str] = None
+    program_number: Optional[str] = None
+    title_card_has_name: bool = False
+    title_card_has_credential: bool = False
+    ai_used: bool = False
+    ai_notice_each_episode: bool = False
+    contains_foreign_language: bool = False
+    chinese_subtitles_complete: bool = False
+    uniform_mark_asset_received: bool = False
+    uniform_mark_three_seconds: bool = False
 
 
 
@@ -403,8 +424,23 @@ def create_app() -> FastAPI:
                 "actions": ["确认继续", "修改方向", "直接编辑", "取消创作", "断点恢复"],
             },
             "observability": ["SSE实时事件", "Agent Run证据", "专家输入输出", "质量门禁", "Token用量"],
-            "product": ["3个场景模板", "60秒零Token体验", "Session持久化", "版本化风格包", "下游结构化导出", "文学/漫画IP改编工作台"],
+            "product": ["3个场景模板", "60秒零Token体验", "Session持久化", "版本化风格包", "下游结构化导出", "文学/漫画IP改编工作台", "文旅宣传视频 Skill Pack"],
         }
+
+    @app.get("/api/v1/tourism-promo/schema")
+    async def get_tourism_promo_schema():
+        """返回文旅宣传视频的配置、工作流与交付契约。"""
+        return tourism_promo_schema_manifest()
+
+    @app.get("/api/v1/compliance/micro-drama-policy")
+    async def get_micro_drama_policy():
+        """返回当前生效的微短剧结构化政策包。"""
+        return MicroDramaReleaseRules().policy
+
+    @app.post("/api/v1/compliance/micro-drama/assess")
+    async def assess_micro_drama_release(request: MicroDramaReleaseAssessRequest):
+        """执行分类及上线门禁预检；创作阶段可带阻断项继续保存草稿。"""
+        return MicroDramaReleaseRules().assess(request.model_dump(exclude_none=True))
 
     @app.get("/api/v1/adaptation/schema")
     async def get_adaptation_schema():
