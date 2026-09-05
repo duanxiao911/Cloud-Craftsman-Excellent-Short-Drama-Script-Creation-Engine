@@ -10,8 +10,10 @@
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Any, Dict, List, Optional, Tuple, Set
 from dataclasses import dataclass, field
+import json
+from pathlib import Path
 
 
 class RulePriority(Enum):
@@ -247,6 +249,75 @@ class MaterialIronRules:
         return True, "素材来源未明确，建议补充出处"
 
 
+class MicroDramaReleaseRules:
+    """2026-09 微短剧发行、编号和标识规则数据包。"""
+
+    DEFAULT_POLICY_PATH = (
+        Path(__file__).resolve().parents[2]
+        / "data"
+        / "policy"
+        / "cn_micro_drama_2026_09.json"
+    )
+
+    def __init__(self, policy_path: Optional[str] = None):
+        path = Path(policy_path) if policy_path else self.DEFAULT_POLICY_PATH
+        with path.open("r", encoding="utf-8") as stream:
+            self.policy: Dict[str, Any] = json.load(stream)
+
+    def classify(self, investment_cny: int, production_type: str = "live_action", topics: Optional[List[str]] = None) -> str:
+        topics = topics or []
+        special_topics = set(self.policy["classification"]["special_topics"])
+        if special_topics.intersection(topics):
+            return "I"
+        budget_key = "ai_generated_cny" if production_type == "ai_generated" else "live_action_cny"
+        thresholds = self.policy["classification"][budget_key]
+        if investment_cny >= thresholds["class_I_min"]:
+            return "I"
+        if investment_cny >= thresholds["class_II_min"]:
+            return "II"
+        return "III"
+
+    def assess(self, project: Dict[str, Any]) -> Dict[str, Any]:
+        """返回结构化发行门禁；未知的技术细则只警告，不伪装成硬性结论。"""
+        drama_class = project.get("drama_class") or self.classify(
+            int(project.get("investment_cny", 0)),
+            project.get("production_type", "live_action"),
+            project.get("topics", []),
+        )
+        issues: List[Dict[str, str]] = []
+
+        def add(code: str, message: str, severity: str, repair: str) -> None:
+            issues.append({"code": code, "message": message, "severity": severity, "repair": repair})
+
+        credential_field = {"I": "license_number", "II": "approval_document_number", "III": "program_number"}[drama_class]
+        if not project.get(credential_field):
+            add("release.credential_missing", f"{drama_class}类微短剧缺少发行所需编号或凭证", "blocker", "取得对应许可证、批准文件或平台节目编号后再上线")
+        if not project.get("title_card_has_name"):
+            add("opening.title_missing", "片头未确认在明显位置标注剧名", "blocker", "在片头明显位置加入正式剧名")
+        if not project.get("title_card_has_credential"):
+            add("opening.credential_missing", "片头未确认展示对应许可证号、批准文件编号或节目编号", "blocker", "在片头明显位置加入与发行凭证一致的编号")
+        if project.get("ai_used") and not project.get("ai_notice_each_episode"):
+            add("mark.ai_notice_missing", "使用AI生成或制作，但未确认每集添加明显提示标识", "blocker", "按相关AI标识规定在每集明显位置添加提示标识")
+        if project.get("contains_foreign_language") and not project.get("chinese_subtitles_complete"):
+            add("language.chinese_subtitles_missing", "外文标题、台词、歌词或特定含义标识缺少中文字幕", "blocker", "补齐规范中文字幕")
+        if drama_class == "I":
+            if not project.get("uniform_mark_asset_received"):
+                add("mark.uniform_asset_pending", "一类微短剧尚未确认取得发证机关下发的统一标识源文件", "warning", "向发证机关确认并取得正式标识素材及技术说明")
+            if not project.get("uniform_mark_three_seconds"):
+                add("mark.uniform_duration_unconfirmed", "一类微短剧片头3秒统一标识尚未确认", "warning", "按正式下发素材验证时长、画面、安全区与音轨；当前公开信息按3秒预检")
+
+        blockers = [item for item in issues if item["severity"] == "blocker"]
+        return {
+            "policy_id": self.policy["policy_id"],
+            "policy_version": self.policy["version"],
+            "effective_on": self.policy["effective_on"],
+            "drama_class": drama_class,
+            "passed": not blockers,
+            "issues": issues,
+            "release_gate": self.policy["release_gates"][drama_class],
+        }
+
+
 class RulesEngine:
     """规则引擎总入口：裁决冲突、红线扫描、因果检查、素材验证"""
     def __init__(self):
@@ -254,6 +325,7 @@ class RulesEngine:
         self.narrative_causality = NarrativeCausality()
         self.ai_detection = AIDetectionRedLine()
         self.material_rules = MaterialIronRules()
+        self.micro_drama_release_rules = MicroDramaReleaseRules()
 
     def resolve_conflict(self, conflict: RuleConflict) -> str:
         """裁决规则冲突"""
@@ -278,6 +350,10 @@ class RulesEngine:
     def export_red_lines(self) -> Dict[str, RedLineItem]:
         """导出红线条目供外部使用"""
         return self.red_line_system.red_lines
+
+    def assess_micro_drama_release(self, project: Dict[str, Any]) -> Dict[str, Any]:
+        """按2026-09规则包执行微短剧分类及上线前检查。"""
+        return self.micro_drama_release_rules.assess(project)
 
 
 # 示例用法

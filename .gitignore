@@ -1,7 +1,9 @@
 .env
 __pycache__/
 *.pyc
-data/
+data/*
+!data/policy/
+!data/policy/*.json
 sessions/
 *.egg-info/
 dist/

@@ -25,6 +25,7 @@ from src.engine.rules import (
     AIDetectionRedLine,
     MaterialIronRules,
     RedLineCategory,
+    MicroDramaReleaseRules,
 )
 
 
@@ -209,6 +210,55 @@ class TestRulesEngine:
         result = self.engine.check_ai_detection(text)
         assert result["score"] < 1.0
         assert len(result["issues"]) > 0
+
+
+class TestMicroDramaReleaseRules:
+    def setup_method(self):
+        self.rules = MicroDramaReleaseRules()
+
+    def test_live_action_classification_boundaries(self):
+        assert self.rules.classify(3000000) == "I"
+        assert self.rules.classify(1000000) == "II"
+        assert self.rules.classify(999999) == "III"
+
+    def test_ai_classification_boundaries(self):
+        assert self.rules.classify(800000, "ai_generated") == "I"
+        assert self.rules.classify(300000, "ai_generated") == "II"
+        assert self.rules.classify(299999, "ai_generated") == "III"
+
+    def test_special_topic_forces_class_one(self):
+        assert self.rules.classify(1, topics=["司法"]) == "I"
+
+    def test_missing_release_fields_are_blockers(self):
+        result = self.rules.assess({"investment_cny": 500000})
+        assert result["drama_class"] == "III"
+        assert result["passed"] is False
+        assert {item["code"] for item in result["issues"]} >= {
+            "release.credential_missing",
+            "opening.title_missing",
+            "opening.credential_missing",
+        }
+
+    def test_complete_class_three_package_passes(self):
+        result = self.rules.assess({
+            "investment_cny": 500000,
+            "program_number": "平台节目编号",
+            "title_card_has_name": True,
+            "title_card_has_credential": True,
+        })
+        assert result["passed"] is True
+
+    def test_ai_notice_is_required_for_each_episode(self):
+        result = self.rules.assess({
+            "investment_cny": 100000,
+            "production_type": "ai_generated",
+            "program_number": "平台节目编号",
+            "title_card_has_name": True,
+            "title_card_has_credential": True,
+            "ai_used": True,
+            "ai_notice_each_episode": False,
+        })
+        assert "mark.ai_notice_missing" in {item["code"] for item in result["issues"]}
 
 
 if __name__ == "__main__":

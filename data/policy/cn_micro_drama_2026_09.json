@@ -1,0 +1,89 @@
+{
+  "policy_id": "CN-NRTA-MICRO-DRAMA-2026-09",
+  "title": "微短剧发展管理办法",
+  "authority": "国家广播电视总局",
+  "order_no": "国家广播电视总局令第16号",
+  "published_on": "2026-07-31",
+  "effective_on": "2026-09-01",
+  "version": "1.0.0",
+  "jurisdiction": "CN",
+  "scope": {
+    "definition": "单集时长少于20分钟，主题主线明确、故事情节连续完整、人物角色突出的剧集",
+    "domestic_public_distribution": true,
+    "domestic_shoot_for_overseas_distribution": true
+  },
+  "classification": {
+    "special_topics_force_class": "I",
+    "special_topics": ["政治", "军事", "外交", "国家安全", "统战", "民族", "宗教", "司法", "公安"],
+    "live_action_cny": {"class_I_min": 3000000, "class_II_min": 1000000},
+    "ai_generated_cny": {"class_I_min": 800000, "class_II_min": 300000},
+    "note": "投资额度分类阈值来自政府部门公开解读；特殊题材不受投资额影响，归入一类。"
+  },
+  "release_gates": {
+    "I": {
+      "pre_production_filing": "required",
+      "completed_content_review": "provincial_or_higher_authority",
+      "release_credential": "微短剧发行许可证",
+      "program_number": "license_number"
+    },
+    "II": {
+      "pre_production_filing": "local_rules_or_voluntary_reference",
+      "completed_content_review": "provincial_or_higher_authority",
+      "release_credential": "批准文件",
+      "program_number": "approval_document_number"
+    },
+    "III": {
+      "pre_production_filing": "not_required_by_this_measure",
+      "completed_content_review": "qualified_broadcast_platform",
+      "release_credential": "播出单位审核",
+      "program_number": "platform_program_number"
+    }
+  },
+  "opening_and_marks": {
+    "all_classes": {
+      "required_visible_fields": ["剧名", "许可证号/批准文件编号/节目编号"],
+      "placement": "片头明显位置",
+      "presentation": "可单独呈现或与剧情融合呈现",
+      "legal_basis": "第二十七条"
+    },
+    "class_I_uniform_mark": {
+      "required": true,
+      "placement": "片头开始部分",
+      "duration_seconds": 3,
+      "visual_description": "苔花造型、红底金色",
+      "verification_status": "provisional_secondary_public_report",
+      "enforcement_mode": "warning_until_primary_technical_asset_is_supplied",
+      "note": "公开报道指向一类微短剧；正式标识源文件、分辨率、安全区和音轨规范须以发证机关下发素材为准。"
+    },
+    "ai_generated_notice": {
+      "required_when_ai_used": true,
+      "frequency": "每集",
+      "placement": "明显位置",
+      "legal_basis": "第三十四条"
+    },
+    "foreign_language_subtitles": {
+      "required": true,
+      "applies_to": ["外文歌曲歌词", "外文标题", "外文台词", "有特定含义的外文词汇及标识"],
+      "legal_basis": "第二十六条第四项"
+    }
+  },
+  "content_and_operations": {
+    "prohibited_content_article": 25,
+    "promotion_must_match_content": true,
+    "rights_and_originality_required": true,
+    "licensed_version_must_match_release": true,
+    "platform_editor_in_chief_and_traceability": true
+  },
+  "sources": [
+    {
+      "level": "primary",
+      "title": "国家广播电视总局令第16号：《微短剧发展管理办法》",
+      "url": "https://www.nrta.gov.cn/art/2026/7/31/art_113_73785.html"
+    },
+    {
+      "level": "official_interpretation",
+      "title": "《微短剧发展管理办法》9月1日正式施行",
+      "url": "https://wlj.nanjing.gov.cn/whyw/202609/t20260902_5904082.html"
+    }
+  ]
+}
